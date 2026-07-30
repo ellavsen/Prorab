@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prorab"
+version = "0.1.0"
+description = "Прораб — AI-сметчик. Деньги считает код."
+requires-python = ">=3.11"
+
+[tool.setuptools]
+package-dir = { "" = "packages" }
+packages = ["smeta_core"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Тесты не зависят от того, установлен ли пакет: из свежего клона достаточно pytest.
+pythonpath = ["packages", "tests"]

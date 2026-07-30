@@ -5,7 +5,7 @@ import os
 import re
 import io
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional, Tuple, Dict, List
 
 from dotenv import load_dotenv
@@ -33,7 +33,6 @@ from sqlalchemy import (
     create_engine,
     Integer,
     String,
-    Numeric,
     DateTime,
     select,
     delete,
@@ -47,6 +46,25 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker,
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+
+from smeta_core import (
+    Category,
+    EstimateTotals,
+    PositionData,
+    calculate_estimate,
+    format_money,
+    format_qty,
+    from_bp,
+    from_kop,
+    from_milli,
+    merge_duplicates,
+    parse_position_line,
+    parse_price,
+    parse_quantity,
+    to_bp,
+    to_kop,
+    to_milli,
+)
 
 # =========================
 # Config & Logging
@@ -63,7 +81,9 @@ if not TOKEN:
     raise RuntimeError("Не задан TELEGRAM_BOT_TOKEN в окружении. Проверь .env")
 
 DB_URL = os.getenv("ESTIMATE_DB_URL", "sqlite:///estimate.db")
-TAX_RATE = Decimal("0.06")  # +6%
+# Наценка по умолчанию для НОВЫХ смет, в базисных пунктах: 600 = 6.00%.
+# Ставка копируется в смету при создании и дальше живёт в документе (ADR-002).
+DEFAULT_MARKUP_BP = 600
 RETENTION_LIMIT = 5          # хранить последние N смет на пользователя
 
 # =========================
@@ -79,8 +99,19 @@ class Estimate(Base):
     user_id: Mapped[int] = mapped_column(Integer, index=True)
     number: Mapped[int] = mapped_column(Integer)  # нумерация внутри пользователя
     name: Mapped[str] = mapped_column(String(255))
+    # Наценка — часть документа, а не глобальная настройка (ADR-002).
+    markup_work_bp: Mapped[int] = mapped_column(Integer, default=DEFAULT_MARKUP_BP)
+    markup_material_bp: Mapped[int] = mapped_column(Integer, default=DEFAULT_MARKUP_BP)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def markup_work_rate(self) -> Decimal:
+        return from_bp(self.markup_work_bp)
+
+    @property
+    def markup_material_rate(self) -> Decimal:
+        return from_bp(self.markup_material_bp)
 
 class Position(Base):
     __tablename__ = "positions"
@@ -90,19 +121,63 @@ class Position(Base):
     estimate_id: Mapped[Optional[int]] = mapped_column(ForeignKey("estimates.id"), nullable=True)
     category: Mapped[str] = mapped_column(String(16))  # "Материал" | "Работа"
     name: Mapped[str] = mapped_column(String(255))
-    unit: Mapped[str] = mapped_column(String(32), default="")  # оставлено для совместимости
-    qty: Mapped[Decimal] = mapped_column(Numeric(18, 3), default=Decimal("0"))
-    price: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal("0"))
+    unit: Mapped[str] = mapped_column(String(32), default="")
+    # Целые минорные единицы: SQLite хранит NUMERIC как REAL, то есть деньги
+    # в Numeric(18,2) уже лежали бы в binary float (ADR-004).
+    qty_milli: Mapped[int] = mapped_column(Integer, default=0)
+    price_kop: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    def sum_line_no_tax(self) -> Decimal:
-        return (self.qty or Decimal("0")) * (self.price or Decimal("0"))
+    @property
+    def qty(self) -> Decimal:
+        return from_milli(self.qty_milli)
 
-    def sum_line_with_tax(self) -> Decimal:
-        return self.sum_line_no_tax() * (Decimal("1") + TAX_RATE)
+    @property
+    def price(self) -> Decimal:
+        return from_kop(self.price_kop)
+
+    def to_domain(self) -> PositionData:
+        return PositionData(
+            category=Category(self.category),
+            name=self.name,
+            qty=self.qty,
+            price=self.price,
+            unit=self.unit or "",
+        )
 
 engine = create_engine(DB_URL, future=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False, future=True)
+
+def migrate_money_to_integers(conn) -> List[str]:
+    """Переводит qty/price из REAL в целые минорные единицы (ADR-004).
+
+    Возвращает журнал строк, чьё хранимое значение не совпало с копейками
+    после округления — это и есть накопленная погрешность REAL-хранения.
+    """
+    conn.execute(text("ALTER TABLE positions ADD COLUMN qty_milli INTEGER DEFAULT 0"))
+    conn.execute(text("ALTER TABLE positions ADD COLUMN price_kop INTEGER DEFAULT 0"))
+
+    journal: List[str] = []
+    rows = conn.execute(text("SELECT id, qty, price FROM positions")).fetchall()
+    for rid, qty_raw, price_raw in rows:
+        qty = Decimal(str(qty_raw if qty_raw is not None else 0))
+        price = Decimal(str(price_raw if price_raw is not None else 0))
+        qty_milli = int(qty.quantize(Decimal("0.001"), rounding=ROUND_HALF_UP).scaleb(3))
+        price_kop = int(price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP).scaleb(2))
+        if Decimal(qty_milli).scaleb(-3) != qty or Decimal(price_kop).scaleb(-2) != price:
+            journal.append(f"#{rid}: qty {qty} -> {qty_milli}/1000, price {price} -> {price_kop}/100")
+        conn.execute(
+            text("UPDATE positions SET qty_milli = :q, price_kop = :p WHERE id = :i"),
+            {"q": qty_milli, "p": price_kop, "i": rid},
+        )
+
+    for column in ("qty", "price"):
+        try:
+            conn.execute(text(f"ALTER TABLE positions DROP COLUMN {column}"))
+        except Exception:
+            logger.warning("Старая колонка positions.%s не удалена — SQLite слишком старый", column)
+    return journal
+
 
 def bootstrap_schema_and_migrate():
     """Создаём таблицы и мягко мигрируем старые данные (если нет estimates/estimate_id)."""
@@ -117,6 +192,14 @@ def bootstrap_schema_and_migrate():
 
         if "estimates" not in tables:
             Base.metadata.create_all(bind=conn, tables=[Estimate.__table__])
+        else:
+            est_cols = {c["name"] for c in inspector.get_columns("estimates")}
+            for column in ("markup_work_bp", "markup_material_bp"):
+                if column not in est_cols:
+                    conn.execute(text(
+                        f"ALTER TABLE estimates ADD COLUMN {column} INTEGER "
+                        f"NOT NULL DEFAULT {DEFAULT_MARKUP_BP}"
+                    ))
 
         cols = {c["name"] for c in inspector.get_columns("positions")} if "positions" in tables else set()
         if "positions" not in tables:
@@ -125,6 +208,12 @@ def bootstrap_schema_and_migrate():
 
         if "estimate_id" not in cols:
             conn.execute(text("ALTER TABLE positions ADD COLUMN estimate_id INTEGER"))
+
+        if "price_kop" not in cols:
+            journal = migrate_money_to_integers(conn)
+            logger.info("Миграция денег в целые: строк с расхождением — %d", len(journal))
+            for entry in journal:
+                logger.info("  %s", entry)
 
         # Создадим дефолтную смету для пользователей, у кого есть позиции без estimate_id
         users = conn.execute(text("SELECT DISTINCT user_id FROM positions WHERE estimate_id IS NULL")).fetchall()
@@ -159,20 +248,6 @@ current_estimate_cache: Dict[int, int] = {}       # user_id -> estimate_id (дл
 # Helpers: parsing & formatting
 # =========================
 
-RE_VOLUME = re.compile(
-    r"(?P<num>[0-9]+([.,][0-9]+)?)\s*(?P<unit>(м2|м3|м^2|м^3|м²|м³|пм|шт\.?|кг|т|м|см|мм)?)$",
-    flags=re.IGNORECASE,
-)
-
-def to_decimal(v: str) -> Decimal:
-    v = v.strip().replace(" ", "").replace(",", ".")
-    if v == "":
-        raise InvalidOperation("empty")
-    return Decimal(v)
-
-def short_money(d: Decimal) -> str:
-    return f"{d:.2f}".replace(".", ",")
-
 def esc(s) -> str:
     """Экранирует пользовательский текст для сообщений с parse_mode=HTML."""
     return html.escape(str(s))
@@ -183,29 +258,7 @@ def reply_kb_start():
 def reply_kb_categories():
     return ReplyKeyboardMarkup([[KeyboardButton("Работа"), KeyboardButton("Материал")]], resize_keyboard=True)
 
-# --- INPUT FORMAT (актуальный) ---
-# Материал:  Наименование, количество, цена
-def parse_material_line(text_line: str) -> Tuple[str, Decimal, Decimal]:
-    parts = [p.strip() for p in text_line.split(",")]
-    if len(parts) < 3:
-        raise ValueError("Материал: ожидается 3 значения: Наименование, количество, цена")
-    name = parts[0]
-    qty = to_decimal(parts[1])   # <-- теперь второе поле = КОЛИЧЕСТВО
-    price = to_decimal(parts[2]) # <-- третье поле = ЦЕНА
-    return name, price, qty      # возвращаем в порядке (name, price, qty), как ждёт add_line
-
-
-# Работа:    Вид работы, количество, цена за единицу
-def parse_work_line(text_line: str) -> Tuple[str, Decimal, Decimal]:
-    parts = [p.strip() for p in text_line.split(",")]
-    if len(parts) < 3:
-        raise ValueError("Работа: ожидается 3 значения: Вид работы, количество, цена за единицу")
-    name = parts[0]
-    vol = parts[1].replace(" ", "")
-    m = RE_VOLUME.search(vol)
-    qty = to_decimal(m.group("num")) if m else to_decimal(vol)
-    price = to_decimal(parts[2])
-    return name, price, qty
+# Разбор строк ввода живёт в smeta_core.parsing — там же валидация границ.
 
 # =========================
 # Estimate helpers
@@ -272,10 +325,40 @@ def touch_estimate(db: Session, est: Estimate):
     est.updated_at = datetime.utcnow()
     db.commit()
 
+def load_positions(db: Session, uid: int, est_id: int) -> List[Position]:
+    return db.execute(
+        select(Position)
+        .where(Position.user_id == uid, Position.estimate_id == est_id)
+        .order_by(Position.category, Position.id)
+    ).scalars().all()
+
+def estimate_totals(db: Session, uid: int, est: Estimate) -> EstimateTotals:
+    """Единственный способ узнать сумму сметы — во всех каналах один и тот же."""
+    rows = load_positions(db, uid, est.id)
+    return calculate_estimate(
+        [r.to_domain() for r in rows], est.markup_work_rate, est.markup_material_rate
+    )
+
+def markup_caption(est: Estimate) -> str:
+    if est.markup_work_bp == est.markup_material_bp:
+        return f"{format_money(est.markup_work_rate)}%"
+    return (
+        f"работы {format_money(est.markup_work_rate)}%, "
+        f"материалы {format_money(est.markup_material_rate)}%"
+    )
+
 def create_new_estimate_like(db: Session, uid: int, src_est: Estimate) -> Estimate:
     """Создаёт новую пустую смету с тем же названием, но с новым номером, делает её активной и применяет ретеншн."""
     num = next_estimate_number(db, uid)
-    new_est = Estimate(user_id=uid, number=num, name=src_est.name)
+    new_est = Estimate(
+        user_id=uid,
+        number=num,
+        name=src_est.name,
+        # Ставки — часть документа, поэтому переносим из исходной сметы,
+        # а не берём текущие настройки: «обновить» значит «то же, но заново».
+        markup_work_bp=src_est.markup_work_bp,
+        markup_material_bp=src_est.markup_material_bp,
+    )
     db.add(new_est)
     db.commit()
     db.refresh(new_est)
@@ -374,18 +457,15 @@ async def cmd_estimates(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Отправляем каждую смету отдельным сообщением с кнопкой "Обновить смету №N"
         for e in ests:
-            total = db.execute(
-                select(func.coalesce(func.sum((Position.qty * Position.price) * (1 + float(TAX_RATE))), 0))
-                .where(Position.user_id == uid, Position.estimate_id == e.id)
-            ).scalar() or 0.0
-            count = db.execute(
-                select(func.count(Position.id)).where(Position.user_id == uid, Position.estimate_id == e.id)
-            ).scalar() or 0
+            # Итог считает домен. Денежных агрегатов в SQL нет — они дают
+            # другой ответ, чем /list и Excel (ADR-002).
+            totals = estimate_totals(db, uid, e)
+            count = len(totals.lines)
             is_active = (uid in current_estimate_cache and current_estimate_cache[uid] == e.id)
             mark = " (активная)" if is_active else ""
             text_msg = (
                 f"№{e.number}: {e.name}{mark}\n"
-                f"Позиции: {count}  Итого (+6%): {short_money(Decimal(str(total)))}"
+                f"Позиции: {count}  Итого: {format_money(totals.total)}"
             )
             kb = InlineKeyboardMarkup([[
                 InlineKeyboardButton(f"Обновить смету №{e.number}", callback_data=f"renew:{e.id}")
@@ -432,10 +512,7 @@ async def add_line(update: Update, context: ContextTypes.DEFAULT_TYPE):
         est = get_current_estimate(db, uid)
         for line in lines:
             try:
-                if cat == "Материал":
-                    name, price, qty = parse_material_line(line)
-                else:
-                    name, price, qty = parse_work_line(line)
+                position = parse_position_line(line, Category(cat))
 
                 # дубликаты: (estimate_id, category, name, price)
                 existing = db.execute(
@@ -443,20 +520,21 @@ async def add_line(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         Position.user_id == uid,
                         Position.estimate_id == est.id,
                         Position.category == cat,
-                        Position.name == name,
-                        Position.price == price,
+                        Position.name == position.name,
+                        Position.price_kop == to_kop(position.price),
                     )
                 ).scalars().first()
                 if existing:
-                    existing.qty = (existing.qty or Decimal("0")) + qty
+                    merged = merge_duplicates([existing.to_domain(), position])[0]
+                    existing.qty_milli = to_milli(merged.qty)
                 else:
                     db.add(Position(
                         user_id=uid,
                         estimate_id=est.id,
                         category=cat,
-                        name=name,
-                        qty=qty,
-                        price=price,
+                        name=position.name,
+                        qty_milli=to_milli(position.qty),
+                        price_kop=to_kop(position.price),
                         unit="",
                     ))
                 added += 1
@@ -473,9 +551,10 @@ async def cmd_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     with SessionLocal() as db:
         est = get_current_estimate(db, uid)
-        rows = db.execute(
-            select(Position).where(Position.user_id == uid, Position.estimate_id == est.id).order_by(Position.category, Position.id)
-        ).scalars().all()
+        rows = load_positions(db, uid, est.id)
+        totals = calculate_estimate(
+            [r.to_domain() for r in rows], est.markup_work_rate, est.markup_material_rate
+        )
 
     if not rows:
         await update.message.reply_text("В текущей смете пока пусто. Выбери категорию и добавь позиции.", reply_markup=reply_kb_categories())
@@ -483,17 +562,18 @@ async def cmd_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     out = [f"<b>{esc(est.name)}</b> (№{est.number})"]
     current_cat = None
-    for r in rows:
+    for r, line in zip(rows, totals.lines):
         if r.category != current_cat:
             current_cat = r.category
             out.append(f"\n<b>{'Материалы и расходники' if current_cat=='Материал' else 'Работы'}</b>")
-        # Жёстко показываем qty -> Кол-во, price -> Цена (фикс путаницы)
         out.append(
             f"#{r.id}: {esc(r.name)}\n"
-            f"    Кол-во: {r.qty}  Цена: {short_money(r.price)}  Сумма(+6%): {short_money(r.sum_line_with_tax())}"
+            f"    Кол-во: {format_qty(r.qty)}  Цена: {format_money(r.price)}  "
+            f"Сумма: {format_money(line.total)}"
         )
-    total = sum((r.sum_line_with_tax() for r in rows), Decimal("0"))
-    out.append(f"\nИтого (+6%): <b>{short_money(total)}</b>")
+    out.append(f"\nБез наценки: {format_money(totals.subtotal)}")
+    out.append(f"Наценка ({markup_caption(est)}): {format_money(totals.markup)}")
+    out.append(f"Итого: <b>{format_money(totals.total)}</b>")
     out.append(f"Наименований: <b>{len(rows)}</b>")
 
     await update.message.reply_text("\n".join(out), parse_mode=ParseMode.HTML)
@@ -535,14 +615,16 @@ async def cmd_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     parts = [p for p in re.split(r"[, ]+", tail) if p != ""]
     try:
         if len(parts) == 1:
-            qty = to_decimal(parts[0])
+            qty = parse_quantity(parts[0])
         elif len(parts) >= 2:
             if parts[0] != "-":
-                qty = to_decimal(parts[0])
+                qty = parse_quantity(parts[0])
             if parts[1] != "-":
-                price = to_decimal(parts[1])
-    except Exception:
-        await update.message.reply_text("Не удалось распознать количество/цену. Пример: /edit 12 200 350")
+                price = parse_price(parts[1])
+    except ValueError as e:
+        await update.message.reply_text(
+            f"{esc(e)}\nПример: <code>/edit 12 200 350</code>", parse_mode=ParseMode.HTML
+        )
         return
 
     uid = update.effective_user.id
@@ -553,9 +635,9 @@ async def cmd_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("Позиция не найдена в текущей смете.")
             return
         if qty is not None:
-            row.qty = qty
+            row.qty_milli = to_milli(qty)
         if price is not None:
-            row.price = price
+            row.price_kop = to_kop(price)
 
         # Merge duplicates внутри текущей сметы
         dup = db.execute(
@@ -565,11 +647,16 @@ async def cmd_edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 Position.estimate_id == est.id,
                 Position.category == row.category,
                 Position.name == row.name,
-                Position.price == row.price,
+                Position.price_kop == row.price_kop,
             )
         ).scalars().first()
         if dup:
-            row.qty = (row.qty or Decimal("0")) + (dup.qty or Decimal("0"))
+            try:
+                merged = merge_duplicates([row.to_domain(), dup.to_domain()])[0]
+            except ValueError as e:
+                await update.message.reply_text(str(e))
+                return
+            row.qty_milli = to_milli(merged.qty)
             db.delete(dup)
 
         touch_estimate(db, est)
@@ -598,121 +685,111 @@ async def cmd_clear(update: Update, context: ContextTypes.DEFAULT_TYPE):
 THIN = Side(border_style="thin", color="000000")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 
-def build_sheet(ws, title: str, rows: List[Position], is_work: bool):
-    ws.title = title
-    headers = (
-        ["№", "Виды работ", "Кол-во (м2/мп/шт)", "Цена за ед.", "Сумма (+6%)"]
-        if is_work else
-        ["№", "Материалы и расходники", "Кол-во (шт/мп/м2)", "Цена", "Сумма (+6%)"]
-    )
-    ws.append(headers)
+RATE_CELL = "$B$1"
+HEADER_ROW = 3
+FIRST_DATA_ROW = 4
 
-    # Header style
-    for col in range(1, len(headers) + 1):
-        cell = ws.cell(row=1, column=col)
+
+def build_sheet(ws, title: str, rows: List[PositionData], rate: Decimal, is_work: bool):
+    """Лист с живыми формулами по схеме docs/money.md §3.4.
+
+    Округление живёт внутри формул тем же каскадом, что и в домене, а ставка
+    вынесена в отдельную ячейку: заказчик видит, из чего сложился итог, и может
+    поменять её честно и на виду.
+    """
+    ws.title = title
+    ws.cell(row=1, column=1, value="Наценка, %").font = Font(bold=True)
+    ws.cell(row=1, column=2, value=rate)
+
+    headers = [
+        "№",
+        "Виды работ" if is_work else "Материалы и расходники",
+        "Кол-во",
+        "Цена за ед.",
+        "Сумма без наценки",
+        "Сумма с наценкой",
+    ]
+    for col, title_text in enumerate(headers, start=1):
+        cell = ws.cell(row=HEADER_ROW, column=col, value=title_text)
         cell.font = Font(bold=True)
         cell.fill = PatternFill(start_color="FFEFEFEF", end_color="FFEFEFEF", fill_type="solid")
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = BORDER
 
-    first_data_row = 2
-    for idx, r in enumerate(rows, start=1):
-        row_idx = first_data_row + idx - 1
-        # жёсткое соответствие колонок: 3=qty, 4=price
+    for idx, position in enumerate(rows, start=1):
+        row_idx = FIRST_DATA_ROW + idx - 1
         ws.cell(row=row_idx, column=1, value=idx)
-        ws.cell(row=row_idx, column=2, value=r.name)
-        ws.cell(row=row_idx, column=3, value=float(r.qty))
-        ws.cell(row=row_idx, column=4, value=float(r.price))
-        qty_col = get_column_letter(3)
-        price_col = get_column_letter(4)
-        sum_cell = ws.cell(row=row_idx, column=5)
-        sum_cell.value = f"={qty_col}{row_idx}*{price_col}{row_idx}*{1 + float(TAX_RATE)}"
+        ws.cell(row=row_idx, column=2, value=position.name)
+        ws.cell(row=row_idx, column=3, value=position.qty)
+        ws.cell(row=row_idx, column=4, value=position.price)
+        ws.cell(row=row_idx, column=5, value=f"=ROUND(C{row_idx}*D{row_idx},2)")
+        ws.cell(row=row_idx, column=6, value=f"=ROUND(E{row_idx}*(1+{RATE_CELL}/100),2)")
 
-        for col in range(1, 6):
+        for col in range(1, 7):
             c = ws.cell(row=row_idx, column=col)
             c.border = BORDER
-            if col in (1, 3, 4, 5):
-                c.alignment = Alignment(horizontal="center", vertical="center")
-            else:
-                c.alignment = Alignment(vertical="center")
+            c.alignment = Alignment(
+                horizontal="center" if col != 2 else "left", vertical="center"
+            )
 
-    last_data_row = ws.max_row if ws.max_row >= first_data_row else first_data_row
+    last_data_row = max(ws.max_row, FIRST_DATA_ROW)
 
-    # Totals
     total_row = last_data_row + 1
     ws.cell(row=total_row, column=2, value="Итого")
-    e_col = get_column_letter(5)
-    ws.cell(row=total_row, column=5, value=f"=SUM({e_col}{first_data_row}:{e_col}{last_data_row})")
-    ws.cell(row=total_row, column=2).font = Font(bold=True)
-    ws.cell(row=total_row, column=5).font = Font(bold=True)
-    ws.cell(row=total_row, column=2).alignment = Alignment(horizontal="right")
-    ws.cell(row=total_row, column=2).border = BORDER
-    ws.cell(row=total_row, column=5).border = BORDER
+    ws.cell(row=total_row, column=5, value=f"=SUM(E{FIRST_DATA_ROW}:E{last_data_row})")
+    ws.cell(row=total_row, column=6, value=f"=SUM(F{FIRST_DATA_ROW}:F{last_data_row})")
 
-    count_row = total_row + 1
+    markup_row = total_row + 1
+    ws.cell(row=markup_row, column=2, value="в том числе наценка")
+    # Наценка — только разностью. Умножением она разошлась бы с суммой строк.
+    ws.cell(row=markup_row, column=6, value=f"=F{total_row}-E{total_row}")
+
+    count_row = markup_row + 1
     ws.cell(row=count_row, column=2, value="Наименований")
-    ws.cell(row=count_row, column=3, value=f"=COUNTA(B{first_data_row}:B{last_data_row})")
-    ws.cell(row=count_row, column=2).font = Font(bold=True)
-    ws.cell(row=count_row, column=3).font = Font(bold=True)
-    ws.cell(row=count_row, column=2).alignment = Alignment(horizontal="right")
-    ws.cell(row=count_row, column=2).border = BORDER
-    ws.cell(row=count_row, column=3).border = BORDER
+    ws.cell(row=count_row, column=3, value=f"=COUNTA(B{FIRST_DATA_ROW}:B{last_data_row})")
 
-    # Column widths
-    ws.column_dimensions[get_column_letter(1)].width = 6
-    ws.column_dimensions[get_column_letter(2)].width = 60
-    ws.column_dimensions[get_column_letter(3)].width = 18
-    ws.column_dimensions[get_column_letter(4)].width = 14
-    ws.column_dimensions[get_column_letter(5)].width = 18
+    for row_idx in (total_row, markup_row, count_row):
+        for col in (2, 3, 5, 6):
+            cell = ws.cell(row=row_idx, column=col)
+            cell.font = Font(bold=True)
+            cell.border = BORDER
+        ws.cell(row=row_idx, column=2).alignment = Alignment(horizontal="right")
 
-    ws.freeze_panes = "A2"
-    ws.auto_filter.ref = f"A1:{get_column_letter(5)}{last_data_row}"
+    for col, width in enumerate((6, 60, 14, 14, 20, 20), start=1):
+        ws.column_dimensions[get_column_letter(col)].width = width
 
-def merge_duplicates_for_estimate(db: Session, uid: int, est_id: int) -> Tuple[List[Position], List[Position]]:
-    """Собирает позиции текущей сметы, объединяя дубли по (category, name, price)."""
-    rows = db.execute(
-        select(
-            Position.category,
-            Position.name,
-            Position.price,
-            func.sum(Position.qty).label("qty"),
-            func.min(Position.id).label("min_id"),
-        ).where(Position.user_id == uid, Position.estimate_id == est_id)
-         .group_by(Position.category, Position.name, Position.price)
-         .order_by(Position.category, func.min(Position.id))
-    ).all()
+    ws.freeze_panes = f"A{FIRST_DATA_ROW}"
 
-    materials: List[Position] = []
-    works: List[Position] = []
-    for cat, name, price, qty, min_id in rows:
-        p = Position(
-            id=int(min_id or 0),
-            user_id=uid,
-            estimate_id=est_id,
-            category=cat,
-            name=name,
-            unit="",
-            qty=Decimal(str(qty)),
-            price=Decimal(str(price)),
-            created_at=datetime.utcnow(),
-        )
-        (works if cat == "Работа" else materials).append(p)
+
+def positions_by_category(db: Session, uid: int, est_id: int) -> Tuple[List[PositionData], List[PositionData]]:
+    """Позиции сметы, разложенные по категориям.
+
+    Слияния дублей здесь нет намеренно. Оно меняет итог — round2(q1*p) +
+    round2(q2*p) не равно round2((q1+q2)*p) — поэтому склейка выполняется один
+    раз при вводе, до расчёта (money.md §5). Если склеивать ещё и здесь, XLSX
+    начнёт расходиться с /list ровно так, как расходился раньше.
+    """
+    domain = [r.to_domain() for r in load_positions(db, uid, est_id)]
+    materials = [p for p in domain if p.category == Category.MATERIAL]
+    works = [p for p in domain if p.category == Category.WORK]
     return materials, works
 
 async def cmd_generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     with SessionLocal() as db:
         est = get_current_estimate(db, uid)
-        materials, works = merge_duplicates_for_estimate(db, uid, est.id)
+        materials, works = positions_by_category(db, uid, est.id)
         if not materials and not works:
             await update.message.reply_text("Нет данных для отчёта в текущей смете. Добавь позиции и повтори /generate.")
             return
 
+        totals = estimate_totals(db, uid, est)
         wb = Workbook()
-        ws1 = wb.active
-        build_sheet(ws1, "Работы", works, is_work=True)
-        ws2 = wb.create_sheet()
-        build_sheet(ws2, "Материалы и расходники", materials, is_work=False)
+        build_sheet(wb.active, "Работы", works, est.markup_work_rate, is_work=True)
+        build_sheet(
+            wb.create_sheet(), "Материалы и расходники", materials,
+            est.markup_material_rate, is_work=False,
+        )
 
         bio = io.BytesIO()
         wb.save(bio)
@@ -721,7 +798,11 @@ async def cmd_generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     filename = f"estimate_{uid}_no{est.number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     await update.message.reply_document(
         document=InputFile(bio, filename=filename),
-        caption=f"Готово: {est.name} (№{est.number}). Две вкладки: «Работы» и «Материалы и расходники». Сумма в строках включает +6%.",
+        caption=(
+            f"Готово: {est.name} (№{est.number}). Две вкладки: «Работы» и «Материалы».\n"
+            f"Наценка {markup_caption(est)}, итог {format_money(totals.total)} — "
+            f"столько же, сколько в /list."
+        ),
     )
 
 # ----- Callback buttons -----

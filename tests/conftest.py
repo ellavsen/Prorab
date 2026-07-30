@@ -1,0 +1,58 @@
+"""Общие генераторы и оракулы для тестов ядра."""
+
+from __future__ import annotations
+
+from decimal import Decimal, ROUND_HALF_UP
+
+from hypothesis import strategies as st
+
+from smeta_core import Category, PositionData
+
+# Генераторы строго в границах домена (docs/money.md §1.2), в целых минорных
+# единицах — так исключены значения, которые домен обязан отвергать.
+qty_st = st.integers(min_value=1, max_value=99_999_999).map(
+    lambda milli: Decimal(milli).scaleb(-3)
+)
+price_st = st.integers(min_value=0, max_value=999_999_999).map(
+    lambda kop: Decimal(kop).scaleb(-2)
+)
+rate_st = st.integers(min_value=0, max_value=9_999).map(
+    lambda bp: Decimal(bp).scaleb(-2)
+)
+category_st = st.sampled_from([Category.WORK, Category.MATERIAL])
+
+# Потолок базы, при котором строка не превысит LINE_MAX ни при какой ставке:
+# 5e8 * (1 + 99.99/100) = 9.9995e8 < 999 999 999.99.
+_BASE_CAP = Decimal("500000000")
+
+
+@st.composite
+def qty_price_st(draw):
+    """Пара (qty, price), заведомо укладывающаяся в потолок суммы строки."""
+    qty = draw(qty_st)
+    price_cap = min(999_999_999, int(_BASE_CAP / qty * 100))
+    price = Decimal(draw(st.integers(min_value=0, max_value=price_cap))).scaleb(-2)
+    return qty, price
+
+
+@st.composite
+def position_st(draw):
+    qty, price = draw(qty_price_st())
+    return PositionData(
+        category=draw(category_st),
+        name=draw(st.text(min_size=1, max_size=40).filter(lambda s: s.strip() != "")),
+        qty=qty,
+        price=price,
+    )
+
+
+def excel_round(value: float, places: int = 2) -> Decimal:
+    """Эмулятор функции ROUND из Excel.
+
+    Excel округляет не точное двоичное значение double, а его десятичное
+    представление на 15 значащих цифрах, half-away-from-zero. Именно поэтому
+    =ROUND(2,675; 2) даёт 2,68, хотя double(2.675) строго меньше 2.675.
+    """
+    return Decimal(f"{value:.15g}").quantize(
+        Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP
+    )
