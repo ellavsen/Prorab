@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import replace
-from typing import Sequence
 
 from .models import PositionData
 from .money import QTY_MAX, format_qty

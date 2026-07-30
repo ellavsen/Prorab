@@ -4,15 +4,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
 from .money import check_price, check_quantity
 
 NAME_MAX_LEN = 200
 
 
-class Category(str, Enum):
-    """Значения совпадают с тем, что лежит в БД и что видит пользователь."""
+class Category(StrEnum):
+    """Значения совпадают с тем, что лежит в БД и что видит пользователь.
+
+    Именно StrEnum, а не (str, Enum): у второго str(Category.WORK) даёт
+    "Category.WORK", и любое сравнение со строкой из базы тихо не срабатывает.
+    """
 
     WORK = "Работа"
     MATERIAL = "Материал"

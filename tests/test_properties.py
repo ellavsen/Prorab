@@ -8,6 +8,7 @@ from decimal import Decimal as D
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
+from conftest import excel_round, position_st, price_st, qty_price_st, qty_st, rate_st
 from smeta_core import (
     Category,
     PositionData,
@@ -20,8 +21,6 @@ from smeta_core import (
     to_kop,
     to_milli,
 )
-
-from conftest import excel_round, position_st, price_st, qty_price_st, qty_st, rate_st
 
 SETTINGS = settings(
     max_examples=300,
@@ -79,7 +78,7 @@ def test_c4_zero_rate_means_total_equals_subtotal(positions):
 def test_c5_adding_a_priced_position_increases_the_total(positions, qty, rate):
     extra = PositionData(Category.WORK, "добавка", qty, D("1000.00"))
     before = calculate_estimate(positions, rate, rate).total
-    after = calculate_estimate(list(positions) + [extra], rate, rate).total
+    after = calculate_estimate([*positions, extra], rate, rate).total
     assert after > before
 
 

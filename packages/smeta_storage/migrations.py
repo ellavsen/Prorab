@@ -1,0 +1,118 @@
+"""Создание схемы и мягкие миграции существующих баз."""
+
+import logging
+from decimal import ROUND_HALF_UP, Decimal
+
+from sqlalchemy import Connection, Engine, text
+from sqlalchemy import inspect as sa_inspect
+from sqlalchemy.exc import OperationalError
+
+from .models import DEFAULT_MARKUP_BP, Base, Estimate, Position, UserState, utcnow
+
+logger = logging.getLogger(__name__)
+
+
+def migrate_money_to_integers(conn: Connection) -> list[str]:
+    """Переводит qty/price из REAL в целые минорные единицы (ADR-004).
+
+    Возвращает журнал строк, чьё хранимое значение не совпало с копейками после
+    округления — это накопленная погрешность REAL-хранения.
+    """
+    conn.execute(text("ALTER TABLE positions ADD COLUMN qty_milli INTEGER DEFAULT 0"))
+    conn.execute(text("ALTER TABLE positions ADD COLUMN price_kop INTEGER DEFAULT 0"))
+
+    journal: list[str] = []
+    for rid, qty_raw, price_raw in conn.execute(
+        text("SELECT id, qty, price FROM positions")
+    ).fetchall():
+        qty = Decimal(str(qty_raw if qty_raw is not None else 0))
+        price = Decimal(str(price_raw if price_raw is not None else 0))
+        qty_milli = int(qty.quantize(Decimal("0.001"), rounding=ROUND_HALF_UP).scaleb(3))
+        price_kop = int(price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP).scaleb(2))
+        if Decimal(qty_milli).scaleb(-3) != qty or Decimal(price_kop).scaleb(-2) != price:
+            journal.append(
+                f"#{rid}: qty {qty} -> {qty_milli}/1000, price {price} -> {price_kop}/100"
+            )
+        conn.execute(
+            text("UPDATE positions SET qty_milli = :q, price_kop = :p WHERE id = :i"),
+            {"q": qty_milli, "p": price_kop, "i": rid},
+        )
+
+    for column in ("qty", "price"):
+        try:
+            conn.execute(text(f"ALTER TABLE positions DROP COLUMN {column}"))
+        except OperationalError:
+            logger.warning("Старая колонка positions.%s не удалена — SQLite слишком старый", column)
+    return journal
+
+
+def _migrate_orphan_positions(conn: Connection) -> None:
+    """Позициям без estimate_id создаём смету, иначе они не видны ни в одной."""
+    users = conn.execute(
+        text("SELECT DISTINCT user_id FROM positions WHERE estimate_id IS NULL")
+    ).fetchall()
+    for (uid,) in users:
+        row = conn.execute(
+            text("SELECT MAX(number) FROM estimates WHERE user_id = :uid"), {"uid": uid}
+        ).fetchone()
+        next_num = (row[0] or 0) + 1
+        now = utcnow().isoformat(sep=" ")
+        conn.execute(
+            text(
+                "INSERT INTO estimates (user_id, number, name, markup_work_bp,"
+                " markup_material_bp, created_at, updated_at)"
+                " VALUES (:uid, :num, :name, :bp, :bp, :c, :c)"
+            ),
+            {"uid": uid, "num": next_num, "name": f"Смета №{next_num}",
+             "bp": DEFAULT_MARKUP_BP, "c": now},
+        )
+        est_id = conn.execute(
+            text("SELECT id FROM estimates WHERE user_id = :uid AND number = :num"),
+            {"uid": uid, "num": next_num},
+        ).fetchone()[0]
+        conn.execute(
+            text("UPDATE positions SET estimate_id = :eid WHERE user_id = :uid"
+                 " AND estimate_id IS NULL"),
+            {"eid": est_id, "uid": uid},
+        )
+
+
+def bootstrap(engine: Engine) -> None:
+    """Создаёт схему и догоняет старые базы до текущей."""
+    with engine.begin() as conn:
+        tables = sa_inspect(conn).get_table_names()
+
+        if "positions" not in tables and "estimates" not in tables:
+            Base.metadata.create_all(bind=conn)
+            return
+
+        if "estimates" not in tables:
+            Base.metadata.create_all(bind=conn, tables=[Estimate.__table__])
+        else:
+            existing = {c["name"] for c in sa_inspect(conn).get_columns("estimates")}
+            for column in ("markup_work_bp", "markup_material_bp"):
+                if column not in existing:
+                    conn.execute(text(
+                        f"ALTER TABLE estimates ADD COLUMN {column} INTEGER"
+                        f" NOT NULL DEFAULT {DEFAULT_MARKUP_BP}"
+                    ))
+
+        if "user_state" not in tables:
+            Base.metadata.create_all(bind=conn, tables=[UserState.__table__])
+
+        if "positions" not in tables:
+            Base.metadata.create_all(bind=conn, tables=[Position.__table__])
+            return
+
+        columns = {c["name"] for c in sa_inspect(conn).get_columns("positions")}
+        if "estimate_id" not in columns:
+            conn.execute(text("ALTER TABLE positions ADD COLUMN estimate_id INTEGER"))
+        if "unit" not in columns:
+            conn.execute(text("ALTER TABLE positions ADD COLUMN unit VARCHAR(32) DEFAULT ''"))
+        if "price_kop" not in columns:
+            journal = migrate_money_to_integers(conn)
+            logger.info("Миграция денег в целые: строк с расхождением — %d", len(journal))
+            for entry in journal:
+                logger.info("  %s", entry)
+
+        _migrate_orphan_positions(conn)

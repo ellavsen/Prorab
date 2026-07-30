@@ -2,3 +2,5 @@
 pytest==9.1.1
 pytest-cov==7.1.0
 hypothesis==6.163.0
+ruff==0.16.0
+vulture==2.14

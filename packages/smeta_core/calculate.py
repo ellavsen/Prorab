@@ -6,8 +6,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from decimal import Decimal
-from typing import Sequence
 
 from .models import Category, EstimateTotals, LineTotal, PositionData
 from .money import LINE_MAX, ZERO, check_rate, format_money, round2

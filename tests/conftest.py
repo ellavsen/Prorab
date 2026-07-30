@@ -2,11 +2,35 @@
 
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
+import pytest
 from hypothesis import strategies as st
 
 from smeta_core import Category, PositionData
+from smeta_storage import bootstrap, build_engine, build_sessionmaker
+
+_open_engines = []
+
+
+def open_storage(db_path):
+    """Поднимает базу с текущей схемой. Возвращает (engine, фабрика сессий).
+
+    Отдельный engine на вызов — так тест может честно изобразить рестарт
+    процесса: выбросить старый и подняться заново на том же файле.
+    """
+    engine = build_engine(f"sqlite:///{db_path}")
+    _open_engines.append(engine)
+    bootstrap(engine)
+    return engine, build_sessionmaker(engine)
+
+
+@pytest.fixture(autouse=True)
+def _dispose_engines():
+    """Закрывает соединения после каждого теста, иначе SQLite течёт файлами."""
+    yield
+    while _open_engines:
+        _open_engines.pop().dispose()
 
 # Генераторы строго в границах домена (docs/money.md §1.2), в целых минорных
 # единицах — так исключены значения, которые домен обязан отвергать.

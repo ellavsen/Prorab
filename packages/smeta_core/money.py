@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import re
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 MONEY_EXP = Decimal("0.01")
 QTY_EXP = Decimal("0.001")

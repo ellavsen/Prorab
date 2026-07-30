@@ -36,23 +36,24 @@ from .money import (
     to_milli,
 )
 from .parsing import parse_position_line
-from .units import UNITS, normalize_unit
+from .units import UNITS, default_unit, normalize_unit
 
 __all__ = [
-    "Category",
-    "EstimateTotals",
-    "LineTotal",
-    "PositionData",
     "PRICE_MAX",
     "QTY_MAX",
     "RATE_MAX",
     "UNITS",
     "ZERO",
+    "Category",
+    "EstimateTotals",
+    "LineTotal",
+    "PositionData",
     "calculate_estimate",
     "check_name",
     "check_price",
     "check_quantity",
     "check_rate",
+    "default_unit",
     "format_money",
     "format_qty",
     "from_bp",
