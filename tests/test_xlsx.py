@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import os
 import shutil
 from decimal import Decimal as D
 
@@ -118,32 +119,89 @@ def test_workbook_has_both_sheets():
     assert D(str(book["Материалы и расходники"]["B1"].value)) == D("0.00")
 
 
-@pytest.mark.skipif(
-    shutil.which("soffice") is None,
-    reason="LibreOffice не установлен — пересчёт формул проверить нечем",
-)
-def test_e1_libreoffice_recalculation_matches(tmp_path):
-    """E1: пересчёт headless LibreOffice. Запускается только там, где он есть."""
+def _libreoffice_missing() -> bool:
+    """В CI пропуск этого теста — не «зелено», а «не проверено».
+
+    REQUIRE_LIBREOFFICE=1 превращает отсутствие движка в падение: иначе задание
+    в workflow могло бы молча ничего не проверять.
+    """
+    if shutil.which("soffice") is not None:
+        return False
+    if os.getenv("REQUIRE_LIBREOFFICE") == "1":
+        pytest.fail("REQUIRE_LIBREOFFICE=1, но soffice не найден — паритет не проверен")
+    return True
+
+
+def _recalculate(path, tmp_path):
+    """Пересчитывает книгу настоящим LibreOffice и возвращает значения ячеек."""
     import subprocess
 
+    out = tmp_path / "out"
+    subprocess.run(
+        ["soffice", "--headless", "--convert-to", "xlsx", "--outdir", str(out), str(path)],
+        check=True, capture_output=True, timeout=300,
+    )
+    return load_workbook(out / path.name, data_only=True)
+
+
+@pytest.mark.skipif(_libreoffice_missing(), reason="LibreOffice не установлен")
+def test_e1_libreoffice_recalculation_matches(tmp_path):
+    """E1–E3: формулы, пересчитанные живым движком, дают те же копейки.
+
+    До сих пор паритет с Excel доказывался эмулятором excel_round. Здесь его
+    считает настоящий табличный процессор — на тех же «злых» данных: границы
+    0.005 в обоих каскадах, копеечная строка и значение у потолка.
+    """
     workbook = Workbook()
     build_sheet(workbook.active, "Работы", POSITIONS, RATE, is_work=True)
     source = tmp_path / "estimate.xlsx"
     workbook.save(source)
 
-    subprocess.run(
-        ["soffice", "--headless", "--convert-to", "xlsx", "--outdir",
-         str(tmp_path / "out"), str(source)],
-        check=True, capture_output=True, timeout=180,
-    )
-    recalculated = load_workbook(tmp_path / "out" / "estimate.xlsx", data_only=True).active
+    sheet = _recalculate(source, tmp_path).active
     expected = calculate_estimate(POSITIONS, RATE, RATE)
 
     for index, line in enumerate(expected.lines):
         row = FIRST_DATA_ROW + index
-        assert D(str(recalculated[f"F{row}"].value)) == line.base
-        assert D(str(recalculated[f"G{row}"].value)) == line.total
+        assert D(str(sheet[f"F{row}"].value)) == line.base, f"строка {row}, без наценки"
+        assert D(str(sheet[f"G{row}"].value)) == line.total, f"строка {row}, с наценкой"
 
     total_row = LAST_DATA_ROW + 1
-    assert D(str(recalculated[f"F{total_row}"].value)) == expected.subtotal
-    assert D(str(recalculated[f"G{total_row}"].value)) == expected.total
+    assert D(str(sheet[f"F{total_row}"].value)) == expected.subtotal
+    assert D(str(sheet[f"G{total_row}"].value)) == expected.total
+    # Наценка в файле — разность итогов, как и в домене.
+    assert D(str(sheet[f"G{total_row + 1}"].value)) == expected.markup
+
+
+@pytest.mark.skipif(_libreoffice_missing(), reason="LibreOffice не установлен")
+def test_e7_changing_the_rate_cell_recalculates_the_whole_sheet(tmp_path):
+    """Ставка в файле — живая: правка B1 честно меняет итог, а не декорацию."""
+    workbook = Workbook()
+    build_sheet(workbook.active, "Работы", POSITIONS, RATE, is_work=True)
+    workbook.active["B1"] = D("10.00")          # заказчик поправил ставку сам
+    source = tmp_path / "reprice.xlsx"
+    workbook.save(source)
+
+    sheet = _recalculate(source, tmp_path).active
+    expected = calculate_estimate(POSITIONS, D("10.00"), D("10.00"))
+
+    total_row = LAST_DATA_ROW + 1
+    assert D(str(sheet[f"G{total_row}"].value)) == expected.total
+    assert D(str(sheet[f"F{total_row}"].value)) == expected.subtotal
+
+
+@pytest.mark.skipif(_libreoffice_missing(), reason="LibreOffice не установлен")
+def test_both_sheets_survive_a_recalculation(tmp_path):
+    materials = [PositionData(Category.MATERIAL, "Гвозди", D("1000"), D("0.37"), "шт")]
+    source = tmp_path / "book.xlsx"
+    with open(source, "wb") as handle:
+        handle.write(build_workbook(materials, POSITIONS, RATE, D("0.00")).getvalue())
+
+    book = _recalculate(source, tmp_path)
+    works_expected = calculate_estimate(POSITIONS, RATE, RATE)
+    materials_expected = calculate_estimate(materials, D("0.00"), D("0.00"))
+
+    works = book["Работы"]
+    assert D(str(works[f"G{LAST_DATA_ROW + 1}"].value)) == works_expected.total
+
+    goods = book["Материалы и расходники"]
+    assert D(str(goods[f"G{FIRST_DATA_ROW}"].value)) == materials_expected.lines[0].total
