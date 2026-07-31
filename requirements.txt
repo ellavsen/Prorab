@@ -2,3 +2,8 @@ python-telegram-bot==21.4
 openpyxl==3.1.5
 SQLAlchemy==2.0.31
 python-dotenv==1.0.0
+
+# API (apps/api). Боту не нужны, но ставятся одной командой.
+fastapi==0.141.1
+uvicorn[standard]==0.52.0
+pydantic==2.13.4

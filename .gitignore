@@ -22,6 +22,12 @@ htmlcov/
 *.sqlite3
 *.xlsx
 
+# Web
+node_modules/
+apps/web/dist/
+# Колёса собираются scripts/prepare_web_assets.py — в репозитории не хранятся.
+apps/web/public/wheels/
+
 # OS / editors
 .DS_Store
 .idea/

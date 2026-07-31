@@ -1,0 +1,2905 @@
+{
+  "calculate": [
+    {
+      "expected": {
+        "lines": [
+          {
+            "base": {
+              "text": "150,15",
+              "value": "150.15"
+            },
+            "category": "Работа",
+            "name": "Побелка",
+            "price": "100.10",
+            "price_text": "100,10",
+            "qty": "1.5",
+            "qty_text": "1,5",
+            "total": {
+              "text": "159,16",
+              "value": "159.16"
+            },
+            "unit": "м²"
+          },
+          {
+            "base": {
+              "text": "250,25",
+              "value": "250.25"
+            },
+            "category": "Работа",
+            "name": "Стяжка",
+            "price": "100.10",
+            "price_text": "100,10",
+            "qty": "2.5",
+            "qty_text": "2,5",
+            "total": {
+              "text": "265,27",
+              "value": "265.27"
+            },
+            "unit": "м²"
+          }
+        ],
+        "markup": {
+          "text": "24,03",
+          "value": "24.03"
+        },
+        "subtotal": {
+          "text": "400,40",
+          "value": "400.40"
+        },
+        "total": {
+          "text": "424,43",
+          "value": "424.43"
+        }
+      },
+      "name": "две работы, копейки расходились до Sprint 1",
+      "request": {
+        "markup_material_rate": "6.00",
+        "markup_work_rate": "6.00",
+        "positions": [
+          {
+            "category": "Работа",
+            "name": "Побелка",
+            "price": "100.10",
+            "qty": "1.5",
+            "unit": "м²"
+          },
+          {
+            "category": "Работа",
+            "name": "Стяжка",
+            "price": "100.10",
+            "qty": "2.5",
+            "unit": "м²"
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "lines": [
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "Половинка",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "0.5",
+            "qty_text": "0,5",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,04",
+              "value": "0.04"
+            },
+            "category": "Работа",
+            "name": "Тысячные",
+            "price": "5.00",
+            "price_text": "5,00",
+            "qty": "0.007",
+            "qty_text": "0,007",
+            "total": {
+              "text": "0,04",
+              "value": "0.04"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,50",
+              "value": "0.50"
+            },
+            "category": "Работа",
+            "name": "Второй каскад",
+            "price": "0.50",
+            "price_text": "0,50",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,51",
+              "value": "0.51"
+            },
+            "unit": "шт"
+          }
+        ],
+        "markup": {
+          "text": "0,01",
+          "value": "0.01"
+        },
+        "subtotal": {
+          "text": "0,55",
+          "value": "0.55"
+        },
+        "total": {
+          "text": "0,56",
+          "value": "0.56"
+        }
+      },
+      "name": "границы 0.005 в обоих каскадах",
+      "request": {
+        "markup_material_rate": "1.00",
+        "markup_work_rate": "1.00",
+        "positions": [
+          {
+            "category": "Работа",
+            "name": "Половинка",
+            "price": "0.01",
+            "qty": "0.5",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "Тысячные",
+            "price": "5.00",
+            "qty": "0.007",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "Второй каскад",
+            "price": "0.50",
+            "qty": "1",
+            "unit": "шт"
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "lines": [
+          {
+            "base": {
+              "text": "1000,00",
+              "value": "1000.00"
+            },
+            "category": "Работа",
+            "name": "Работа",
+            "price": "1000.00",
+            "price_text": "1000,00",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "1100,00",
+              "value": "1100.00"
+            },
+            "unit": "м²"
+          },
+          {
+            "base": {
+              "text": "1000,00",
+              "value": "1000.00"
+            },
+            "category": "Материал",
+            "name": "Материал",
+            "price": "1000.00",
+            "price_text": "1000,00",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "1000,00",
+              "value": "1000.00"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,00",
+              "value": "0.00"
+            },
+            "category": "Материал",
+            "name": "Подарок",
+            "price": "0",
+            "price_text": "0,00",
+            "qty": "3",
+            "qty_text": "3",
+            "total": {
+              "text": "0,00",
+              "value": "0.00"
+            },
+            "unit": "шт"
+          }
+        ],
+        "markup": {
+          "text": "100,00",
+          "value": "100.00"
+        },
+        "subtotal": {
+          "text": "2000,00",
+          "value": "2000.00"
+        },
+        "total": {
+          "text": "2100,00",
+          "value": "2100.00"
+        }
+      },
+      "name": "разные ставки по категориям, нулевая цена",
+      "request": {
+        "markup_material_rate": "0.00",
+        "markup_work_rate": "10.00",
+        "positions": [
+          {
+            "category": "Работа",
+            "name": "Работа",
+            "price": "1000.00",
+            "qty": "1",
+            "unit": "м²"
+          },
+          {
+            "category": "Материал",
+            "name": "Материал",
+            "price": "1000.00",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Материал",
+            "name": "Подарок",
+            "price": "0",
+            "qty": "3",
+            "unit": "шт"
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "lines": [
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-0",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-1",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-2",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-3",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-4",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-5",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-6",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-7",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-8",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-9",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-10",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-11",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-12",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-13",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-14",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-15",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-16",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-17",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-18",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-19",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-20",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-21",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-22",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-23",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-24",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-25",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-26",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-27",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-28",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-29",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-30",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-31",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-32",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-33",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-34",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-35",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-36",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-37",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-38",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-39",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-40",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-41",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-42",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-43",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-44",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-45",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-46",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-47",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-48",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-49",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-50",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-51",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-52",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-53",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-54",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-55",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-56",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-57",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-58",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-59",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-60",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-61",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-62",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-63",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-64",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-65",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-66",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-67",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-68",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-69",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-70",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-71",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-72",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-73",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-74",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-75",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-76",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-77",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-78",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-79",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-80",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-81",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-82",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-83",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-84",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-85",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-86",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-87",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-88",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-89",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-90",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-91",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-92",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-93",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-94",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-95",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-96",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-97",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-98",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          },
+          {
+            "base": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "category": "Работа",
+            "name": "поз-99",
+            "price": "0.01",
+            "price_text": "0,01",
+            "qty": "1",
+            "qty_text": "1",
+            "total": {
+              "text": "0,01",
+              "value": "0.01"
+            },
+            "unit": "шт"
+          }
+        ],
+        "markup": {
+          "text": "0,00",
+          "value": "0.00"
+        },
+        "subtotal": {
+          "text": "1,00",
+          "value": "1.00"
+        },
+        "total": {
+          "text": "1,00",
+          "value": "1.00"
+        }
+      },
+      "name": "сто копеечных строк: итог 1.00, а не 1.06",
+      "request": {
+        "markup_material_rate": "6.00",
+        "markup_work_rate": "6.00",
+        "positions": [
+          {
+            "category": "Работа",
+            "name": "поз-0",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-1",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-2",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-3",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-4",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-5",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-6",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-7",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-8",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-9",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-10",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-11",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-12",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-13",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-14",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-15",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-16",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-17",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-18",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-19",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-20",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-21",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-22",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-23",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-24",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-25",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-26",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-27",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-28",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-29",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-30",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-31",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-32",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-33",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-34",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-35",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-36",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-37",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-38",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-39",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-40",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-41",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-42",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-43",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-44",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-45",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-46",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-47",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-48",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-49",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-50",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-51",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-52",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-53",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-54",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-55",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-56",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-57",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-58",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-59",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-60",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-61",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-62",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-63",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-64",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-65",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-66",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-67",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-68",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-69",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-70",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-71",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-72",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-73",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-74",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-75",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-76",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-77",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-78",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-79",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-80",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-81",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-82",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-83",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-84",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-85",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-86",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-87",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-88",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-89",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-90",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-91",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-92",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-93",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-94",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-95",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-96",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-97",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-98",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          },
+          {
+            "category": "Работа",
+            "name": "поз-99",
+            "price": "0.01",
+            "qty": "1",
+            "unit": "шт"
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "lines": [
+          {
+            "base": {
+              "text": "499999995,00",
+              "value": "499999995.00"
+            },
+            "category": "Работа",
+            "name": "Максимум",
+            "price": "5000.00",
+            "price_text": "5000,00",
+            "qty": "99999.999",
+            "qty_text": "99999,999",
+            "total": {
+              "text": "999949990,00",
+              "value": "999949990.00"
+            },
+            "unit": "м.п."
+          }
+        ],
+        "markup": {
+          "text": "499949995,00",
+          "value": "499949995.00"
+        },
+        "subtotal": {
+          "text": "499999995,00",
+          "value": "499999995.00"
+        },
+        "total": {
+          "text": "999949990,00",
+          "value": "999949990.00"
+        }
+      },
+      "name": "крупные значения у потолка строки",
+      "request": {
+        "markup_material_rate": "0.00",
+        "markup_work_rate": "99.99",
+        "positions": [
+          {
+            "category": "Работа",
+            "name": "Максимум",
+            "price": "5000.00",
+            "qty": "99999.999",
+            "unit": "м.п."
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "lines": [
+          {
+            "base": {
+              "text": "5378,12",
+              "value": "5378.12"
+            },
+            "category": "Материал",
+            "name": "Бетон",
+            "price": "4780.55",
+            "price_text": "4780,55",
+            "qty": "1.125",
+            "qty_text": "1,125",
+            "total": {
+              "text": "6319,29",
+              "value": "6319.29"
+            },
+            "unit": "м³"
+          },
+          {
+            "base": {
+              "text": "12344,88",
+              "value": "12344.88"
+            },
+            "category": "Материал",
+            "name": "Песок",
+            "price": "999.99",
+            "price_text": "999,99",
+            "qty": "12.345",
+            "qty_text": "12,345",
+            "total": {
+              "text": "14505,23",
+              "value": "14505.23"
+            },
+            "unit": "т"
+          }
+        ],
+        "markup": {
+          "text": "3101,52",
+          "value": "3101.52"
+        },
+        "subtotal": {
+          "text": "17723,00",
+          "value": "17723.00"
+        },
+        "total": {
+          "text": "20824,52",
+          "value": "20824.52"
+        }
+      },
+      "name": "дробные количества до трёх знаков",
+      "request": {
+        "markup_material_rate": "17.50",
+        "markup_work_rate": "6.00",
+        "positions": [
+          {
+            "category": "Материал",
+            "name": "Бетон",
+            "price": "4780.55",
+            "qty": "1.125",
+            "unit": "м³"
+          },
+          {
+            "category": "Материал",
+            "name": "Песок",
+            "price": "999.99",
+            "qty": "12.345",
+            "unit": "т"
+          }
+        ]
+      }
+    }
+  ],
+  "parse": [
+    {
+      "expected": {
+        "errors": [],
+        "positions": [
+          {
+            "category": "Работа",
+            "name": "Побелка",
+            "price": "3000.00",
+            "price_text": "3000,00",
+            "qty": "150.000",
+            "qty_text": "150",
+            "unit": "м²"
+          },
+          {
+            "category": "Работа",
+            "name": "Стяжка",
+            "price": "1200.00",
+            "price_text": "1200,00",
+            "qty": "40.500",
+            "qty_text": "40,5",
+            "unit": "м²"
+          }
+        ]
+      },
+      "request": {
+        "category": "Работа",
+        "text": "Побелка, 150 м2, 3000\nСтяжка, 40.5, 1200"
+      }
+    },
+    {
+      "expected": {
+        "errors": [],
+        "positions": [
+          {
+            "category": "Материал",
+            "name": "Гвозди",
+            "price": "20.00",
+            "price_text": "20,00",
+            "qty": "1000.000",
+            "qty_text": "1000",
+            "unit": "шт"
+          },
+          {
+            "category": "Материал",
+            "name": "Цемент",
+            "price": "450.00",
+            "price_text": "450,00",
+            "qty": "12.000",
+            "qty_text": "12",
+            "unit": "шт"
+          }
+        ]
+      },
+      "request": {
+        "category": "Материал",
+        "text": "Гвозди, 1000 шт, 20\nЦемент, 12, 450"
+      }
+    },
+    {
+      "expected": {
+        "errors": [
+          {
+            "line": "Побелка, 150,5, 3000",
+            "reason": "получено полей: 4, а нужно 3.\nОжидается три поля через запятую: Наименование, количество, цена.\nДробные числа пиши через точку: 150.5 — запятая разделяет поля."
+          },
+          {
+            "line": "Пустая,,",
+            "reason": "Количество: значение не указано"
+          },
+          {
+            "line": "Много, 100000, 5",
+            "reason": "Количество: не больше 99999,999"
+          },
+          {
+            "line": "nan, nan, nan",
+            "reason": "Количество: «nan» — это не число. Ожидается 12 или 12,5"
+          }
+        ],
+        "positions": []
+      },
+      "request": {
+        "category": "Работа",
+        "text": "Побелка, 150,5, 3000\nПустая,,\nМного, 100000, 5\nnan, nan, nan"
+      }
+    }
+  ]
+}

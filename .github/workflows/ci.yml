@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python:
+    name: Python (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS в матрице не для красоты: там Python 3.13 пропускает .pth
+        # с флагом hidden, и `pip install -e .` может «пройти», оставив
+        # пакеты неимпортируемыми. Ловится тестом test_installed_distribution.
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Установить зависимости
+        run: |
+          python -m pip install -U pip setuptools
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -e .
+
+      - name: ruff
+        run: ruff check .
+
+      - name: vulture
+        run: vulture packages apps scripts --min-confidence 80
+
+      - name: Тесты и покрытие
+        run: pytest --cov=smeta_core --cov=smeta_storage --cov=smeta_export --cov=api --cov-report=term-missing
+
+      - name: Покрытие ядра не ниже 90%
+        run: coverage report --include="packages/smeta_core/*" --fail-under=90
+
+      - name: OpenAPI-схема совпадает с кодом
+        run: python scripts/export_openapi.py --check
+
+  web:
+    name: Демо и сходимость с браузерным ядром
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Собрать колёса ядра
+        run: |
+          python -m pip install -U pip setuptools wheel
+          pip install -e .
+          python scripts/prepare_web_assets.py
+
+      - name: Установить фронт
+        run: npm ci
+        working-directory: apps/web
+
+      - name: Сборка
+        run: npm run build
+        working-directory: apps/web
+
+      - name: Сходимость браузерного ядра с CPython
+        run: npm run conformance
+        working-directory: apps/web

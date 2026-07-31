@@ -12,6 +12,7 @@ CORE = ROOT / "packages" / "smeta_core"
 STORAGE = ROOT / "packages" / "smeta_storage"
 EXPORT = ROOT / "packages" / "smeta_export"
 BOT = ROOT / "apps" / "bot"
+API = ROOT / "apps" / "api"
 
 MAX_FILE_LINES = 300
 
@@ -22,6 +23,8 @@ FORBIDDEN = {
     STORAGE: {"telegram", "openpyxl", "requests", "httpx", "aiohttp", "fastapi", "dotenv"},
     EXPORT: {"telegram", "sqlalchemy", "requests", "httpx", "aiohttp", "fastapi", "dotenv"},
     BOT: {"sqlalchemy", "openpyxl"},
+    # API без состояния: базы он не касается вовсе (ADR-008).
+    API: {"telegram", "sqlalchemy", "openpyxl", "smeta_storage"},
 }
 
 
@@ -29,7 +32,7 @@ def python_files(*roots: pathlib.Path) -> list[pathlib.Path]:
     return sorted(path for root in roots for path in root.rglob("*.py"))
 
 
-ALL_FILES = python_files(CORE, STORAGE, EXPORT, BOT)
+ALL_FILES = python_files(CORE, STORAGE, EXPORT, BOT, API)
 
 
 def _imported_roots(tree: ast.AST) -> set[str]:
@@ -51,7 +54,7 @@ def _multiplication_lines(tree: ast.AST) -> list[int]:
 
 
 def test_every_layer_is_present():
-    for layer in (CORE, STORAGE, EXPORT, BOT):
+    for layer in (CORE, STORAGE, EXPORT, BOT, API):
         assert layer.is_dir(), f"нет слоя {layer}"
     assert len(ALL_FILES) > 15
 

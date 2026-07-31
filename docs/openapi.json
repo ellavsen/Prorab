@@ -1,0 +1,586 @@
+{
+  "components": {
+    "schemas": {
+      "Category": {
+        "description": "Значения совпадают с тем, что лежит в БД и что видит пользователь.\n\nИменно StrEnum, а не (str, Enum): у второго str(Category.WORK) даёт\n\"Category.WORK\", и любое сравнение со строкой из базы тихо не срабатывает.",
+        "enum": [
+          "Работа",
+          "Материал"
+        ],
+        "title": "Category",
+        "type": "string"
+      },
+      "EstimateIn": {
+        "properties": {
+          "fill_missing_units": {
+            "default": true,
+            "description": "Подставлять единицу по категории, если она не указана",
+            "title": "Fill Missing Units",
+            "type": "boolean"
+          },
+          "markup_material_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "6.00",
+            "description": "Наценка на материалы в процентах",
+            "title": "Markup Material Rate"
+          },
+          "markup_work_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "default": "6.00",
+            "description": "Наценка на работы в процентах: 6.00 = 6%",
+            "title": "Markup Work Rate"
+          },
+          "positions": {
+            "items": {
+              "$ref": "#/components/schemas/PositionIn-Input"
+            },
+            "title": "Positions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "positions"
+        ],
+        "title": "EstimateIn",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Health": {
+        "properties": {
+          "core": {
+            "title": "Core",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "core"
+        ],
+        "title": "Health",
+        "type": "object"
+      },
+      "LineOut": {
+        "properties": {
+          "base": {
+            "description": "Сумма строки без наценки",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Base",
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Price",
+            "type": "string"
+          },
+          "qty": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Qty",
+            "type": "string"
+          },
+          "total": {
+            "description": "Сумма строки с наценкой",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "unit",
+          "qty",
+          "price",
+          "base",
+          "total"
+        ],
+        "title": "LineOut",
+        "type": "object"
+      },
+      "ParseError": {
+        "properties": {
+          "line": {
+            "title": "Line",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "line",
+          "reason"
+        ],
+        "title": "ParseError",
+        "type": "object"
+      },
+      "ParseIn": {
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "fill_missing_units": {
+            "default": true,
+            "title": "Fill Missing Units",
+            "type": "boolean"
+          },
+          "text": {
+            "description": "Строки вида «Побелка, 150 м2, 3000», по одной на строку",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "text"
+        ],
+        "title": "ParseIn",
+        "type": "object"
+      },
+      "ParseOut": {
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ParseError"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "positions": {
+            "items": {
+              "$ref": "#/components/schemas/PositionIn-Output"
+            },
+            "title": "Positions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "positions",
+          "errors"
+        ],
+        "title": "ParseOut",
+        "type": "object"
+      },
+      "PositionIn-Input": {
+        "example": {
+          "category": "Работа",
+          "name": "Побелка",
+          "price": "100.10",
+          "qty": "1.5",
+          "unit": "м²"
+        },
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "name": {
+            "description": "Наименование, 1–200 символов",
+            "title": "Name",
+            "type": "string"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "description": "Цена за единицу, до 2 знаков; строкой",
+            "title": "Price"
+          },
+          "qty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              }
+            ],
+            "description": "Количество, до 3 знаков; строкой",
+            "title": "Qty"
+          },
+          "unit": {
+            "default": "",
+            "description": "Единица измерения; пустая — подставится",
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "qty",
+          "price"
+        ],
+        "title": "PositionIn",
+        "type": "object"
+      },
+      "PositionIn-Output": {
+        "example": {
+          "category": "Работа",
+          "name": "Побелка",
+          "price": "100.10",
+          "qty": "1.5",
+          "unit": "м²"
+        },
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "name": {
+            "description": "Наименование, 1–200 символов",
+            "title": "Name",
+            "type": "string"
+          },
+          "price": {
+            "description": "Цена за единицу, до 2 знаков; строкой",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Price",
+            "type": "string"
+          },
+          "qty": {
+            "description": "Количество, до 3 знаков; строкой",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Qty",
+            "type": "string"
+          },
+          "unit": {
+            "default": "",
+            "description": "Единица измерения; пустая — подставится",
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "name",
+          "qty",
+          "price"
+        ],
+        "title": "PositionIn",
+        "type": "object"
+      },
+      "TotalsOut": {
+        "description": "Итоги. total — сумма уже округлённых строк, markup — разность.",
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/LineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "markup": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Markup",
+            "type": "string"
+          },
+          "subtotal": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Subtotal",
+            "type": "string"
+          },
+          "total": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lines",
+          "subtotal",
+          "markup",
+          "total"
+        ],
+        "title": "TotalsOut",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "\nHTTP-обёртка над детерминированным ядром расчёта смет.\n\n**LLM превращает речь, фото и текст в структуру. Деньги считает код.**\n\nСчитает ровно одна функция — `calculate_estimate` в `smeta_core`. Этот API её\nне дублирует, а вызывает; XLSX содержит те же значения и живые формулы.\n\nДеньги передаются **строками** (`\"159.16\"`), а не числами: JSON-число это\ndouble, и копейки на границе терялись бы.\n",
+    "title": "Прораб API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/calculate": {
+      "post": {
+        "description": "Считает смету.\n\nИтог — сумма уже округлённых строк, поэтому сумма показанных клиентом строк\nи поле total совпадают до копейки по построению.",
+        "operationId": "calculate_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstimateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotalsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Calculate",
+        "tags": [
+          "расчёт"
+        ]
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "healthz_healthz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Healthz",
+        "tags": [
+          "служебное"
+        ]
+      }
+    },
+    "/parse": {
+      "post": {
+        "description": "Разбирает текст в позиции. Плохие строки возвращаются с причиной, а не роняют запрос.",
+        "operationId": "parse_parse_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParseIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParseOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Parse",
+        "tags": [
+          "ввод"
+        ]
+      }
+    },
+    "/units": {
+      "get": {
+        "description": "Канонические единицы измерения.",
+        "operationId": "units_units_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Units Units Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Units",
+        "tags": [
+          "справочники"
+        ]
+      }
+    },
+    "/xlsx": {
+      "post": {
+        "description": "XLSX с живыми формулами. Значения те же, что вернул бы /calculate.",
+        "operationId": "xlsx_xlsx_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstimateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            },
+            "description": "Книга Excel"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Xlsx",
+        "tags": [
+          "расчёт"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "description": "Суммы и документы по смете",
+      "name": "расчёт"
+    },
+    {
+      "description": "Разбор пользовательских строк",
+      "name": "ввод"
+    },
+    {
+      "description": "Единицы измерения",
+      "name": "справочники"
+    },
+    {
+      "description": "Проверка живости",
+      "name": "служебное"
+    }
+  ]
+}
