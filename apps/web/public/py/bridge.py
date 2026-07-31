@@ -16,6 +16,7 @@ from decimal import Decimal, InvalidOperation
 
 from smeta_core import (
     UNITS,
+    AmbiguousLine,
     Category,
     PositionData,
     calculate_estimate,
@@ -73,8 +74,19 @@ def parse_lines(payload: str) -> str:
             continue
         try:
             position = parse_position_line(line, category)
+        except AmbiguousLine as error:
+            # Оба прочтения показываем целиком: выбор за человеком (ADR-011).
+            errors.append({
+                "line": line,
+                "reason": str(error),
+                "readings": [
+                    _position_to_json(error.plain),
+                    _position_to_json(error.merged),
+                ],
+            })
+            continue
         except (ValueError, InvalidOperation) as error:
-            errors.append({"line": line, "reason": str(error)})
+            errors.append({"line": line, "reason": str(error), "readings": []})
             continue
         if not position.unit and fill_units:
             position = replace(position, unit=default_unit(category))

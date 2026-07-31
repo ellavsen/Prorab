@@ -11,6 +11,23 @@ from .models import DEFAULT_MARKUP_BP, Base, Estimate, Position, UserState, utcn
 
 logger = logging.getLogger(__name__)
 
+# Черновик пошагового ввода, добавлен в Sprint 4 (ADR-010).
+DRAFT_COLUMNS = {
+    "draft_step": "VARCHAR(16)",
+    "draft_name": "VARCHAR(255)",
+    "draft_unit": "VARCHAR(32)",
+    "draft_qty_milli": "INTEGER",
+    "draft_price_kop": "INTEGER",
+    "pending_line": "VARCHAR(512)",
+}
+
+
+def _add_missing_columns(conn: Connection, table: str, columns: dict[str, str]) -> None:
+    existing = {c["name"] for c in sa_inspect(conn).get_columns(table)}
+    for name, sql_type in columns.items():
+        if name not in existing:
+            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}"))
+
 
 def migrate_money_to_integers(conn: Connection) -> list[str]:
     """Переводит qty/price из REAL в целые минорные единицы (ADR-004).
@@ -99,6 +116,8 @@ def bootstrap(engine: Engine) -> None:
 
         if "user_state" not in tables:
             Base.metadata.create_all(bind=conn, tables=[UserState.__table__])
+        else:
+            _add_missing_columns(conn, "user_state", DRAFT_COLUMNS)
 
         if "positions" not in tables:
             Base.metadata.create_all(bind=conn, tables=[Position.__table__])

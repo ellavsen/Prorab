@@ -222,3 +222,101 @@ def test_merge_backfills_a_missing_unit(tmp_path):
     assert len(rows) == 1
     assert rows[0].qty == D("15")
     assert rows[0].unit == "м²"
+
+
+# --- Ставка живёт в смете и меняется только у активной (ADR-003) ---
+
+def test_rate_change_touches_only_the_current_estimate(tmp_path):
+    from smeta_storage import set_rates
+
+    _, Session = open_storage(tmp_path / "rate.db")
+    with Session() as db:
+        first = create_estimate(db, UID, name="Первая")
+        second = create_estimate(db, UID, name="Вторая")
+        line = parse_position_line("Побелка, 1, 1000", Category.WORK)
+        positions.add(db, UID, first.id, line)
+        positions.add(db, UID, second.id, line)
+        db.commit()
+
+        set_rates(db, first, work_bp=1000, material_bp=1000)
+
+        assert positions.totals(db, UID, first).total == D("1100.00")
+        assert positions.totals(db, UID, second).total == D("1060.00")   # не тронута
+        assert second.markup_work_bp == 600
+
+
+def test_rate_change_is_visible_immediately_without_touching_positions(tmp_path):
+    """Итоги считаются на чтение, поэтому пересчитывать позиции не нужно."""
+    from smeta_storage import set_rates
+
+    _, Session = open_storage(tmp_path / "rate2.db")
+    with Session() as db:
+        estimate = create_estimate(db, UID, name="Смета")
+        positions.add(db, UID, estimate.id, parse_position_line("Побелка, 1, 100", Category.WORK))
+        db.commit()
+        before = positions.load(db, UID, estimate.id)[0].price_kop
+
+        set_rates(db, estimate, work_bp=0, material_bp=0)
+        assert positions.totals(db, UID, estimate).total == D("100.00")
+
+        set_rates(db, estimate, work_bp=5000, material_bp=5000)
+        assert positions.totals(db, UID, estimate).total == D("150.00")
+        # Позиции при этом никто не переписывал.
+        assert positions.load(db, UID, estimate.id)[0].price_kop == before
+
+
+def test_separate_rates_for_work_and_materials(tmp_path):
+    from smeta_storage import set_rates
+
+    _, Session = open_storage(tmp_path / "rate3.db")
+    with Session() as db:
+        estimate = create_estimate(db, UID, name="Смета")
+        positions.add(db, UID, estimate.id, parse_position_line("Побелка, 1, 1000", Category.WORK))
+        positions.add(
+            db, UID, estimate.id, parse_position_line("Гвозди, 1, 1000", Category.MATERIAL)
+        )
+        db.commit()
+
+        set_rates(db, estimate, work_bp=1000, material_bp=0)
+        totals = positions.totals(db, UID, estimate)
+
+    assert totals.total == D("2100.00")
+    assert totals.markup == D("100.00")
+
+
+def test_draft_fields_are_added_to_an_existing_user_state_table(tmp_path):
+    """Миграция догоняет базы, созданные до Sprint 4."""
+    import sqlite3
+
+    path = tmp_path / "old_state.db"
+    con = sqlite3.connect(path)
+    con.executescript("""
+        CREATE TABLE estimates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, number INTEGER,
+            name VARCHAR(255), markup_work_bp INTEGER DEFAULT 600,
+            markup_material_bp INTEGER DEFAULT 600, created_at DATETIME, updated_at DATETIME
+        );
+        CREATE TABLE positions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, estimate_id INTEGER,
+            category VARCHAR(16), name VARCHAR(255), unit VARCHAR(32),
+            qty_milli INTEGER, price_kop INTEGER, created_at DATETIME
+        );
+        CREATE TABLE user_state (
+            user_id INTEGER PRIMARY KEY, category VARCHAR(16),
+            current_estimate_id INTEGER, updated_at DATETIME
+        );
+    """)
+    con.execute("INSERT INTO user_state (user_id, category) VALUES (7, 'Работа')")
+    con.commit()
+    con.close()
+
+    _, Session = open_storage(path)
+    con = sqlite3.connect(path)
+    columns = {row[1] for row in con.execute("PRAGMA table_info(user_state)")}
+    con.close()
+
+    assert {"draft_step", "draft_name", "draft_unit",
+            "draft_qty_milli", "draft_price_kop", "pending_line"} <= columns
+    with Session() as db:
+        assert user_state(db, 7).category == "Работа"   # старое состояние уцелело
+        assert user_state(db, 7).draft_step is None

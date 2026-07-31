@@ -145,6 +145,14 @@
             "title": "Line",
             "type": "string"
           },
+          "readings": {
+            "description": "Оба прочтения неоднозначной строки. Выбор за пользователем: «Побелка, 150,5, 3000» это количество 5 или 150.5",
+            "items": {
+              "$ref": "#/components/schemas/PositionIn-Output"
+            },
+            "title": "Readings",
+            "type": "array"
+          },
           "reason": {
             "title": "Reason",
             "type": "string"

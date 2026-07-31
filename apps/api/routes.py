@@ -4,7 +4,14 @@ from dataclasses import asdict, replace
 
 from fastapi import APIRouter, Response
 
-from smeta_core import UNITS, Category, calculate_estimate, default_unit, parse_position_line
+from smeta_core import (
+    UNITS,
+    AmbiguousLine,
+    Category,
+    calculate_estimate,
+    default_unit,
+    parse_position_line,
+)
 from smeta_export import build_workbook
 
 from .convert import positions_of, to_schema
@@ -74,6 +81,13 @@ def parse(request: ParseIn) -> ParseOut:
             continue
         try:
             domain = parse_position_line(line, request.category)
+        except AmbiguousLine as error:
+            errors.append(ParseError(
+                line=line,
+                reason=str(error),
+                readings=[PositionIn(**asdict(error.plain)), PositionIn(**asdict(error.merged))],
+            ))
+            continue
         except ValueError as error:
             errors.append(ParseError(line=line, reason=str(error)))
             continue

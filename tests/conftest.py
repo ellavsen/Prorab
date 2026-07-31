@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import functools
 from decimal import ROUND_HALF_UP, Decimal
 
 import pytest
@@ -9,6 +11,17 @@ from hypothesis import strategies as st
 
 from smeta_core import Category, PositionData
 from smeta_storage import bootstrap, build_engine, build_sessionmaker
+
+
+def async_test(function):
+    """Запускает корутину-тест без pytest-asyncio: лишняя зависимость не нужна."""
+
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(function(*args, **kwargs))
+
+    return wrapper
+
 
 _open_engines = []
 

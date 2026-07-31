@@ -35,7 +35,7 @@ from .money import (
     to_kop,
     to_milli,
 )
-from .parsing import parse_position_line
+from .parsing import AmbiguousLine, parse_position_line, split_qty_unit
 from .units import UNITS, default_unit, normalize_unit
 
 __all__ = [
@@ -44,6 +44,7 @@ __all__ = [
     "RATE_MAX",
     "UNITS",
     "ZERO",
+    "AmbiguousLine",
     "Category",
     "EstimateTotals",
     "LineTotal",
@@ -66,6 +67,7 @@ __all__ = [
     "parse_quantity",
     "parse_rate",
     "round2",
+    "split_qty_unit",
     "to_bp",
     "to_kop",
     "to_milli",

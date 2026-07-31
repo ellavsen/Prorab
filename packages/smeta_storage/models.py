@@ -82,7 +82,11 @@ class Position(Base):
 
 
 class UserState(Base):
-    """Состояние диалога. Раньше жило в dict'ах процесса и умирало с рестартом."""
+    """Состояние диалога. Раньше жило в dict'ах процесса и умирало с рестартом.
+
+    Здесь же черновик наполовину введённой позиции: рестарт посреди пошагового
+    ввода не должен стоить пользователю набранного (ADR-010).
+    """
 
     __tablename__ = "user_state"
 
@@ -91,4 +95,22 @@ class UserState(Base):
     current_estimate_id: Mapped[int | None] = mapped_column(
         ForeignKey("estimates.id", ondelete="SET NULL"), nullable=True
     )
+
+    # Шаг пошагового ввода: name | qty | unit | price | confirm | ambiguous.
+    draft_step: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    draft_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    draft_unit: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    draft_qty_milli: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    draft_price_kop: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Строка свободного формата, которую не удалось прочитать однозначно.
+    pending_line: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+    @property
+    def draft_qty(self) -> Decimal | None:
+        return None if self.draft_qty_milli is None else from_milli(self.draft_qty_milli)
+
+    @property
+    def draft_price(self) -> Decimal | None:
+        return None if self.draft_price_kop is None else from_kop(self.draft_price_kop)

@@ -75,6 +75,13 @@ class ParseIn(BaseModel):
 class ParseError(BaseModel):
     line: str
     reason: str
+    readings: list[PositionIn] = Field(
+        default_factory=list,
+        description=(
+            "Оба прочтения неоднозначной строки. Выбор за пользователем: "
+            "«Побелка, 150,5, 3000» это количество 5 или 150.5"
+        ),
+    )
 
 
 class ParseOut(BaseModel):

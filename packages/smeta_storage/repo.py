@@ -26,6 +26,42 @@ def set_category(db: Session, uid: int, category: str | None) -> None:
     db.commit()
 
 
+DRAFT_FIELDS = (
+    "draft_step", "draft_name", "draft_unit",
+    "draft_qty_milli", "draft_price_kop", "pending_line",
+)
+
+
+def update_draft(db: Session, uid: int, **fields) -> UserState:
+    """Запоминает шаг пошагового ввода. Хранится в базе, а не в памяти (ADR-010)."""
+    state = user_state(db, uid)
+    for name, value in fields.items():
+        if name not in DRAFT_FIELDS:
+            raise ValueError(f"неизвестное поле черновика: {name}")
+        setattr(state, name, value)
+    db.commit()
+    return state
+
+
+def clear_draft(db: Session, uid: int) -> None:
+    state = user_state(db, uid)
+    for name in DRAFT_FIELDS:
+        setattr(state, name, None)
+    db.commit()
+
+
+def set_rates(db: Session, estimate: Estimate, work_bp: int, material_bp: int) -> None:
+    """Ставка — часть документа, поэтому меняется только у этой сметы (ADR-003).
+
+    Пересчитывать ничего не нужно: итоги считаются из позиций и ставок при
+    каждом чтении, поэтому смена ставки видна сразу и только здесь.
+    """
+    estimate.markup_work_bp = work_bp
+    estimate.markup_material_bp = material_bp
+    estimate.updated_at = utcnow()
+    db.commit()
+
+
 def next_estimate_number(db: Session, uid: int) -> int:
     highest = db.execute(
         select(func.max(Estimate.number)).where(Estimate.user_id == uid)

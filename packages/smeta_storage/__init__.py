@@ -6,6 +6,7 @@ from .migrations import bootstrap, migrate_money_to_integers
 from .models import DEFAULT_MARKUP_BP, Base, Estimate, Position, UserState, utcnow
 from .repo import (
     RETENTION_LIMIT,
+    clear_draft,
     create_estimate,
     create_new_estimate_like,
     current_estimate,
@@ -17,7 +18,9 @@ from .repo import (
     next_estimate_number,
     set_category,
     set_current_estimate,
+    set_rates,
     touch_estimate,
+    update_draft,
     user_state,
 )
 
@@ -31,6 +34,7 @@ __all__ = [
     "bootstrap",
     "build_engine",
     "build_sessionmaker",
+    "clear_draft",
     "create_estimate",
     "create_new_estimate_like",
     "current_estimate",
@@ -44,7 +48,9 @@ __all__ = [
     "positions",
     "set_category",
     "set_current_estimate",
+    "set_rates",
     "touch_estimate",
+    "update_draft",
     "user_state",
     "utcnow",
 ]

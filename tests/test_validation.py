@@ -5,6 +5,7 @@ from decimal import Decimal as D
 import pytest
 
 from smeta_core import (
+    AmbiguousLine,
     Category,
     PositionData,
     check_name,
@@ -121,6 +122,15 @@ def test_quantity_field_without_any_digit():
 
 
 def test_decimal_comma_in_the_middle_field_is_caught_not_silently_misread():
-    """«Побелка, 150,5, 3000» — четыре поля. Раньше молча читалось как qty=150."""
-    with pytest.raises(ValueError, match="получено полей: 4"):
+    """«Побелка, 150,5, 3000» читается двумя способами — молча выбирать нельзя.
+
+    До Sprint 2 строка тихо читалась как qty=150, price=5. До Sprint 4 —
+    отвергалась целиком. Теперь бот показывает оба прочтения и спрашивает.
+    """
+    with pytest.raises(AmbiguousLine) as caught:
         parse_position_line("Побелка, 150,5, 3000", Category.WORK)
+
+    error = caught.value
+    assert error.plain.qty == D("5")        # запятая как разделитель полей
+    assert error.merged.qty == D("150.5")   # запятая как десятичный разделитель
+    assert error.plain.price == error.merged.price == D("3000.00")

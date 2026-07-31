@@ -8,7 +8,8 @@ from smeta_storage import Estimate, create_new_estimate_like, positions, touch_e
 
 from ..database import SessionLocal
 from ..keyboards import confirm_keyboard
-from ..texts import esc
+from ..texts import BULK_HINT, esc
+from . import stepwise
 
 NOT_FOUND = "Смета не найдена."
 CANCELLED = "Отменено."
@@ -27,6 +28,24 @@ async def on_callback(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> No
 
     if data.startswith(("renew_no:", "clear_no:")):
         await query.edit_message_text(CANCELLED)
+        return
+
+    # Пошаговый ввод и разбор неоднозначных строк — работают со своим состоянием.
+    if data.startswith(("mode:", "unit:", "draft:", "pick:")):
+        prefix, _, value = data.partition(":")
+        with SessionLocal() as db:
+            if prefix == "mode":
+                if value == "step":
+                    await query.edit_message_text("Добавляем по шагам.")
+                    await stepwise.start_draft(query.message, db, uid)
+                else:
+                    await query.edit_message_text(BULK_HINT, parse_mode=ParseMode.HTML)
+            elif prefix == "unit":
+                await stepwise.handle_unit_choice(query, db, uid, value)
+            elif prefix == "draft":
+                await stepwise.handle_draft_action(query, db, uid, value)
+            else:
+                await stepwise.handle_reading_choice(query, db, uid, value)
         return
 
     with SessionLocal() as db:
