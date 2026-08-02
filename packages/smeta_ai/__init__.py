@@ -32,6 +32,7 @@ from .prompt import PROMPT_VERSION
 from .protocols import AIProvider, Extractor, Transcriber
 from .recorded import MissingRecording, RecordedProvider, recording_key
 from .registry import build_provider
+from .report import field_disagreements, format_report, report_to_dict, tag_rows
 from .serialize import candidate_from_dict, extraction_from_dict, extraction_to_dict
 from .stub import StubProvider
 from .validate import check_candidate, quote_is_grounded, validate_extraction
@@ -64,9 +65,13 @@ __all__ = [
     "counted_name",
     "extraction_from_dict",
     "extraction_to_dict",
+    "field_disagreements",
+    "format_report",
     "pick_category",
     "quote_is_grounded",
     "recording_key",
+    "report_to_dict",
+    "tag_rows",
     "to_position",
     "validate_extraction",
 ]

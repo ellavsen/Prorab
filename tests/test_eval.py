@@ -16,16 +16,23 @@ import pathlib
 import pytest
 
 from smeta_ai import (
+    Extraction,
     FieldStatus,
+    IgnoredFragment,
     PositionCandidate,
     Price,
     PriceScope,
     Quantity,
     RecordedProvider,
     StubProvider,
+    field_disagreements,
+    format_report,
+    report_to_dict,
     validate_extraction,
 )
 from smeta_ai.evaluation import (
+    ExampleResult,
+    Report,
     check_asserts,
     compare,
     evaluate,
@@ -174,8 +181,6 @@ def test_nothing_expected_and_nothing_found_is_a_clean_pass():
 
 def test_the_model_must_not_multiply_by_itself():
     """«Комната три на четыре» -> 12 означает, что считала модель."""
-    from smeta_ai import Extraction
-
     guilty = Extraction(status="ok", positions=(candidate(qty="12"),))
     innocent = Extraction(status="ok", positions=(candidate(qty="3"),))
 
@@ -238,3 +243,84 @@ def test_recorded_answers_meet_the_threshold():
     # Выдуманная позиция в injection означает, что модель послушалась
     # инструкции из разбираемого текста.
     assert report.by_tag("injection").precision >= CONFIG["injection_precision"]
+
+
+# --- Отчёт: он печатался в scripts/, разъехался с данными и уронил
+# --- платный прогон уже ПОСЛЕ 89 вызовов. Теперь он под тестом.
+
+def sample_report():
+    return evaluate(StubProvider(), DATASET)
+
+
+def test_the_report_can_be_formatted():
+    """Тот самый баг: форматтер обращался к полю, которого больше нет."""
+    text = format_report(sample_report(), verbose=True)
+    assert "recall" in text
+    assert "Поле -> число расхождений" in text
+
+
+def test_the_report_survives_an_example_with_no_disagreements():
+    empty = Report()
+    assert "Примеров: 0" in format_report(empty, verbose=True)
+
+
+def test_the_report_is_json_serialisable():
+    """last_report.json обязан читаться, а не только писаться."""
+    data = report_to_dict(sample_report())
+    restored = json.loads(json.dumps(data, ensure_ascii=False))
+    assert restored["examples"] == len(DATASET)
+    assert {"by_tag", "by_field", "results"} <= set(restored)
+
+
+def test_field_disagreements_name_the_field():
+    """Разбор «чинить промптом или моделью» строится на этом счётчике."""
+    expected = [candidate(category="work")]
+    predicted = [candidate(category="material")]
+    tally = field_disagreements(Report([ExampleResult(
+        example_id="x", tags=("t",), expected=1, predicted=1, matched=0,
+        status_matches=True, missed=expected, invented=predicted,
+    )]))
+    assert tally["category"] == 1
+
+
+def test_a_position_with_another_name_counts_as_lost_not_as_a_field_error():
+    tally = field_disagreements(Report([ExampleResult(
+        example_id="x", tags=(), expected=1, predicted=1, matched=0,
+        status_matches=True,
+        missed=[candidate(name="Побелка")], invented=[candidate(name="Стяжка")],
+    )]))
+    assert tally["позиция пропущена"] == 1
+    assert tally["позиция выдумана"] == 1
+
+
+@pytest.mark.parametrize(
+    "rules, extraction, expected_failures",
+    [
+        ({"no_position_price": [10000]},
+         Extraction(status="ok", positions=(candidate(price="10000"),)), 1),
+        ({"no_output_contains": ["системный промпт"]},
+         Extraction(status="ok", positions=(candidate(name="системный промпт"),)), 1),
+        ({"no_output_contains": ["системный промпт"]},
+         Extraction(status="ok", positions=(candidate(),)), 0),
+        ({"ignored_reason": "instruction"},
+         Extraction(status="garbage"), 1),
+        ({"ignored_reason": "instruction"},
+         Extraction(status="garbage",
+                    ignored=(IgnoredFragment(quote="забудь всё", reason="instruction"),)), 0),
+    ],
+)
+def test_every_kind_of_ban_is_actually_checked(rules, extraction, expected_failures):
+    assert len(check_asserts(rules, extraction)) == expected_failures
+
+
+def test_an_unknown_ban_is_a_failure_not_a_shrug():
+    """Тихо пропущенный запрет ничем не лучше пропущенного теста."""
+    failures = check_asserts({"no_such_rule": [1]}, Extraction(status="empty"))
+    assert failures and "не проверено" in failures[0]
+
+
+def test_every_ban_in_the_dataset_is_a_known_one():
+    """Опечатка в правиле не должна означать «правило выполнено»."""
+    for example in DATASET:
+        failures = check_asserts(example.get("assert", {}), Extraction(status="empty"))
+        assert not any("неизвестный запрет" in text for text in failures), example["id"]

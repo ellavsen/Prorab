@@ -1,0 +1,11 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "алло, слышно меня? проверка связи",
+  "result": {
+    "status": "empty",
+    "positions": [],
+    "ignored": []
+  }
+}

@@ -16,15 +16,18 @@ import json
 import os
 import pathlib
 import sys
+import traceback
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "packages"))
 
 from smeta_ai import OpenAIProvider, RecordedProvider, StubProvider  # noqa: E402
 from smeta_ai.evaluation import evaluate, load_dataset  # noqa: E402
+from smeta_ai.report import format_report, report_to_dict  # noqa: E402
 
 EVAL_DIR = ROOT / "tests" / "eval"
 FIXTURES = EVAL_DIR / "fixtures"
+LAST_REPORT = EVAL_DIR / "last_report.json"
 
 
 def load_config() -> dict:
@@ -44,23 +47,12 @@ def build_extractor(mode: str, model: str):
     return RecordedProvider(FIXTURES, model=model, inner=inner)
 
 
-def print_report(report, verbose: bool) -> None:
-    print(f"Примеров: {len(report.results)}")
-    print(f"Ожидалось позиций: {report.expected}, извлечено: {report.predicted}, "
-          f"совпало: {report.matched}")
-    print(f"recall    {report.recall:.3f}")
-    print(f"precision {report.precision:.3f}")
-    print(f"целиком верных примеров: {report.exact_examples} из {len(report.results)}")
-
-    if not verbose:
-        return
-    for result in report.results:
-        if result.missed or result.invented:
-            print(f"\n[{result.example_id}] {result.kind}")
-            for item in result.missed:
-                print(f"  пропущено: {item}")
-            for item in result.invented:
-                print(f"  лишнее:    {item}")
+def save_report(report) -> None:
+    """Отчёт на диск раньше печати: форматтер не должен стоить прогона."""
+    LAST_REPORT.write_text(
+        json.dumps(report_to_dict(report), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 def main() -> int:
@@ -75,10 +67,21 @@ def main() -> int:
     dataset = load_dataset(EVAL_DIR / "dataset.jsonl")
     report = evaluate(build_extractor(mode, config["model"]), dataset)
 
+    # Всё, что ниже, идёт ПОСЛЕ совершённых (и оплаченных) вызовов, поэтому
+    # ни сохранение, ни печать не имеют права уронить процесс.
     print(f"Режим: {mode}, модель: {config['model']}")
-    print_report(report, args.verbose or mode != "stub")
+    for step, action in (("сохранить отчёт", lambda: save_report(report)),
+                         ("напечатать отчёт",
+                          lambda: print(format_report(report, args.verbose or mode != "stub")))):
+        try:
+            action()
+        except Exception:  # noqa: BLE001 — отчёт не стоит прогона
+            print(f"[!] не удалось {step}:", file=sys.stderr)
+            traceback.print_exc()
 
-    if mode == "stub":
+    if mode != "stub":
+        print(f"\nОтчёт сохранён: {LAST_REPORT.relative_to(ROOT)}")
+    else:
         print("\nЭто нижняя граница без модели, порог к ней не применяется.")
         return 0
 

@@ -375,3 +375,30 @@ def test_recording_survives_a_restart(tmp_path):
         b"audio", "voice.ogg"
     )
     assert RecordedProvider(tmp_path, model="test-model").transcribe(b"audio", "voice.ogg")
+
+
+def test_each_answer_is_written_before_the_next_call(tmp_path):
+    """89 платных вызовов не должны теряться из-за падения в конце прогона.
+
+    Провайдер бросает на третьем ответе; первые два обязаны лежать на диске.
+    """
+    class FailsOnThird:
+        def __init__(self):
+            self.calls = 0
+
+        def extract(self, text):
+            self.calls += 1
+            if self.calls == 3:
+                raise RuntimeError("сеть отвалилась")
+            return StubProvider().extract(text)
+
+    recorder = RecordedProvider(tmp_path, model="test-model", inner=FailsOnThird())
+    for phrase in ("побелка 150 квадратов по 3000", "гвозди 1000 штук по 20"):
+        recorder.extract(phrase)
+    with pytest.raises(RuntimeError):
+        recorder.extract("стяжка 40 квадратов по 1200")
+
+    assert len(list(tmp_path.glob("*.json"))) == 2
+    # И записанное читается: провайдер без inner их проигрывает.
+    replay = RecordedProvider(tmp_path, model="test-model")
+    assert replay.extract("побелка 150 квадратов по 3000").positions

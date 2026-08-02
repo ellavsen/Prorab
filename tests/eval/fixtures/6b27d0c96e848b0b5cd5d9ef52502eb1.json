@@ -1,0 +1,63 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "Накладная №7\nУтеплитель минеральный 36 м² 265,00\nПлёнка пароизоляционная 70 м² 45,00\nСкотч монтажный 6 шт 120,00",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Утеплитель Минеральный",
+        "qty": {
+          "status": "stated",
+          "value": "36"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "unknown",
+          "value": "265.00"
+        },
+        "unit": "м²",
+        "unit_spoken": "м²",
+        "category": "material",
+        "source_quote": "Утеплитель минеральный 36 м² 265,00",
+        "confidence": "high"
+      },
+      {
+        "name": "Плёнка Пароизоляционная",
+        "qty": {
+          "status": "stated",
+          "value": "70"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "unknown",
+          "value": "45.00"
+        },
+        "unit": "м²",
+        "unit_spoken": "м²",
+        "category": "material",
+        "source_quote": "Плёнка пароизоляционная 70 м² 45,00",
+        "confidence": "high"
+      },
+      {
+        "name": "Скотч Монтажный",
+        "qty": {
+          "status": "stated",
+          "value": "6"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "unknown",
+          "value": "120.00"
+        },
+        "unit": "",
+        "unit_spoken": "шт",
+        "category": "material",
+        "source_quote": "Скотч монтажный 6 шт 120,00",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

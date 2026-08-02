@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "кирпич десять тысяч штук по восемнадцать рублей",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Кирпич",
+        "qty": {
+          "status": "stated",
+          "value": "10000"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "18"
+        },
+        "unit": "",
+        "unit_spoken": "штук",
+        "category": "material",
+        "source_quote": "кирпич десять тысяч штук по восемнадцать рублей",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

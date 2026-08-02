@@ -1,0 +1,16 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "надо будет на неделе посчитать смету на ванную, напомни мне",
+  "result": {
+    "status": "empty",
+    "positions": [],
+    "ignored": [
+      {
+        "quote": "надо будет на неделе посчитать смету на ванную, напомни мне",
+        "reason": "chatter"
+      }
+    ]
+  }
+}

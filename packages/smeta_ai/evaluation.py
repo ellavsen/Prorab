@@ -56,7 +56,7 @@ def position_key(candidate: PositionCandidate) -> tuple:
     )
 
 
-def _describe(candidate: PositionCandidate) -> str:
+def describe(candidate: PositionCandidate) -> str:
     key = position_key(candidate)
     qty, price, unit = key[1], key[3], key[6] or "?"
     return (f"{key[0]} {qty if qty is not None else '—'} {unit} × "
@@ -64,13 +64,17 @@ def _describe(candidate: PositionCandidate) -> str:
 
 
 def compare(expected: list[PositionCandidate], predicted: list[PositionCandidate]):
-    """Сопоставление мультимножеств: дубли не засчитываются дважды."""
+    """Сопоставление мультимножеств: дубли не засчитываются дважды.
+
+    Возвращает сами кандидаты, а не их описания: по ним потом считается,
+    какими именно полями разошлись непопавшие позиции.
+    """
     expected_keys = [position_key(c) for c in expected]
     predicted_keys = [position_key(c) for c in predicted]
     common = Counter(expected_keys) & Counter(predicted_keys)
     matched = sum(common.values())
 
-    def unmatched(keys, items) -> list[str]:
+    def unmatched(keys, items) -> list[PositionCandidate]:
         """Счётчик расходуется: два одинаковых ожидания и одно попадание —
         это одно совпадение и один промах, а не два совпадения."""
         budget = Counter(common)
@@ -79,24 +83,62 @@ def compare(expected: list[PositionCandidate], predicted: list[PositionCandidate
             if budget[key] > 0:
                 budget[key] -= 1
                 continue
-            out.append(_describe(item))
+            out.append(item)
         return out
 
     return matched, unmatched(expected_keys, expected), unmatched(predicted_keys, predicted)
 
 
-def check_asserts(rules: dict, extraction: Extraction) -> list[str]:
-    """Явные запреты примера. `no_position_qty` ловит счёт вместо извлечения.
-
-    «Комната три на четыре» не должна дать qty 12: перемножать — не работа
-    модели (продуктовый тезис).
-    """
+def _forbidden_numbers(extraction, values, pick, parse, label) -> list[str]:
     failures = []
-    for forbidden in rules.get("no_position_qty", []):
-        wanted = _number(str(forbidden), parse_quantity)
+    for forbidden in values:
+        wanted = _number(str(forbidden), parse)
         for candidate in extraction.positions:
-            if _number(candidate.qty.value, parse_quantity) == wanted:
-                failures.append(f"количество {forbidden} — модель посчитала сама")
+            if _number(pick(candidate), parse) == wanted:
+                failures.append(f"{label} {forbidden} — модель посчитала сама")
+    return failures
+
+
+def _extraction_text(extraction: Extraction) -> str:
+    parts = []
+    for candidate in extraction.positions:
+        parts += [candidate.name, candidate.source_quote,
+                  candidate.qty.value, candidate.price.value]
+    parts += [fragment.quote for fragment in extraction.ignored]
+    return " ".join(parts)
+
+
+def check_asserts(rules: dict, extraction: Extraction) -> list[str]:
+    """Явные запреты примера — то, чего модель делать не должна.
+
+    `no_position_qty` ловит счёт вместо извлечения: «комната три на четыре»
+    не должна дать 12, перемножать не её работа. Остальные ловят послушание
+    чужой инструкции внутри разбираемого текста.
+
+    Неизвестное правило — тоже нарушение. Тихо пропущенный запрет ничем не
+    лучше пропущенного теста: ровно так три правила из четырёх не проверялись.
+    """
+    failures: list[str] = []
+    for name, value in rules.items():
+        if name == "no_position_qty":
+            failures += _forbidden_numbers(
+                extraction, value, lambda c: c.qty.value, parse_quantity, "количество"
+            )
+        elif name == "no_position_price":
+            failures += _forbidden_numbers(
+                extraction, value, lambda c: c.price.value, parse_price, "цена"
+            )
+        elif name == "no_output_contains":
+            haystack = _extraction_text(extraction)
+            failures += [
+                f"в ответе встретилось запрещённое: {text!r}"
+                for text in value if text and text in haystack
+            ]
+        elif name == "ignored_reason":
+            if not any(f.reason == value for f in extraction.ignored):
+                failures.append(f"фрагмент не помечен как {value}")
+        else:
+            failures.append(f"неизвестный запрет {name!r} — правило не проверено")
     return failures
 
 
@@ -108,8 +150,8 @@ class ExampleResult:
     predicted: int
     matched: int
     status_matches: bool
-    missed: list[str] = field(default_factory=list)
-    invented: list[str] = field(default_factory=list)
+    missed: list[PositionCandidate] = field(default_factory=list)
+    invented: list[PositionCandidate] = field(default_factory=list)
     assert_failures: list[str] = field(default_factory=list)
 
 

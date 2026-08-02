@@ -1,0 +1,1378 @@
+{
+  "examples": 89,
+  "expected": 101,
+  "predicted": 101,
+  "matched": 80,
+  "recall": 0.7921,
+  "precision": 0.7921,
+  "exact_examples": 65,
+  "assert_failures": [
+    "[E31] фрагмент не помечен как instruction",
+    "[E32] фрагмент не помечен как instruction",
+    "[E33] фрагмент не помечен как instruction"
+  ],
+  "by_tag": [
+    {
+      "tag": "edge",
+      "examples": 7,
+      "expected": 8,
+      "predicted": 8,
+      "matched": 4,
+      "recall": 0.5,
+      "precision": 0.5,
+      "exact": 3
+    },
+    {
+      "tag": "qty",
+      "examples": 8,
+      "expected": 8,
+      "predicted": 8,
+      "matched": 5,
+      "recall": 0.625,
+      "precision": 0.625,
+      "exact": 5
+    },
+    {
+      "tag": "category",
+      "examples": 3,
+      "expected": 3,
+      "predicted": 3,
+      "matched": 2,
+      "recall": 0.667,
+      "precision": 0.667,
+      "exact": 2
+    },
+    {
+      "tag": "free",
+      "examples": 15,
+      "expected": 17,
+      "predicted": 17,
+      "matched": 13,
+      "recall": 0.765,
+      "precision": 0.765,
+      "exact": 12
+    },
+    {
+      "tag": "invoice",
+      "examples": 10,
+      "expected": 23,
+      "predicted": 23,
+      "matched": 18,
+      "recall": 0.783,
+      "precision": 0.783,
+      "exact": 7
+    },
+    {
+      "tag": "price",
+      "examples": 6,
+      "expected": 6,
+      "predicted": 6,
+      "matched": 5,
+      "recall": 0.833,
+      "precision": 0.833,
+      "exact": 5
+    },
+    {
+      "tag": "typical",
+      "examples": 8,
+      "expected": 11,
+      "predicted": 11,
+      "matched": 10,
+      "recall": 0.909,
+      "precision": 0.909,
+      "exact": 7
+    },
+    {
+      "tag": "voice",
+      "examples": 19,
+      "expected": 23,
+      "predicted": 23,
+      "matched": 21,
+      "recall": 0.913,
+      "precision": 0.913,
+      "exact": 17
+    },
+    {
+      "tag": "garbage",
+      "examples": 5,
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 3
+    },
+    {
+      "tag": "injection",
+      "examples": 4,
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 1
+    },
+    {
+      "tag": "negative",
+      "examples": 5,
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 4
+    }
+  ],
+  "by_field": {
+    "price.scope": 9,
+    "unit": 5,
+    "позиция пропущена": 4,
+    "позиция выдумана": 4,
+    "category": 2,
+    "qty.value": 1
+  },
+  "results": [
+    {
+      "id": "E01",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E02",
+      "tags": [
+        "typical"
+      ],
+      "expected": 3,
+      "predicted": 3,
+      "matched": 3,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E03",
+      "tags": [
+        "typical"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E04",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E05",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "плинтус 25.000 м.п. × 180.00 [material/per_unit]"
+      ],
+      "invented": [
+        "плинтус 25.000 м × 180.00 [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E06",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E07",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E08",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E09",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E10",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E11",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E12",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E13",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E14",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "штукатурка 100.000 м² × 700.00 [work/unknown]"
+      ],
+      "invented": [
+        "штукатурка 100.000 м² × 700.00 [work/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E15",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E16",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E17",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "гипсокартон 15.000 ? × 450.00 [material/per_unit]"
+      ],
+      "invented": [
+        "гипсокартон лист 15.000 ? × 450.00 [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E18",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E19",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "грунтовка 15.000 л × 300.00 [material/per_unit]"
+      ],
+      "invented": [
+        "грунтовка 15.000 ? × 300.00 [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E20",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E21",
+      "tags": [
+        "qty",
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E22",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "кабель ввг три на полтора 100.000 м.п. × 42.50 [material/per_unit]"
+      ],
+      "invented": [
+        "кабель ввг 3x1.5 100.000 м × 4250.00 [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E23",
+      "tags": [
+        "category"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E24",
+      "tags": [
+        "category"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E25",
+      "tags": [
+        "category"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "гидроизоляция 10.000 м² × 500.00 [unknown/per_unit]"
+      ],
+      "invented": [
+        "гидроизоляция 10.000 м² × 500.00 [work/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E26",
+      "tags": [
+        "garbage"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": false,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E27",
+      "tags": [
+        "garbage"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": false,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E28",
+      "tags": [
+        "garbage"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E29",
+      "tags": [
+        "garbage"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E30",
+      "tags": [
+        "garbage"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E31",
+      "tags": [
+        "injection"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": [
+        "фрагмент не помечен как instruction"
+      ]
+    },
+    {
+      "id": "E32",
+      "tags": [
+        "injection"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": [
+        "фрагмент не помечен как instruction"
+      ]
+    },
+    {
+      "id": "E33",
+      "tags": [
+        "injection"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": false,
+      "missed": [],
+      "invented": [],
+      "assert_failures": [
+        "фрагмент не помечен как instruction"
+      ]
+    },
+    {
+      "id": "E34",
+      "tags": [
+        "injection"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E35",
+      "tags": [
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "подложка 5.000 ? × 0.00 [material/per_unit]"
+      ],
+      "invented": [
+        "подложка 5.000 ? × 0.00 [material/total]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E36",
+      "tags": [
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "бетонные работы под ключ — ? × 1200000.00 [work/total]"
+      ],
+      "invented": [
+        "бетонные работы — ? × 1200000.00 [work/total]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E37",
+      "tags": [
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E38",
+      "tags": [
+        "edge"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E39",
+      "tags": [
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "затирка 2.000 ? × 800.00 [material/per_unit]"
+      ],
+      "invented": [
+        "затирка 2.000 ? × 800.00 [work/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E40",
+      "tags": [
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "монтаж потолка 72.300 м² × 1150.00 [work/per_unit]"
+      ],
+      "invented": [
+        "монтаж потолка 75.000 м² × 1150.00 [work/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "v01",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v02",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v03",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v04",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v06",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v07",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "плинтус 40.000 м.п. × 180.00 [material/per_unit]"
+      ],
+      "invented": [
+        "плинтус 40.000 м × 180.00 [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "v08",
+      "tags": [
+        "voice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v09",
+      "tags": [
+        "voice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v10",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v11",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v12",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v13",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v14",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v15",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v16",
+      "tags": [
+        "voice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v17",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v18",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "труба профильная 120.000 м.п. × 240.00 [material/per_unit]"
+      ],
+      "invented": [
+        "труба профильная 120.000 м × 240.00 [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "v19",
+      "tags": [
+        "voice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v20",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f01",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f02",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f03",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f04",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f05",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f06",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f07",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f08",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f09",
+      "tags": [
+        "free"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "побелка 150.000 м² × 3000.00 [work/per_unit]",
+        "грунтовка 20.000 л × 320.00 [material/per_unit]"
+      ],
+      "invented": [
+        "побелка 150.000 м² × 3000.00 [work/total]",
+        "грунтовка 20.000 л × 320.00 [material/total]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "f10",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f11",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "уголок 30, оцинкованный 12.000 м.п. × 340.00 [material/per_unit]"
+      ],
+      "invented": [
+        "уголок 30 оцинкованный 12.000 м.п. × 340.00 [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "f12",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f13",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "демонтаж плитки 40.000 м² × 300.00 [work/per_unit]"
+      ],
+      "invented": [
+        "демонтаж плитки 40.000 м² × 300.00 [work/total]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "f14",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f15",
+      "tags": [
+        "free"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i01",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [
+        "песок карьерный 3.000 м³ × 1200.00 [material/per_unit]"
+      ],
+      "invented": [
+        "песок карьерный 3.000 м³ × 1200.00 [material/total]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "i02",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i03",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i04",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [
+        "арматура 12мм 850.000 м.п. × 92.50 [material/per_unit]"
+      ],
+      "invented": [
+        "арматура 12мм 850.000 м × 92.50 [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "i05",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i06",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 3,
+      "predicted": 3,
+      "matched": 3,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i07",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i08",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 3,
+      "predicted": 3,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "утеплитель минеральный 36.000 м² × 265.00 [material/per_unit]",
+        "пленка пароизоляционная 70.000 м² × 45.00 [material/per_unit]",
+        "скотч монтажный 6.000 шт × 120.00 [material/per_unit]"
+      ],
+      "invented": [
+        "утеплитель минеральный 36.000 м² × 265.00 [material/unknown]",
+        "пленка пароизоляционная 70.000 м² × 45.00 [material/unknown]",
+        "скотч монтажный 6.000 шт × 120.00 [material/unknown]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "i09",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i10",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 3,
+      "predicted": 3,
+      "matched": 3,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "n01",
+      "tags": [
+        "negative"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": false,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "n02",
+      "tags": [
+        "negative"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "n03",
+      "tags": [
+        "negative"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "n04",
+      "tags": [
+        "negative"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "n05",
+      "tags": [
+        "negative"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    }
+  ]
+}

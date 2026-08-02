@@ -1,0 +1,46 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "плитка тридцать квадратов по тысяче двести, клей десять мешков по четыреста",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Плитка",
+        "qty": {
+          "status": "stated",
+          "value": "30"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "1200"
+        },
+        "unit": "м²",
+        "unit_spoken": "квадратов",
+        "category": "material",
+        "source_quote": "плитка тридцать квадратов по тысяче двести",
+        "confidence": "high"
+      },
+      {
+        "name": "Клей",
+        "qty": {
+          "status": "stated",
+          "value": "10"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "400"
+        },
+        "unit": "",
+        "unit_spoken": "мешков",
+        "category": "material",
+        "source_quote": "клей десять мешков по четыреста",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

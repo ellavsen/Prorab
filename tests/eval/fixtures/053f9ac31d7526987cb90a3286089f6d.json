@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "покрасили сто квадратов на тридцать тысяч за всё",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Покраска",
+        "qty": {
+          "status": "stated",
+          "value": "100"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "total",
+          "value": "30000"
+        },
+        "unit": "м²",
+        "unit_spoken": "квадратов",
+        "category": "work",
+        "source_quote": "покрасили сто квадратов на тридцать тысяч за всё",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

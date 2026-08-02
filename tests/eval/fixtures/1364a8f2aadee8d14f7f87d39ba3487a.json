@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "гипсокартона листов пятнадцать по четыреста пятьдесят",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Гипсокартон Лист",
+        "qty": {
+          "status": "stated",
+          "value": "15"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "450"
+        },
+        "unit": "",
+        "unit_spoken": "листов",
+        "category": "material",
+        "source_quote": "гипсокартона листов пятнадцать по четыреста пятьдесят",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

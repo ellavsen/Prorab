@@ -1,0 +1,34 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "ну ты понял, короче, привет жене передавай, и запиши грунтовку десять литров по триста",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Грунтовка",
+        "qty": {
+          "status": "stated",
+          "value": "10"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "300"
+        },
+        "unit": "л",
+        "unit_spoken": "литров",
+        "category": "material",
+        "source_quote": "грунтовку десять литров по триста",
+        "confidence": "high"
+      }
+    ],
+    "ignored": [
+      {
+        "quote": "ну ты понял, короче, привет жене передавай",
+        "reason": "chatter"
+      }
+    ]
+  }
+}

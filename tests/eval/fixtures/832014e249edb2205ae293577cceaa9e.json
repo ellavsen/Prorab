@@ -1,0 +1,46 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "утеплитель сорок пять квадратов по двести десять и монтаж утеплителя те же сорок пять квадратов по триста",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Утеплитель",
+        "qty": {
+          "status": "stated",
+          "value": "45"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "210"
+        },
+        "unit": "м²",
+        "unit_spoken": "квадратов",
+        "category": "material",
+        "source_quote": "утеплитель сорок пять квадратов по двести десять",
+        "confidence": "high"
+      },
+      {
+        "name": "Монтаж утеплителя",
+        "qty": {
+          "status": "stated",
+          "value": "45"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "300"
+        },
+        "unit": "м²",
+        "unit_spoken": "квадратов",
+        "category": "work",
+        "source_quote": "монтаж утеплителя те же сорок пять квадратов по триста",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}
