@@ -39,7 +39,7 @@ jobs:
         run: vulture packages apps scripts --min-confidence 80
 
       - name: Тесты и покрытие
-        run: pytest --cov=smeta_core --cov=smeta_storage --cov=smeta_export --cov=api --cov-report=term-missing
+        run: pytest --cov=smeta_core --cov=smeta_storage --cov=smeta_export --cov=smeta_ai --cov=api --cov-report=term-missing
 
       - name: Покрытие ядра не ниже 90%
         run: coverage report --include="packages/smeta_core/*" --fail-under=90
@@ -75,6 +75,62 @@ jobs:
         env:
           REQUIRE_LIBREOFFICE: "1"
         run: pytest tests/test_xlsx.py -v
+
+  eval:
+    name: Извлечение — набор, метрика и нижняя граница
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Зависимости
+        run: |
+          python -m pip install -U pip setuptools
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -e .
+
+      - name: Разметка, метрика и записанные ответы
+        run: pytest tests/test_eval.py -v
+
+      - name: Нижняя граница без модели
+        # Число печатается в лог, чтобы разница «модель против регулярки»
+        # была видна, а не подразумевалась.
+        run: python scripts/run_eval.py --stub
+
+  eval-live:
+    name: Замер на живой модели
+    runs-on: ubuntu-latest
+    # Живой вызов недетерминирован и платен, поэтому только вручную.
+    # Задание падает, если ключа нет: «не проверено» не должно выглядеть
+    # как «зелено» (тот же приём, что REQUIRE_LIBREOFFICE).
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Зависимости
+        run: |
+          python -m pip install -U pip setuptools
+          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -e .
+
+      - name: Записать недостающие ответы модели
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python scripts/run_eval.py --record --verbose
+
+      - name: Метрика на записанном не ниже порога
+        env:
+          REQUIRE_EVAL_FIXTURES: "1"
+        run: pytest tests/test_eval.py -v
 
   web:
     name: Демо и сходимость с браузерным ядром

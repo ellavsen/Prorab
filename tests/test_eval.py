@@ -1,0 +1,240 @@
+"""Группа G: eval-набор и метрика извлечения (ADR-014).
+
+Тут проверяются три разные вещи, и путать их нельзя:
+  1. разметка набора корректна — иначе метрика меряет опечатки;
+  2. метрика считает то, что заявлено — точное совпадение после нормализации;
+  3. на записанных ответах модели метрика не ниже порога.
+
+Третье возможно только там, где есть фикстуры. Их отсутствие не делает замер
+пройденным: задание CI с REQUIRE_EVAL_FIXTURES=1 падает, а не пропускает тест.
+"""
+
+import json
+import os
+import pathlib
+
+import pytest
+
+from smeta_ai import (
+    FieldStatus,
+    PositionCandidate,
+    Price,
+    PriceScope,
+    Quantity,
+    RecordedProvider,
+    StubProvider,
+    validate_extraction,
+)
+from smeta_ai.evaluation import (
+    check_asserts,
+    compare,
+    evaluate,
+    expected_extraction,
+    load_dataset,
+    normalize_name,
+)
+
+EVAL_DIR = pathlib.Path(__file__).resolve().parent / "eval"
+FIXTURES = EVAL_DIR / "fixtures"
+
+DATASET = load_dataset(EVAL_DIR / "dataset.jsonl")
+CONFIG = json.loads((EVAL_DIR / "config.json").read_text(encoding="utf-8"))
+
+
+def candidate(name="Побелка", qty="150", price="3000", unit="м²", category="work",
+              qty_status=FieldStatus.STATED, price_status=FieldStatus.STATED,
+              scope=PriceScope.PER_UNIT, unit_spoken=""):
+    return PositionCandidate(
+        name=name,
+        qty=Quantity(status=qty_status, value=qty),
+        price=Price(status=price_status, scope=scope, value=price),
+        unit=unit, unit_spoken=unit_spoken, category=category,
+    )
+
+
+# --- Набор ---
+
+
+def test_the_dataset_is_big_enough():
+    assert len(DATASET) >= 40, "спринт требует 40–60 размеченных примеров"
+
+
+def test_every_example_has_a_unique_id():
+    ids = [example["id"] for example in DATASET]
+    assert len(set(ids)) == len(ids)
+
+
+def test_no_two_examples_share_an_input():
+    """Слияние двух наборов не должно оставить дубли: они перевешивают метрику."""
+    inputs = [" ".join(example["input"].lower().split()) for example in DATASET]
+    assert len(set(inputs)) == len(inputs)
+
+
+def test_both_sources_survived_the_merge():
+    sources = {example["source"] for example in DATASET}
+    assert sources == {"fable_draft", "generated"}
+
+
+def test_the_dataset_covers_speech_documents_injection_and_nothing():
+    tags = {tag for example in DATASET for tag in example["tags"]}
+    assert {"voice", "invoice", "negative", "injection", "garbage"} <= tags
+
+
+@pytest.mark.parametrize("example", DATASET, ids=lambda e: e["id"])
+def test_the_labelling_itself_is_valid(example):
+    """Разметка проходит те же проверки контракта, что и ответ модели.
+
+    Цитаты не сверяем: source_quote — обязанность модели, а не разметчика,
+    поэтому source=None.
+    """
+    assert validate_extraction(expected_extraction(example), source=None) == []
+
+
+def test_a_position_with_no_price_is_labelled_missing_not_zero():
+    """Ради этого и вложенная схема: «цену потом скажу» — это не ноль."""
+    incomplete = [
+        p for e in DATASET for p in e["expected"]["positions"]
+        if p["price"]["status"] == "missing"
+    ]
+    assert incomplete, "в наборе должны быть позиции без цены"
+    assert all(p["price"]["value"] == "" for p in incomplete)
+
+
+# --- Метрика ---
+
+
+def test_identical_positions_match():
+    assert compare([candidate()], [candidate()]) == (1, [], [])
+
+
+@pytest.mark.parametrize(
+    "predicted",
+    [
+        candidate(name="побелка"),                # регистр
+        candidate(name="  Побелка  "),            # пробелы по краям
+        candidate(unit="м2"),                     # синоним единицы
+        candidate(unit="", unit_spoken="м2"),     # канон выводится из сказанного
+        candidate(unit_spoken="квадратов"),       # сказанное в ключ не входит
+        candidate(qty="150.0"),
+        candidate(price="3000.00"),
+    ],
+)
+def test_normalization_does_not_hide_a_real_match(predicted):
+    matched, _missed, _invented = compare([candidate()], [predicted])
+    assert matched == 1
+
+
+def test_yo_and_ye_are_the_same_name():
+    assert normalize_name("Шпаклёвка") == normalize_name("шпаклевка")
+
+
+@pytest.mark.parametrize(
+    "predicted",
+    [
+        candidate(qty="151"),
+        candidate(price="3001"),
+        candidate(unit="шт"),
+        candidate(category="material"),
+        candidate(name="Побелка стен"),
+        candidate(qty_status=FieldStatus.APPROX),
+        candidate(scope=PriceScope.TOTAL),
+    ],
+)
+def test_a_difference_in_any_field_is_a_miss(predicted):
+    """Сравнение точное: «почти та же позиция» — это другая позиция."""
+    matched, missed, invented = compare([candidate()], [predicted])
+    assert (matched, len(missed), len(invented)) == (0, 1, 1)
+
+
+def test_missing_and_zero_are_different_positions():
+    """Главное, ради чего схема вложенная."""
+    absent = candidate(price="", price_status=FieldStatus.MISSING,
+                       scope=PriceScope.UNKNOWN)
+    zero = candidate(price="0")
+    matched, _missed, _invented = compare([absent], [zero])
+    assert matched == 0
+
+
+def test_duplicates_are_not_counted_twice():
+    matched, missed, invented = compare([candidate(), candidate()], [candidate()])
+    assert (matched, len(missed), len(invented)) == (1, 1, 0)
+
+
+def test_an_invented_position_hurts_precision():
+    matched, missed, invented = compare([candidate()], [candidate(), candidate(name="Стяжка")])
+    assert (matched, len(missed), len(invented)) == (1, 0, 1)
+
+
+def test_nothing_expected_and_nothing_found_is_a_clean_pass():
+    assert compare([], []) == (0, [], [])
+
+
+# --- Запреты примеров ---
+
+
+def test_the_model_must_not_multiply_by_itself():
+    """«Комната три на четыре» -> 12 означает, что считала модель."""
+    from smeta_ai import Extraction
+
+    guilty = Extraction(status="ok", positions=(candidate(qty="12"),))
+    innocent = Extraction(status="ok", positions=(candidate(qty="3"),))
+
+    assert check_asserts({"no_position_qty": [12]}, guilty)
+    assert check_asserts({"no_position_qty": [12]}, innocent) == []
+
+
+def test_the_dataset_carries_such_a_ban():
+    assert any("assert" in example for example in DATASET)
+
+
+# --- Прогон ---
+
+
+def test_the_harness_runs_over_every_example():
+    report = evaluate(StubProvider(), DATASET)
+    assert len(report.results) == len(DATASET)
+    assert 0.0 <= report.recall <= 1.0
+    assert 0.0 <= report.precision <= 1.0
+
+
+def test_the_stub_is_a_floor_not_a_measurement():
+    """Стаб — голая регулярка. Он что-то находит, но порогом ему не судья."""
+    report = evaluate(StubProvider(), DATASET)
+    assert report.predicted > 0, "стаб обязан хоть что-то извлекать"
+    assert report.recall < 1.0, "если стаб решает набор целиком, набор слишком лёгкий"
+
+
+def test_the_stub_scores_zero_because_it_never_classifies():
+    """Нижняя граница — ноль, и это честнее любого маленького числа.
+
+    Регулярка достаёт наименование, количество и цену, но отличить работу от
+    материала не может: категория остаётся unknown, а она входит в ключ
+    сравнения. Значит всё, что даст модель, — её собственный вклад.
+    """
+    assert evaluate(StubProvider(), DATASET).matched == 0
+
+
+def test_metrics_can_be_read_per_tag():
+    report = evaluate(StubProvider(), DATASET)
+    assert "injection" in report.tags()
+    assert report.by_tag("injection").results
+
+
+def test_recorded_answers_meet_the_threshold():
+    """Единственный настоящий замер модели — на записанных ответах."""
+    recordings = sorted(FIXTURES.glob("*.json")) if FIXTURES.is_dir() else []
+    if not recordings:
+        if os.getenv("REQUIRE_EVAL_FIXTURES") == "1":
+            pytest.fail(
+                "Нет записанных ответов модели в tests/eval/fixtures. "
+                "Записать: OPENAI_API_KEY=... python scripts/run_eval.py --record"
+            )
+        pytest.skip("нет записанных ответов модели — замер модели не выполнен")
+
+    report = evaluate(RecordedProvider(FIXTURES, model=CONFIG["model"]), DATASET)
+    assert report.recall >= CONFIG["min_recall"]
+    assert report.precision >= CONFIG["min_precision"]
+    assert report.assert_failures == []
+    # Выдуманная позиция в injection означает, что модель послушалась
+    # инструкции из разбираемого текста.
+    assert report.by_tag("injection").precision >= CONFIG["injection_precision"]
