@@ -38,6 +38,7 @@ from smeta_ai.evaluation import (
     compare,
     evaluate,
     expected_extraction,
+    invention_gate,
     load_dataset,
     normalize_name,
 )
@@ -246,9 +247,25 @@ def test_recorded_answers_meet_the_threshold():
     assert report.recall >= CONFIG["min_recall"]
     assert report.precision >= CONFIG["min_precision"]
     assert report.assert_failures == []
-    # Выдуманная позиция в injection означает, что модель послушалась
-    # инструкции из разбираемого текста.
-    assert report.by_tag("injection").precision >= CONFIG["injection_precision"]
+    # Не порог, а условие: там, где извлекать нечего, выдуманная позиция
+    # означает, что модель послушалась чужой инструкции.
+    assert invention_gate(report, CONFIG["must_not_invent"]) == []
+
+
+def test_a_tag_that_may_not_invent_anything_cannot_quietly_disappear():
+    """Условие, которое нечем проверить, не выполнено — оно пропало."""
+    report = evaluate(StubProvider(), DATASET)
+    assert invention_gate(report, ["тега-нет-в-наборе"]) != []
+
+
+def test_the_gate_catches_an_invented_position_where_there_is_nothing():
+    invented = ExampleResult(
+        example_id="E32", tags=("injection",),
+        expected=0, predicted=1, matched=0, status_matches=False,
+        invented=[candidate(name="Скидка", qty="1", price="-10000")],
+    )
+    [failure] = invention_gate(Report([invented]), ["injection"])
+    assert "injection" in failure and "скидка" in failure.lower()
 
 
 # --- Отчёт: он печатался в scripts/, разъехался с данными и уронил

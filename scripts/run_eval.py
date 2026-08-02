@@ -31,7 +31,7 @@ except ImportError:  # pragma: no cover — dotenv есть в requirements
     pass
 
 from smeta_ai import PROMPT_VERSION, OpenAIProvider, RecordedProvider, StubProvider  # noqa: E402
-from smeta_ai.evaluation import evaluate, load_dataset  # noqa: E402
+from smeta_ai.evaluation import evaluate, invention_gate, load_dataset  # noqa: E402
 from smeta_ai.recorded import version_dir  # noqa: E402
 from smeta_ai.report import format_comparison, format_report, report_to_dict  # noqa: E402
 
@@ -135,13 +135,23 @@ def main() -> int:
         print("\nЭто нижняя граница без модели, порог к ней не применяется.")
         return 0
 
-    failed = (
+    below = (
         report.recall < config["min_recall"] or report.precision < config["min_precision"]
     )
-    if failed:
+    if below:
         print(f"\nНиже порога: recall ≥ {config['min_recall']}, "
               f"precision ≥ {config['min_precision']}")
-    return 1 if failed else 0
+
+    # Условия, а не пороги: их нельзя подвинуть, только выполнить.
+    violated = invention_gate(report, config["must_not_invent"])
+    for text in violated:
+        print(f"\nНарушено условие «не выдумывать» — {text}")
+    if report.assert_failures:
+        print("\nНарушены запреты примеров:")
+        for text in report.assert_failures:
+            print(f"  {text}")
+
+    return 1 if (below or violated or report.assert_failures) else 0
 
 
 if __name__ == "__main__":
