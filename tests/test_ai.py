@@ -34,6 +34,7 @@ from smeta_ai import (
     to_position,
     validate_extraction,
 )
+from smeta_ai.prompt import DOCUMENT_RULES, IMAGE_PROMPT
 from smeta_core import Category
 
 
@@ -359,6 +360,38 @@ def test_a_refusal_is_raised_not_read_as_an_empty_answer():
 def test_an_empty_answer_yields_no_candidates():
     provider, _c, _t = fake_provider(content=None)
     assert provider.extract("пусто").positions == ()
+
+
+def sent_text(request) -> str:
+    """Весь текст запроса: и системный промпт, и то, что приложено к фото."""
+    parts = []
+    for message in request["messages"]:
+        content = message["content"]
+        parts.append(content if isinstance(content, str) else json.dumps(
+            [c for c in content if c.get("type") == "text"], ensure_ascii=False))
+    return " ".join(parts)
+
+
+def test_rules_common_to_text_and_photo_reach_both_channels():
+    """Общие правила живут в одном месте и подключаются обоими каналами.
+
+    «Итого» — не позиция независимо от того, продиктовали строку или
+    сфотографировали. Пока это правило лежало только в IMAGE_PROMPT, текстовые
+    накладные исправно создавали позицию «итого» с суммой в цене.
+    """
+    provider, completions, _ = fake_provider(content=ANSWER)
+
+    provider.extract("Итого 45 000 рублей")
+    assert DOCUMENT_RULES in sent_text(completions.seen)
+
+    provider.extract_from_image(b"\x89PNG", "image/png")
+    assert DOCUMENT_RULES in sent_text(completions.seen)
+
+
+def test_the_photo_prompt_does_not_keep_its_own_copy_of_the_shared_rules():
+    """Второй экземпляр правила однажды разойдётся с первым."""
+    assert "Итого" not in IMAGE_PROMPT
+    assert DOCUMENT_RULES not in IMAGE_PROMPT
 
 
 def test_the_photo_goes_as_a_data_url():

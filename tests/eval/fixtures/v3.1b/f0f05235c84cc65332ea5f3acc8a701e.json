@@ -1,0 +1,46 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1b",
+  "input": "штробление 18 м.п. 550; установка подрозетников 25 шт 250",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "штробление",
+        "qty": {
+          "status": "stated",
+          "value": "18"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "550"
+        },
+        "unit": "м.п.",
+        "unit_spoken": "м.п.",
+        "category": "work",
+        "source_quote": "штробление 18 м.п. 550",
+        "confidence": "high"
+      },
+      {
+        "name": "установка подрозетников",
+        "qty": {
+          "status": "stated",
+          "value": "25"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "250"
+        },
+        "unit": "шт",
+        "unit_spoken": "шт",
+        "category": "work",
+        "source_quote": "установка подрозетников 25 шт 250",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

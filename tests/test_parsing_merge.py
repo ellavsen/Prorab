@@ -50,6 +50,24 @@ def test_unit_normalization(raw, expected):
     assert normalize_unit(raw) == expected
 
 
+@pytest.mark.parametrize(
+    "raw, expected",
+    [("точка", "точка"), ("точек", "точка"), ("Точки", "точка"),
+     ("смена", "смена"), ("день", "смена"), ("дня", "смена"), ("дней", "смена"),
+     # Тара канона не получает намеренно: в мешке может быть и 25 кг, и 50.
+     ("мешок", ""), ("рулон", ""), ("лист", ""), ("упаковка", ""),
+     # «т.» — тонна, и добавление «точки» не имеет права это переехать.
+     ("т.", "т"), ("тонн", "т")],
+)
+def test_work_units_are_canon_and_packaging_is_not(raw, expected):
+    """Точка — единица электромонтажа, смена — повремёнки (ADR-016).
+
+    Пустой канон там, где единица есть, теряет данные: цену «за точку» не
+    отличить от цены «за штуку», и справочник цен их не сопоставит.
+    """
+    assert normalize_unit(raw) == expected
+
+
 def test_too_few_fields():
     with pytest.raises(ValueError, match="получено полей: 2"):
         parse_position_line("Гвозди, 1000", Category.MATERIAL)

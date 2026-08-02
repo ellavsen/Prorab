@@ -1,0 +1,46 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1c",
+  "input": "Отгрузка\nЦемент ПЦ400 1,5 т по 7 800,00\nИзвесть гашёная 300 кг по 26,00",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Цемент ПЦ400",
+        "qty": {
+          "status": "stated",
+          "value": "1.5"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "7800.00"
+        },
+        "unit": "т",
+        "unit_spoken": "т",
+        "category": "material",
+        "source_quote": "Цемент ПЦ400 1,5 т по 7 800,00",
+        "confidence": "high"
+      },
+      {
+        "name": "Известь гашёная",
+        "qty": {
+          "status": "stated",
+          "value": "300"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "26.00"
+        },
+        "unit": "кг",
+        "unit_spoken": "кг",
+        "category": "material",
+        "source_quote": "Известь гашёная 300 кг по 26,00",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

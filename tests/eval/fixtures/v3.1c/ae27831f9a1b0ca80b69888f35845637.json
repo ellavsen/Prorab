@@ -1,0 +1,11 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1c",
+  "input": "объект на Ленина 12, подъезд 3, код домофона 45",
+  "result": {
+    "status": "empty",
+    "positions": [],
+    "ignored": []
+  }
+}
