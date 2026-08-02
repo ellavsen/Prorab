@@ -9,6 +9,7 @@ import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CORE = ROOT / "packages" / "smeta_core"
+PRICES = ROOT / "packages" / "smeta_prices"
 STORAGE = ROOT / "packages" / "smeta_storage"
 EXPORT = ROOT / "packages" / "smeta_export"
 AI = ROOT / "packages" / "smeta_ai"
@@ -22,7 +23,11 @@ MAX_FILE_LINES = 300
 # см. test_openai_is_imported_lazily.
 FORBIDDEN = {
     CORE: {"telegram", "sqlalchemy", "openpyxl", "requests", "httpx",
-           "aiohttp", "fastapi", "pydantic", "dotenv", "openai"},
+           "aiohttp", "fastapi", "pydantic", "dotenv", "openai", "smeta_prices"},
+    # Справочник и подсказка — такой же чистый пакет, как ядро: ни базы, ни
+    # сети. Историю цен ему передают уже прочитанной (ADR-017).
+    PRICES: {"telegram", "sqlalchemy", "openpyxl", "requests", "httpx", "aiohttp",
+             "fastapi", "pydantic", "dotenv", "openai", "smeta_storage", "smeta_ai"},
     STORAGE: {"telegram", "openpyxl", "requests", "httpx", "aiohttp", "fastapi",
               "dotenv", "openai", "smeta_ai"},
     EXPORT: {"telegram", "sqlalchemy", "requests", "httpx", "aiohttp", "fastapi",
@@ -40,7 +45,7 @@ def python_files(*roots: pathlib.Path) -> list[pathlib.Path]:
     return sorted(path for root in roots for path in root.rglob("*.py"))
 
 
-ALL_FILES = python_files(CORE, STORAGE, EXPORT, AI, BOT, API)
+ALL_FILES = python_files(CORE, PRICES, STORAGE, EXPORT, AI, BOT, API)
 
 
 def _imported_roots(tree: ast.AST) -> set[str]:
@@ -73,7 +78,7 @@ def _module_level_imports(tree: ast.AST) -> set[str]:
 
 
 def test_every_layer_is_present():
-    for layer in (CORE, STORAGE, EXPORT, AI, BOT, API):
+    for layer in (CORE, PRICES, STORAGE, EXPORT, AI, BOT, API):
         assert layer.is_dir(), f"нет слоя {layer}"
     assert len(ALL_FILES) > 15
 
