@@ -12,6 +12,11 @@ requires-python = ">=3.11"
 [tool.setuptools.packages.find]
 where = ["packages", "apps"]
 
+# Справочник позиций — данные пакета, а не код: 173 строки в .py не влезли бы
+# в лимит длины файла, да и место данным в файле данных.
+[tool.setuptools.package-data]
+smeta_prices = ["*.json"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

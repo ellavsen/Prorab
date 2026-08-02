@@ -5,6 +5,7 @@ Telegram. Цену он не придумывает — он умеет узна
 и посчитать медиану по тому, что уже было (ADR-017).
 """
 
+from .catalog import CATALOG, Catalog, CatalogError, Item
 from .normalize import fold, normalize_name, packaging_form, same_unit
 from .packaging import BASES, FORM_GROUPS, FORMS, FormCollision, build_forms
 from .stats import (
@@ -19,12 +20,16 @@ from .suggest import MIN_FOR_MEDIAN, Hint, PricePoint, from_history
 
 __all__ = [
     "BASES",
+    "CATALOG",
     "FORMS",
     "FORM_GROUPS",
     "MIN_FOR_MEDIAN",
     "MIN_FOR_SPREAD",
+    "Catalog",
+    "CatalogError",
     "FormCollision",
     "Hint",
+    "Item",
     "PricePoint",
     "build_forms",
     "fold",
