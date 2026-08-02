@@ -71,12 +71,14 @@ def _chunked(values: list[int]):
 
 
 def pending_keyboard(
-    ordinals: list[int], addable: int, splittable: list[int] | None = None
+    ordinals: list[int], addable: int, splittable: list[int] | None = None,
+    hinted: list[int] | None = None, hinted_median: list[int] | None = None,
 ) -> InlineKeyboardMarkup:
     """Предпросмотр распознанной пачки: убрать лишнее, добавить остальное.
 
     Кнопки «Добавить» нет, когда добавлять нечего: она обещала бы действие,
-    которого не будет. «÷» появляется только у строк, сказанных «за всё».
+    которого не будет. «÷» появляется только у строк, сказанных «за всё»,
+    а «взять цену» — только там, где своя история эту цену помнит.
     """
     rows = [
         [InlineKeyboardButton(f"🗑 {o}", callback_data=f"ai:drop:{o}") for o in chunk]
@@ -85,6 +87,16 @@ def pending_keyboard(
     for chunk in _chunked(splittable or []):
         rows.append([
             InlineKeyboardButton(f"÷ {o}", callback_data=f"ai:split:{o}") for o in chunk
+        ])
+    for chunk in _chunked(hinted or []):
+        rows.append([
+            InlineKeyboardButton(f"💡 Взять цену {o}", callback_data=f"ai:hint:{o}")
+            for o in chunk
+        ])
+    for chunk in _chunked(hinted_median or []):
+        rows.append([
+            InlineKeyboardButton(f"Медиана {o}", callback_data=f"ai:hintmed:{o}")
+            for o in chunk
         ])
 
     tail = []

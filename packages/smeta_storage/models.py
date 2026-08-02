@@ -115,6 +115,14 @@ class PendingPosition(Base):
     total_qty: Mapped[str | None] = mapped_column(String(32), nullable=True)
     total_unit: Mapped[str | None] = mapped_column(String(64), nullable=True)
     problem: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    # Подсказка цены по своей истории: откуда взялось предложение и что
+    # предлагается. Провенанс живёт здесь и умирает вместе с предпросмотром —
+    # после подтверждения это просто цена, и доменной модели знать о ней
+    # нечего (ADR-017).
+    hint_price: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    hint_median: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    hint_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    hint_times: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 

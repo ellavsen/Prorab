@@ -48,7 +48,7 @@ from ..texts import (
     render_pending,
     render_units_substituted,
 )
-from . import split
+from . import hints, split
 
 
 def _check(position, estimate) -> str | None:
@@ -170,6 +170,8 @@ async def show_preview(target, db, uid: int, edit: bool = False) -> None:
         [row.ordinal for row in rows],
         addable=len(by_ordinal),
         splittable=[row.ordinal for row in rows if row.total_price],
+        hinted=hints.hinted_ordinals(rows),
+        hinted_median=hints.hinted_ordinals(rows, median=True),
     )
     if edit:
         await target.edit_message_text(text, parse_mode=ParseMode.HTML,
@@ -187,6 +189,9 @@ async def offer(message: Message, db, uid: int, extraction, source: str | None =
     if not rows:
         await message.reply_text(AI_NOTHING)
         return
+
+    # Своя цена, если она была: предложением, а не подстановкой (ADR-017).
+    rows = hints.attach(db, uid, rows)
 
     pending.replace(db, uid, estimate.id, rows)
     for unit, names in substituted.items():
@@ -217,6 +222,11 @@ async def handle_action(query, db, uid: int, action: str) -> None:
 
     if verb == "dosplit":
         split.apply(db, uid, int(value))
+        await show_preview(query, db, uid, edit=True)
+        return
+
+    if verb in {"hint", "hintmed"}:
+        hints.apply(db, uid, int(value), median=verb == "hintmed")
         await show_preview(query, db, uid, edit=True)
         return
 

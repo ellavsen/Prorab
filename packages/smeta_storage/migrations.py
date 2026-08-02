@@ -28,6 +28,11 @@ PENDING_COLUMNS = {
     "total_qty": "VARCHAR(32)",
     "total_unit": "VARCHAR(64)",
     "price_scope": "VARCHAR(16)",
+    # Подсказка цены по своей истории, Sprint 6a (ADR-017).
+    "hint_price": "VARCHAR(32)",
+    "hint_median": "VARCHAR(32)",
+    "hint_on": "DATE",
+    "hint_times": "INTEGER",
 }
 
 # Черновик пошагового ввода, добавлен в Sprint 4 (ADR-010).

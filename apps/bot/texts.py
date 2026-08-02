@@ -174,6 +174,39 @@ def render_split(name: str, count, each, restored, delta, total, unit: str) -> s
     return "\n".join(lines)
 
 
+MONTHS = ("января", "февраля", "марта", "апреля", "мая", "июня",
+          "июля", "августа", "сентября", "октября", "ноября", "декабря")
+
+
+def _times(count: int) -> str:
+    """«4 раза», «1 раз», «11 раз» — по-русски, а не «4 раз(а)»."""
+    tail = count % 100
+    if 11 <= tail <= 14:
+        return f"{count} раз"
+    return {1: f"{count} раз", 2: f"{count} раза",
+            3: f"{count} раза", 4: f"{count} раза"}.get(count % 10, f"{count} раз")
+
+
+def render_price_hint(row) -> str:
+    """Что человек сам платил за это раньше. Ни одного выдуманного числа.
+
+    «За полгода» — не оборот речи: выборка ограничена окном истории, и всё,
+    что старше, в подсказку не попадает вовсе (ADR-018).
+    """
+    if not row.hint_price:
+        return ""
+    unit = row.unit_spoken or row.unit
+    per = f"/{esc(unit)}" if unit else ""
+    when = f"{row.hint_on.day} {MONTHS[row.hint_on.month - 1]}" if row.hint_on else ""
+    parts = [f"    💡 вы брали по {format_money(Decimal(row.hint_price))} ₽{per}"]
+    tail = ", ".join(part for part in (when, _times(row.hint_times or 1)) if part)
+    if tail:
+        parts.append(f" — {tail} за полгода")
+    if row.hint_median:
+        parts.append(f"; чаще всего {format_money(Decimal(row.hint_median))}")
+    return "".join(parts)
+
+
 def render_pending(estimate, rows, computed: dict, totals) -> str:
     """Предпросмотр распознанной пачки.
 
@@ -203,10 +236,14 @@ def render_pending(estimate, rows, computed: dict, totals) -> str:
     broken = [row for row in rows if row.ordinal not in computed]
     if broken:
         out.append("\nНе разобрала:")
-        out.extend(
-            f"⚠️ {row.ordinal}. {esc(row.name)} — {esc(row.problem or 'непонятная строка')}"
-            for row in broken
-        )
+        for row in broken:
+            out.append(
+                f"⚠️ {row.ordinal}. {esc(row.name)} — "
+                f"{esc(row.problem or 'непонятная строка')}"
+            )
+            hint = render_price_hint(row)
+            if hint:
+                out.append(hint)
 
     if good:
         out.append(f"\nИтого по этим позициям: <b>{format_money(totals.total)}</b>")

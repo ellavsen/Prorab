@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -34,6 +35,12 @@ class PendingRow:
     total_qty: str | None = None
     total_unit: str | None = None
     problem: str | None = None
+    # Что человек сам платил за это раньше. Предложение, а не подстановка:
+    # цена появится в строке только по нажатию (ADR-017).
+    hint_price: str | None = None
+    hint_median: str | None = None
+    hint_on: date | None = None
+    hint_times: int | None = None
 
 
 def replace(db: Session, uid: int, estimate_id: int, rows: list[PendingRow]) -> None:
@@ -55,6 +62,10 @@ def replace(db: Session, uid: int, estimate_id: int, rows: list[PendingRow]) -> 
             total_qty=row.total_qty,
             total_unit=row.total_unit,
             problem=None if row.problem is None else row.problem[:200],
+            hint_price=row.hint_price,
+            hint_median=row.hint_median,
+            hint_on=row.hint_on,
+            hint_times=row.hint_times,
         ))
     db.commit()
 
