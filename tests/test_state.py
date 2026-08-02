@@ -32,7 +32,7 @@ def test_active_estimate_survives_a_restart(tmp_path):
         first = create_estimate(db, UID, name="Первая")
         create_estimate(db, UID, name="Вторая")
         set_current_estimate(db, UID, first.id)
-        set_category(db, UID, "Работа")
+        set_category(db, UID, "work")
         first_id = first.id
     engine.dispose()
 
@@ -42,7 +42,7 @@ def test_active_estimate_survives_a_restart(tmp_path):
         restored = current_estimate(db, UID)
         assert restored.id == first_id
         assert restored.name == "Первая"
-        assert get_category(db, UID) == "Работа"
+        assert get_category(db, UID) == "work"
 
 
 def test_positions_land_in_the_chosen_estimate_after_a_restart(tmp_path):
@@ -84,8 +84,8 @@ def test_category_starts_empty_and_can_be_reset(tmp_path):
     _, Session = open_storage(tmp_path / "cat.db")
     with Session() as db:
         assert get_category(db, UID) is None
-        set_category(db, UID, "Материал")
-        assert get_category(db, UID) == "Материал"
+        set_category(db, UID, "material")
+        assert get_category(db, UID) == "material"
         set_category(db, UID, None)
         assert get_category(db, UID) is None
 
@@ -97,7 +97,7 @@ def test_state_is_per_user(tmp_path):
         theirs = create_estimate(db, 2, name="Их")
         set_current_estimate(db, 1, mine.id)
         set_current_estimate(db, 2, theirs.id)
-        set_category(db, 1, "Работа")
+        set_category(db, 1, "work")
 
         assert current_estimate(db, 1).id == mine.id
         assert current_estimate(db, 2).id == theirs.id
@@ -210,7 +210,7 @@ def test_merge_backfills_a_missing_unit(tmp_path):
     with Session() as db:
         estimate = create_estimate(db, UID, name="Смета")
         db.add(Position(
-            user_id=UID, estimate_id=estimate.id, category="Работа",
+            user_id=UID, estimate_id=estimate.id, category="work",
             name="Побелка", unit="", qty_milli=10_000, price_kop=10_000,
         ))
         db.commit()
@@ -318,5 +318,7 @@ def test_draft_fields_are_added_to_an_existing_user_state_table(tmp_path):
     assert {"draft_step", "draft_name", "draft_unit",
             "draft_qty_milli", "draft_price_kop", "pending_line"} <= columns
     with Session() as db:
-        assert user_state(db, 7).category == "Работа"   # старое состояние уцелело
+        # Состояние уцелело, но категория переведена: Category("Работа") уронил
+        # бы первый же хендлер.
+        assert user_state(db, 7).category == "work"
         assert user_state(db, 7).draft_step is None

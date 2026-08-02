@@ -1,0 +1,34 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "эээ ну это самое стяжка эээ сорок квадратов по семьсот значит",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Стяжка",
+        "qty": {
+          "status": "stated",
+          "value": "40"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "700"
+        },
+        "unit": "м²",
+        "unit_spoken": "квадратов",
+        "category": "work",
+        "source_quote": "стяжка эээ сорок квадратов по семьсот",
+        "confidence": "high"
+      }
+    ],
+    "ignored": [
+      {
+        "quote": "эээ ну это самое",
+        "reason": "chatter"
+      }
+    ]
+  }
+}

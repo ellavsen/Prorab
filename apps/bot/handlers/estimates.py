@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
-from smeta_core import parse_rate, to_bp
+from smeta_core import Category, parse_rate, to_bp
 from smeta_storage import (
     create_estimate,
     current_estimate,
@@ -21,7 +21,7 @@ from smeta_storage import (
 
 from ..database import SessionLocal
 from ..keyboards import categories_keyboard, mode_keyboard, renew_keyboard, start_keyboard
-from ..texts import START_TEXT, esc, render_rates, render_summary
+from ..texts import CATEGORY_LABEL, START_TEXT, esc, render_rates, render_summary
 
 
 async def start(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -46,12 +46,12 @@ async def handle_begin(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def handle_category(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
     text = (update.message.text or "").strip().lower()
-    category = "Работа" if text == "работа" else "Материал"
+    category = Category.WORK if text == "работа" else Category.MATERIAL
     with SessionLocal() as db:
         set_category(db, update.effective_user.id, category)
 
     await update.message.reply_text(
-        f"Активная категория: <b>{category}</b> ✅\nКак вводим?",
+        f"Активная категория: <b>{CATEGORY_LABEL[category]}</b> ✅\nКак вводим?",
         parse_mode=ParseMode.HTML,
         reply_markup=mode_keyboard(),
     )

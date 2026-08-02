@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from smeta_core import Category
 
 EXAMPLE_POSITION = {
-    "category": "Работа",
+    "category": "work",
     "name": "Побелка",
     "qty": "1.5",
     "price": "100.10",
@@ -31,7 +31,10 @@ class PositionIn(BaseModel):
     name: str = Field(description="Наименование, 1–200 символов")
     qty: Decimal = Field(description="Количество, до 3 знаков; строкой")
     price: Decimal = Field(description="Цена за единицу, до 2 знаков; строкой")
-    unit: str = Field(default="", description="Единица измерения; пустая — подставится")
+    unit: str = Field(default="", description="Каноническая единица; пустая — подставится")
+    unit_spoken: str = Field(
+        default="", description="Единица как её назвал человек; печатается в отчёте"
+    )
 
 
 class EstimateIn(BaseModel):
@@ -51,6 +54,7 @@ class LineOut(BaseModel):
     category: Category
     name: str
     unit: str
+    unit_spoken: str
     qty: Decimal
     price: Decimal
     base: Decimal = Field(description="Сумма строки без наценки")

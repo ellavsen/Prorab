@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "выключатели легранд пять штук по семьсот пятьдесят",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Выключатели Легранд",
+        "qty": {
+          "status": "stated",
+          "value": "5"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "750"
+        },
+        "unit": "",
+        "unit_spoken": "штук",
+        "category": "material",
+        "source_quote": "выключатели легранд пять штук по семьсот пятьдесят",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

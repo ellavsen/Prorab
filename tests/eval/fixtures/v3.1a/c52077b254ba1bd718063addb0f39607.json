@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1a",
+  "input": "Уголок 30, оцинкованный 12 м.п. по 340",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Уголок 30, оцинкованный",
+        "qty": {
+          "status": "stated",
+          "value": "12"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "340"
+        },
+        "unit": "м.п.",
+        "unit_spoken": "м.п.",
+        "category": "material",
+        "source_quote": "Уголок 30, оцинкованный 12 м.п. по 340",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

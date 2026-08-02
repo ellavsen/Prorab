@@ -1,0 +1,51 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3",
+  "input": "Поставка 12.05\nЩебень фр.20-40, 8 м3, 1 850,00 за куб\nПесок речной, 5 м3, 1 400,00 за куб\nДоставка включена",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Щебень фр.20-40",
+        "qty": {
+          "status": "stated",
+          "value": "8"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "1850.00"
+        },
+        "unit": "м³",
+        "unit_spoken": "м3",
+        "category": "material",
+        "source_quote": "Щебень фр.20-40, 8 м3, 1 850,00 за куб",
+        "confidence": "high"
+      },
+      {
+        "name": "Песок речной",
+        "qty": {
+          "status": "stated",
+          "value": "5"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "1400.00"
+        },
+        "unit": "м³",
+        "unit_spoken": "м3",
+        "category": "material",
+        "source_quote": "Песок речной, 5 м3, 1 400,00 за куб",
+        "confidence": "high"
+      }
+    ],
+    "ignored": [
+      {
+        "quote": "Доставка включена",
+        "reason": "chatter"
+      }
+    ]
+  }
+}

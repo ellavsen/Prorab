@@ -1,0 +1,1351 @@
+{
+  "examples": 90,
+  "expected": 102,
+  "predicted": 105,
+  "matched": 90,
+  "recall": 0.8824,
+  "precision": 0.8571,
+  "exact_examples": 76,
+  "assert_failures": [],
+  "by_tag": [
+    {
+      "tag": "edge",
+      "examples": 8,
+      "expected": 9,
+      "predicted": 9,
+      "matched": 5,
+      "recall": 0.556,
+      "precision": 0.556,
+      "exact": 4
+    },
+    {
+      "tag": "qty",
+      "examples": 8,
+      "expected": 8,
+      "predicted": 8,
+      "matched": 5,
+      "recall": 0.625,
+      "precision": 0.625,
+      "exact": 5
+    },
+    {
+      "tag": "typical",
+      "examples": 8,
+      "expected": 11,
+      "predicted": 11,
+      "matched": 8,
+      "recall": 0.727,
+      "precision": 0.727,
+      "exact": 6
+    },
+    {
+      "tag": "price",
+      "examples": 6,
+      "expected": 6,
+      "predicted": 6,
+      "matched": 5,
+      "recall": 0.833,
+      "precision": 0.833,
+      "exact": 5
+    },
+    {
+      "tag": "invoice",
+      "examples": 10,
+      "expected": 23,
+      "predicted": 26,
+      "matched": 21,
+      "recall": 0.913,
+      "precision": 0.808,
+      "exact": 7
+    },
+    {
+      "tag": "category",
+      "examples": 4,
+      "expected": 4,
+      "predicted": 4,
+      "matched": 4,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 4
+    },
+    {
+      "tag": "free",
+      "examples": 15,
+      "expected": 17,
+      "predicted": 17,
+      "matched": 17,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 15
+    },
+    {
+      "tag": "garbage",
+      "examples": 5,
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 3
+    },
+    {
+      "tag": "injection",
+      "examples": 4,
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 4
+    },
+    {
+      "tag": "negative",
+      "examples": 5,
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 5
+    },
+    {
+      "tag": "voice",
+      "examples": 19,
+      "expected": 23,
+      "predicted": 23,
+      "matched": 23,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 19
+    }
+  ],
+  "by_field": {
+    "позиция выдумана": 7,
+    "price.scope": 5,
+    "позиция пропущена": 4,
+    "unit": 4
+  },
+  "results": [
+    {
+      "id": "E01",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E02",
+      "tags": [
+        "typical"
+      ],
+      "expected": 3,
+      "predicted": 3,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [
+        "цемент 20.000 ? × 350.00 [material/per_unit]",
+        "грунтовка 10.000 л × — [material/unknown]"
+      ],
+      "invented": [
+        "цемента 20.000 ? × 350.00 [material/per_unit]",
+        "грунтовка 10.000 л × — [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E03",
+      "tags": [
+        "typical"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E04",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "электрика 12.000 ? × 2500.00 [work/per_unit]"
+      ],
+      "invented": [
+        "электрика 12.000 шт × 2500.00 [work/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E05",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E06",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E07",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E08",
+      "tags": [
+        "typical"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E09",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E10",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E11",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "краска белая 20.000 л × — [material/unknown]"
+      ],
+      "invented": [
+        "краска белая 20.000 ? × — [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E12",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E13",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E14",
+      "tags": [
+        "price"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E15",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E16",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E17",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "гипсокартон 15.000 ? × 450.00 [material/per_unit]"
+      ],
+      "invented": [
+        "гипсокартона 15.000 ? × 450.00 [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E18",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E19",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E20",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E21",
+      "tags": [
+        "qty",
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "линолеум — ? × — [material/unknown]"
+      ],
+      "invented": [
+        "линолеум — ? × — [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E22",
+      "tags": [
+        "qty"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "кабель ввг три на полтора 100.000 м.п. × 42.50 [material/per_unit]"
+      ],
+      "invented": [
+        "кабель ввг три на полтора 100.000 м × 42.50 [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E23",
+      "tags": [
+        "category"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E24",
+      "tags": [
+        "category"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E25",
+      "tags": [
+        "category"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E26",
+      "tags": [
+        "garbage"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": false,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E27",
+      "tags": [
+        "garbage"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": false,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E28",
+      "tags": [
+        "garbage"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E29",
+      "tags": [
+        "garbage"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E30",
+      "tags": [
+        "garbage"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E31",
+      "tags": [
+        "injection"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E32",
+      "tags": [
+        "injection"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E33",
+      "tags": [
+        "injection"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E34",
+      "tags": [
+        "injection"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E35",
+      "tags": [
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "подложка 5.000 ? × 0.00 [material/per_unit]"
+      ],
+      "invented": [
+        "подложка 5.000 ? × 0.00 [material/total]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E36",
+      "tags": [
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E37",
+      "tags": [
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "аренда вышки 2.000 ? × 3500.00 [work/per_unit]"
+      ],
+      "invented": [
+        "аренда вышки 2.000 час × 3500.00 [work/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E38",
+      "tags": [
+        "edge"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E39",
+      "tags": [
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "затирка 2.000 ? × 800.00 [unknown/per_unit]"
+      ],
+      "invented": [
+        "затирка 2.000 ? × 800.00 [unknown/unknown]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E40",
+      "tags": [
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v01",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v02",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v03",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v04",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v06",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v07",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v08",
+      "tags": [
+        "voice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v09",
+      "tags": [
+        "voice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v10",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v11",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v12",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v13",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v14",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v15",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v16",
+      "tags": [
+        "voice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v17",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v18",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v19",
+      "tags": [
+        "voice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "v20",
+      "tags": [
+        "voice"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f01",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f02",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f03",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f04",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f05",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f06",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f07",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f08",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f09",
+      "tags": [
+        "free"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f10",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f11",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f12",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f13",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f14",
+      "tags": [
+        "free"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "f15",
+      "tags": [
+        "free"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i01",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 3,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [
+        "итого — ? × 12600.00 [unknown/total]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "i02",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i03",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 3,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [
+        "краска фасадная 15.000 л × 1250.00 [material/per_unit]",
+        "грунт глубокого проникновения 10.000 л × 480.00 [material/per_unit]"
+      ],
+      "invented": [
+        "краска фасадная 15 л 15.000 л × 1250.00 [material/per_unit]",
+        "грунт глубокого проникновения 10 л 10.000 л × 480.00 [material/per_unit]",
+        "итого — ? × 22550.00 [unknown/total]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "i04",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i05",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i06",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 3,
+      "predicted": 3,
+      "matched": 3,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i07",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i08",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 3,
+      "predicted": 3,
+      "matched": 3,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i09",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 2,
+      "predicted": 2,
+      "matched": 2,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "i10",
+      "tags": [
+        "invoice"
+      ],
+      "expected": 3,
+      "predicted": 4,
+      "matched": 3,
+      "status_matches": true,
+      "missed": [],
+      "invented": [
+        "всего — ? × 31300.00 [unknown/total]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "n01",
+      "tags": [
+        "negative"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "n02",
+      "tags": [
+        "negative"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "n03",
+      "tags": [
+        "negative"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "n04",
+      "tags": [
+        "negative"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "n05",
+      "tags": [
+        "negative"
+      ],
+      "expected": 0,
+      "predicted": 0,
+      "matched": 0,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    },
+    {
+      "id": "E41",
+      "tags": [
+        "category",
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
+      "status_matches": true,
+      "missed": [],
+      "invented": [],
+      "assert_failures": []
+    }
+  ]
+}

@@ -2,10 +2,10 @@
   "components": {
     "schemas": {
       "Category": {
-        "description": "Значения совпадают с тем, что лежит в БД и что видит пользователь.\n\nИменно StrEnum, а не (str, Enum): у второго str(Category.WORK) даёт\n\"Category.WORK\", и любое сравнение со строкой из базы тихо не срабатывает.",
+        "description": "Значения английские: это код, а не экран (конституция про язык).\n\nРусские подписи живут в адаптерах — в текстах бота и заголовках листов\nExcel. До Sprint 5 здесь лежали «Работа»/«Материал», и они же попадали в\nбазу и в HTTP-контракт; миграция переводит старые значения.\n\nИменно StrEnum, а не (str, Enum): у второго str(Category.WORK) даёт\n\"Category.WORK\", и любое сравнение со строкой из базы тихо не срабатывает.",
         "enum": [
-          "Работа",
-          "Материал"
+          "work",
+          "material"
         ],
         "title": "Category",
         "type": "string"
@@ -125,12 +125,17 @@
           "unit": {
             "title": "Unit",
             "type": "string"
+          },
+          "unit_spoken": {
+            "title": "Unit Spoken",
+            "type": "string"
           }
         },
         "required": [
           "category",
           "name",
           "unit",
+          "unit_spoken",
           "qty",
           "price",
           "base",
@@ -214,7 +219,7 @@
       },
       "PositionIn-Input": {
         "example": {
-          "category": "Работа",
+          "category": "work",
           "name": "Побелка",
           "price": "100.10",
           "qty": "1.5",
@@ -257,8 +262,14 @@
           },
           "unit": {
             "default": "",
-            "description": "Единица измерения; пустая — подставится",
+            "description": "Каноническая единица; пустая — подставится",
             "title": "Unit",
+            "type": "string"
+          },
+          "unit_spoken": {
+            "default": "",
+            "description": "Единица как её назвал человек; печатается в отчёте",
+            "title": "Unit Spoken",
             "type": "string"
           }
         },
@@ -273,7 +284,7 @@
       },
       "PositionIn-Output": {
         "example": {
-          "category": "Работа",
+          "category": "work",
           "name": "Побелка",
           "price": "100.10",
           "qty": "1.5",
@@ -302,8 +313,14 @@
           },
           "unit": {
             "default": "",
-            "description": "Единица измерения; пустая — подставится",
+            "description": "Каноническая единица; пустая — подставится",
             "title": "Unit",
+            "type": "string"
+          },
+          "unit_spoken": {
+            "default": "",
+            "description": "Единица как её назвал человек; печатается в отчёте",
+            "title": "Unit Spoken",
             "type": "string"
           }
         },

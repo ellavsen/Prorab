@@ -26,7 +26,7 @@ select = ["E", "W", "F", "I", "UP", "DTZ", "ERA", "BLE", "RUF", "B", "SIM"]
 ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["smeta_core", "smeta_storage", "smeta_export", "bot", "api", "bridge", "conftest"]
+known-first-party = ["smeta_core", "smeta_storage", "smeta_export", "smeta_ai", "bot", "api", "bridge", "conftest"]
 
 [tool.ruff.lint.per-file-ignores]
 # В тестах длинные литералы и импорт из conftest — норма.

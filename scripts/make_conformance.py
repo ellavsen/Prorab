@@ -17,11 +17,11 @@ import bridge  # noqa: E402  — путь настраивается выше
 
 
 def work(name, qty, price, unit="м²"):
-    return {"category": "Работа", "name": name, "qty": qty, "price": price, "unit": unit}
+    return {"category": "work", "name": name, "qty": qty, "price": price, "unit": unit}
 
 
 def material(name, qty, price, unit="шт"):
-    return {"category": "Материал", "name": name, "qty": qty, "price": price, "unit": unit}
+    return {"category": "material", "name": name, "qty": qty, "price": price, "unit": unit}
 
 
 def case(name, positions, work_rate="6.00", material_rate="6.00"):
@@ -79,15 +79,15 @@ CASES: list[dict] = [
 ]
 
 PARSE_CASES = [
-    {"category": "Работа", "text": "Побелка, 150 м2, 3000\nСтяжка, 40.5, 1200"},
-    {"category": "Материал", "text": "Гвозди, 1000 шт, 20\nЦемент, 12, 450"},
+    {"category": "work", "text": "Побелка, 150 м2, 3000\nСтяжка, 40.5, 1200"},
+    {"category": "material", "text": "Гвозди, 1000 шт, 20\nЦемент, 12, 450"},
     {
-        "category": "Работа",
+        "category": "work",
         "text": "Побелка, 150,5, 3000\nПустая,,\nМного, 100000, 5\nnan, nan, nan",
     },
     # Запятая внутри наименования — разбор справа (ADR-011).
     {
-        "category": "Материал",
+        "category": "material",
         "text": (
             "Гвозди 3,5 мм, 100, 20\n"
             "Уголок 30, оцинкованный, 5, 100\n"

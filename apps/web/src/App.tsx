@@ -13,9 +13,12 @@ import {
 type Category = Position["category"];
 type Bridge = Awaited<ReturnType<typeof loadCore>>;
 
+// Категории в коде английские, на экране русские: подпись — дело адаптера.
+const LABEL: Record<Category, string> = { work: "Работа", material: "Материал" };
+
 const PLACEHOLDER: Record<Category, string> = {
-  Работа: "Побелка, 150 м2, 3000\nСтяжка, 40.5 м2, 1200",
-  Материал: "Гвозди, 1000 шт, 20\nЦемент, 12 меш, 450",
+  work: "Побелка, 150 м2, 3000\nСтяжка, 40.5 м2, 1200",
+  material: "Гвозди, 1000 шт, 20\nЦемент, 12 меш, 450",
 };
 
 export default function App() {
@@ -23,8 +26,8 @@ export default function App() {
   const [stage, setStage] = useState("Запускаю…");
   const [failed, setFailed] = useState<string | null>(null);
 
-  const [category, setCategory] = useState<Category>("Работа");
-  const [draft, setDraft] = useState(PLACEHOLDER["Работа"]);
+  const [category, setCategory] = useState<Category>("work");
+  const [draft, setDraft] = useState(PLACEHOLDER["work"]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [workRate, setWorkRate] = useState("6.00");
   const [materialRate, setMaterialRate] = useState("6.00");
@@ -110,13 +113,13 @@ export default function App() {
         <>
           <section className="card">
             <div className="tabs">
-              {(["Работа", "Материал"] as Category[]).map((value) => (
+              {(["work", "material"] as Category[]).map((value) => (
                 <button
                   key={value}
                   className={value === category ? "tab active" : "tab"}
                   onClick={() => switchCategory(value)}
                 >
-                  {value}
+                  {LABEL[value]}
                 </button>
               ))}
             </div>
@@ -173,7 +176,7 @@ export default function App() {
                     <tr key={index}>
                       <td>
                         {line.name}
-                        <span className="tag">{line.category}</span>
+                        <span className="tag">{LABEL[line.category]}</span>
                       </td>
                       <td className="num">
                         {line.qty_text} {line.unit}

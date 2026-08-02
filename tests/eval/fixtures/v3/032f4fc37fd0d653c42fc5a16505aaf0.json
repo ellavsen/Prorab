@@ -1,0 +1,63 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3",
+  "input": "Акт выполненных работ\nШтукатурка стен 210 м² по 520,00\nМонтаж маяков 95 м.п. по 180,00\nИтого по акту: 126 300,00",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Штукатурка стен",
+        "qty": {
+          "status": "stated",
+          "value": "210"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "520.00"
+        },
+        "unit": "м²",
+        "unit_spoken": "м²",
+        "category": "work",
+        "source_quote": "Штукатурка стен 210 м² по 520,00",
+        "confidence": "high"
+      },
+      {
+        "name": "Монтаж маяков",
+        "qty": {
+          "status": "stated",
+          "value": "95"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "180.00"
+        },
+        "unit": "м.п.",
+        "unit_spoken": "м.п.",
+        "category": "work",
+        "source_quote": "Монтаж маяков 95 м.п. по 180,00",
+        "confidence": "high"
+      },
+      {
+        "name": "Итого по акту",
+        "qty": {
+          "status": "missing",
+          "value": ""
+        },
+        "price": {
+          "status": "stated",
+          "scope": "total",
+          "value": "126300.00"
+        },
+        "unit": "",
+        "unit_spoken": "",
+        "category": "unknown",
+        "source_quote": "Итого по акту: 126 300,00",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

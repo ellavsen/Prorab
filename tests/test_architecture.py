@@ -11,20 +11,28 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CORE = ROOT / "packages" / "smeta_core"
 STORAGE = ROOT / "packages" / "smeta_storage"
 EXPORT = ROOT / "packages" / "smeta_export"
+AI = ROOT / "packages" / "smeta_ai"
 BOT = ROOT / "apps" / "bot"
 API = ROOT / "apps" / "api"
 
 MAX_FILE_LINES = 300
 
 # Что каждому слою запрещено импортировать (конституция, правило 1).
+# openai разрешён ровно в одном месте — в smeta_ai, и только лениво:
+# см. test_openai_is_imported_lazily.
 FORBIDDEN = {
     CORE: {"telegram", "sqlalchemy", "openpyxl", "requests", "httpx",
-           "aiohttp", "fastapi", "pydantic", "dotenv"},
-    STORAGE: {"telegram", "openpyxl", "requests", "httpx", "aiohttp", "fastapi", "dotenv"},
-    EXPORT: {"telegram", "sqlalchemy", "requests", "httpx", "aiohttp", "fastapi", "dotenv"},
-    BOT: {"sqlalchemy", "openpyxl"},
+           "aiohttp", "fastapi", "pydantic", "dotenv", "openai"},
+    STORAGE: {"telegram", "openpyxl", "requests", "httpx", "aiohttp", "fastapi",
+              "dotenv", "openai", "smeta_ai"},
+    EXPORT: {"telegram", "sqlalchemy", "requests", "httpx", "aiohttp", "fastapi",
+             "dotenv", "openai"},
+    # AI-слой — граница ввода. Ни базы, ни телеграма, ни Excel он не знает.
+    AI: {"telegram", "sqlalchemy", "openpyxl", "fastapi", "dotenv",
+         "smeta_storage", "smeta_export"},
+    BOT: {"sqlalchemy", "openpyxl", "openai"},
     # API без состояния: базы он не касается вовсе (ADR-008).
-    API: {"telegram", "sqlalchemy", "openpyxl", "smeta_storage"},
+    API: {"telegram", "sqlalchemy", "openpyxl", "smeta_storage", "openai"},
 }
 
 
@@ -32,7 +40,7 @@ def python_files(*roots: pathlib.Path) -> list[pathlib.Path]:
     return sorted(path for root in roots for path in root.rglob("*.py"))
 
 
-ALL_FILES = python_files(CORE, STORAGE, EXPORT, BOT, API)
+ALL_FILES = python_files(CORE, STORAGE, EXPORT, AI, BOT, API)
 
 
 def _imported_roots(tree: ast.AST) -> set[str]:
@@ -53,10 +61,50 @@ def _multiplication_lines(tree: ast.AST) -> list[int]:
     ]
 
 
+def _module_level_imports(tree: ast.AST) -> set[str]:
+    """Только импорты на уровне модуля — вложенные в функции сюда не попадают."""
+    roots: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.Import):
+            roots.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            roots.add(node.module.split(".")[0])
+    return roots
+
+
 def test_every_layer_is_present():
-    for layer in (CORE, STORAGE, EXPORT, BOT, API):
+    for layer in (CORE, STORAGE, EXPORT, AI, BOT, API):
         assert layer.is_dir(), f"нет слоя {layer}"
     assert len(ALL_FILES) > 15
+
+
+@pytest.mark.parametrize("path", python_files(AI), ids=lambda p: p.name)
+def test_openai_is_imported_lazily(path):
+    """Без ключа AI-слой обязан подниматься на стандартной библиотеке.
+
+    Импорт openai на уровне модуля сделал бы пакет обязательной зависимостью
+    DEMO-режима, а конституция требует старта с нулём ключей (правило 7).
+    """
+    top = _module_level_imports(ast.parse(path.read_text(encoding="utf-8")))
+    assert "openai" not in top, f"{path.name}: openai импортируется на уровне модуля"
+
+
+@pytest.mark.parametrize("path", python_files(AI), ids=lambda p: p.name)
+def test_the_ai_layer_never_writes_to_the_estimate(path):
+    """Тезис проекта, проверяемый машиной: деньги пишет не модель.
+
+    Запись в смету идёт через positions.add, а его в AI-слое нет вовсе. Денег
+    здесь тоже нет: слой оперирует строками, Decimal появляется только после
+    проверки доменом.
+    """
+    source = path.read_text(encoding="utf-8")
+    assert "positions.add" not in source, f"{path.name}: AI-слой пишет в смету"
+    offenders = [
+        node.lineno
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Name) and node.id == "Decimal"
+    ]
+    assert not offenders, f"{path.name}: Decimal в строках {offenders}"
 
 
 @pytest.mark.parametrize("path", ALL_FILES, ids=lambda p: f"{p.parent.name}/{p.name}")

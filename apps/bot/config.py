@@ -24,3 +24,17 @@ def require_token() -> str:
     if not token:
         raise RuntimeError("Не задан TELEGRAM_BOT_TOKEN в окружении. Проверь .env")
     return token
+
+
+def openai_key() -> str | None:
+    """Ключ AI-слоя. Его отсутствие — не ошибка: без него включается стаб."""
+    return os.getenv("OPENAI_API_KEY") or None
+
+
+def unit_blocking_enabled() -> bool:
+    """Запрещать ли подстановку цены без подтверждённой единицы (ADR-015).
+
+    По умолчанию включено. Флаг существует, чтобы выключить проверку без
+    правки кода, если она окажется навязчивой.
+    """
+    return os.getenv("UNIT_BLOCKING_ENABLED", "1").strip().lower() not in {"0", "false", "no"}

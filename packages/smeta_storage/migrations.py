@@ -7,9 +7,27 @@ from sqlalchemy import Connection, Engine, text
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.exc import OperationalError
 
-from .models import DEFAULT_MARKUP_BP, Base, Estimate, Position, UserState, utcnow
+from .models import (
+    DEFAULT_MARKUP_BP,
+    Base,
+    Estimate,
+    PendingPosition,
+    Position,
+    UserState,
+    utcnow,
+)
 
 logger = logging.getLogger(__name__)
+
+# Сказанная единица доезжает до документа заказчика, Sprint 5 (ADR-015).
+POSITION_COLUMNS = {"unit_spoken": "VARCHAR(64)"}
+PENDING_COLUMNS = {
+    "unit_spoken": "VARCHAR(64)",
+    "total_price": "VARCHAR(32)",
+    "total_qty": "VARCHAR(32)",
+    "total_unit": "VARCHAR(64)",
+    "price_scope": "VARCHAR(16)",
+}
 
 # Черновик пошагового ввода, добавлен в Sprint 4 (ADR-010).
 DRAFT_COLUMNS = {
@@ -61,6 +79,35 @@ def migrate_money_to_integers(conn: Connection) -> list[str]:
         except OperationalError:
             logger.warning("Старая колонка positions.%s не удалена — SQLite слишком старый", column)
     return journal
+
+
+# Категории уехали в english в Sprint 5. Пары старое -> новое.
+CATEGORY_RENAMES = (("Работа", "work"), ("Материал", "material"))
+
+
+def migrate_categories(conn: Connection, reverse: bool = False) -> int:
+    """Переводит категории в english. Идемпотентна и обратима.
+
+    Обе таблицы: в user_state лежит выбранная человеком категория, и оставить
+    её русской значило бы уронить первый же хендлер на Category("Работа").
+
+    WHERE берёт оба значения, поэтому повторный прогон ничего не портит, а
+    reverse=True возвращает базу к русским значениям, если откатить придётся.
+    """
+    present = set(sa_inspect(conn).get_table_names())
+    changed = 0
+    for table in ("positions", "user_state"):
+        if table not in present:
+            continue
+        for old, new in CATEGORY_RENAMES:
+            source, target = (new, old) if reverse else (old, new)
+            result = conn.execute(
+                text(f"UPDATE {table} SET category = :target"
+                     " WHERE category IN (:source, :target) AND category != :target"),
+                {"source": source, "target": target},
+            )
+            changed += result.rowcount or 0
+    return changed
 
 
 def _migrate_orphan_positions(conn: Connection) -> None:
@@ -119,8 +166,15 @@ def bootstrap(engine: Engine) -> None:
         else:
             _add_missing_columns(conn, "user_state", DRAFT_COLUMNS)
 
+        # Предпросмотр распознанной пачки, добавлен в Sprint 5 (ADR-012).
+        if "pending_positions" not in tables:
+            Base.metadata.create_all(bind=conn, tables=[PendingPosition.__table__])
+        else:
+            _add_missing_columns(conn, "pending_positions", PENDING_COLUMNS)
+
         if "positions" not in tables:
             Base.metadata.create_all(bind=conn, tables=[Position.__table__])
+            migrate_categories(conn)
             return
 
         columns = {c["name"] for c in sa_inspect(conn).get_columns("positions")}
@@ -128,10 +182,15 @@ def bootstrap(engine: Engine) -> None:
             conn.execute(text("ALTER TABLE positions ADD COLUMN estimate_id INTEGER"))
         if "unit" not in columns:
             conn.execute(text("ALTER TABLE positions ADD COLUMN unit VARCHAR(32) DEFAULT ''"))
+        _add_missing_columns(conn, "positions", POSITION_COLUMNS)
         if "price_kop" not in columns:
             journal = migrate_money_to_integers(conn)
             logger.info("Миграция денег в целые: строк с расхождением — %d", len(journal))
             for entry in journal:
                 logger.info("  %s", entry)
+
+        renamed = migrate_categories(conn)
+        if renamed:
+            logger.info("Категории переведены в english: строк — %d", renamed)
 
         _migrate_orphan_positions(conn)

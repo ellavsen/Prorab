@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3",
+  "input": "Итого 45 000 рублей, оплата до пятницы",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Оплата",
+        "qty": {
+          "status": "missing",
+          "value": ""
+        },
+        "price": {
+          "status": "stated",
+          "scope": "total",
+          "value": "45000"
+        },
+        "unit": "",
+        "unit_spoken": "",
+        "category": "unknown",
+        "source_quote": "Итого 45 000 рублей",
+        "confidence": "low"
+      }
+    ],
+    "ignored": []
+  }
+}

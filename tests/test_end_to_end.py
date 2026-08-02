@@ -99,7 +99,7 @@ def test_export_does_not_re_merge_duplicates(storage):
     with Session() as db:
         estimate = db.get(Estimate, estimate_id)
         db.add(Position(
-            user_id=UID, estimate_id=estimate_id, category="Работа",
+            user_id=UID, estimate_id=estimate_id, category="work",
             name="Половинка-2", unit="шт", qty_milli=500, price_kop=1,
         ))
         db.commit()

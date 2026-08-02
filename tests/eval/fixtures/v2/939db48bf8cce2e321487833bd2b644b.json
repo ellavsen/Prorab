@@ -1,0 +1,16 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "2",
+  "input": "Итого 45 000 рублей, оплата до пятницы",
+  "result": {
+    "status": "empty",
+    "positions": [],
+    "ignored": [
+      {
+        "quote": "Итого 45 000 рублей, оплата до пятницы",
+        "reason": "chatter"
+      }
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3",
+  "input": "сухая смесь две с половиной тонны по девять тысяч",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "сухая смесь",
+        "qty": {
+          "status": "stated",
+          "value": "2.5"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "9000"
+        },
+        "unit": "т",
+        "unit_spoken": "тонны",
+        "category": "material",
+        "source_quote": "сухая смесь две с половиной тонны по девять тысяч",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

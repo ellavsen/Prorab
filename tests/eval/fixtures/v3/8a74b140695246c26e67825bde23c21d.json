@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3",
+  "input": "плитка сорок квадратов по девятьсот",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "плитка",
+        "qty": {
+          "status": "stated",
+          "value": "40"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "900"
+        },
+        "unit": "м²",
+        "unit_spoken": "квадратов",
+        "category": "material",
+        "source_quote": "плитка сорок квадратов по девятьсот",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}
