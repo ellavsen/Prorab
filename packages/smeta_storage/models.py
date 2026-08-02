@@ -1,9 +1,9 @@
 """Таблицы. Деньги — целые минорные единицы, Decimal появляется только в свойствах."""
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from smeta_core import Category, PositionData, from_bp, from_kop, from_milli
@@ -116,6 +116,45 @@ class PendingPosition(Base):
     total_unit: Mapped[str | None] = mapped_column(String(64), nullable=True)
     problem: Mapped[str | None] = mapped_column(String(200), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class PriceHistory(Base):
+    """Своя цена, пережившая свою смету.
+
+    Ретеншен оставляет пять смет, остальные удаляет вместе с позициями — и
+    вместе со знанием о ценах, которое человек ввёл руками. Документ тяжёлый,
+    цена — пять полей, поэтому перед удалением она сюда переписывается: это
+    меньшее хранение, а не новое (ADR-017).
+
+    Персональное поле здесь ровно одно и то же, что уже есть в positions, —
+    user_id. Пересечение историй между пользователями это краудсорсинг, то
+    есть Sprint 6b; здесь каждый видит только своё.
+
+    unit_spoken лежит в приведённой форме («мешков» → «мешок»), иначе падежи
+    одного слова плодили бы строки и мешали дедупликации.
+    """
+
+    __tablename__ = "price_history"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "name_norm", "unit", "unit_spoken", "observed_on",
+            name="uq_price_history_day",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    # Имя, нормализованное на момент сброса: справочник потом меняется,
+    # а история от этого ломаться не должна.
+    name_norm: Mapped[str] = mapped_column(String(255), index=True)
+    unit: Mapped[str] = mapped_column(String(32), default="")
+    unit_spoken: Mapped[str] = mapped_column(String(64), default="")
+    price_kop: Mapped[int] = mapped_column(Integer)
+    observed_on: Mapped[date] = mapped_column(Date)
+
+    @property
+    def price(self) -> Decimal:
+        return from_kop(self.price_kop)
 
 
 class UserState(Base):

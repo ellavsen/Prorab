@@ -13,6 +13,7 @@ from .models import (
     Estimate,
     PendingPosition,
     Position,
+    PriceHistory,
     UserState,
     utcnow,
 )
@@ -110,6 +111,24 @@ def migrate_categories(conn: Connection, reverse: bool = False) -> int:
     return changed
 
 
+def migrate_price_history(conn: Connection, reverse: bool = False) -> bool:
+    """Заводит таблицу истории своих цен, Sprint 6a (ADR-017).
+
+    Идемпотентна: таблица уже есть — ничего не делает. Обратная сносит её
+    целиком, и это осознанно: история восстановима из смет ровно настолько,
+    насколько сметы ещё живы, а полумеры при откате хуже честной потери.
+    """
+    present = "price_history" in set(sa_inspect(conn).get_table_names())
+    if reverse:
+        if present:
+            conn.execute(text("DROP TABLE price_history"))
+        return present
+    if present:
+        return False
+    Base.metadata.create_all(bind=conn, tables=[PriceHistory.__table__])
+    return True
+
+
 def _migrate_orphan_positions(conn: Connection) -> None:
     """Позициям без estimate_id создаём смету, иначе они не видны ни в одной."""
     users = conn.execute(
@@ -149,6 +168,8 @@ def bootstrap(engine: Engine) -> None:
         if "positions" not in tables and "estimates" not in tables:
             Base.metadata.create_all(bind=conn)
             return
+
+        migrate_price_history(conn)
 
         if "estimates" not in tables:
             Base.metadata.create_all(bind=conn, tables=[Estimate.__table__])

@@ -3,6 +3,7 @@
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from . import history
 from .models import Estimate, Position, UserState, utcnow
 
 RETENTION_LIMIT = 5  # хранить последние N смет на пользователя
@@ -150,20 +151,33 @@ def enforce_retention(db: Session, uid: int) -> Estimate | None:
 
     keep, drop = estimates[:RETENTION_LIMIT], estimates[RETENTION_LIMIT:]
     drop_ids = [e.id for e in drop]
+
+    # Архив и удаление — одна транзакция. Это единственное место в проекте,
+    # где данные исчезают безвозвратно: половина операции здесь означала бы
+    # либо историю от несостоявшегося удаления, либо смету, стёртую без
+    # сохранённых цен (ADR-017).
+    try:
+        history.archive(db, uid, drop_ids)
+        history.prune(db, uid)
+        _drop_estimates(db, uid, drop_ids)
+        state = user_state(db, uid)
+        switched = keep[0] if state.current_estimate_id in drop_ids else None
+        if switched is not None:
+            state.current_estimate_id = switched.id
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    return switched
+
+
+def _drop_estimates(db: Session, uid: int, drop_ids: list[int]) -> None:
     db.execute(delete(Position).where(
         Position.user_id == uid, Position.estimate_id.in_(drop_ids)
     ))
     db.execute(delete(Estimate).where(
         Estimate.user_id == uid, Estimate.id.in_(drop_ids)
     ))
-
-    state = user_state(db, uid)
-    switched = None
-    if state.current_estimate_id in drop_ids:
-        switched = keep[0]
-        state.current_estimate_id = switched.id
-    db.commit()
-    return switched
 
 
 def create_new_estimate_like(db: Session, uid: int, source: Estimate) -> Estimate:

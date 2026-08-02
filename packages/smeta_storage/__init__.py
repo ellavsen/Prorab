@@ -1,14 +1,21 @@
 """smeta-storage — хранение смет. Знает про SQLAlchemy и ничего про Telegram."""
 
-from . import pending, positions
+from . import history, pending, positions
 from .db import build_engine, build_sessionmaker
-from .migrations import bootstrap, migrate_categories, migrate_money_to_integers
+from .history import WINDOW_DAYS
+from .migrations import (
+    bootstrap,
+    migrate_categories,
+    migrate_money_to_integers,
+    migrate_price_history,
+)
 from .models import (
     DEFAULT_MARKUP_BP,
     Base,
     Estimate,
     PendingPosition,
     Position,
+    PriceHistory,
     UserState,
     utcnow,
 )
@@ -36,11 +43,13 @@ from .repo import (
 __all__ = [
     "DEFAULT_MARKUP_BP",
     "RETENTION_LIMIT",
+    "WINDOW_DAYS",
     "Base",
     "Estimate",
     "PendingPosition",
     "PendingRow",
     "Position",
+    "PriceHistory",
     "UserState",
     "bootstrap",
     "build_engine",
@@ -52,9 +61,11 @@ __all__ = [
     "enforce_retention",
     "find_by_number",
     "get_category",
+    "history",
     "list_estimates",
     "migrate_categories",
     "migrate_money_to_integers",
+    "migrate_price_history",
     "newest_estimate",
     "next_estimate_number",
     "pending",

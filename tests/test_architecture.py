@@ -7,6 +7,8 @@ import pathlib
 
 import pytest
 
+from smeta_storage import Base, PriceHistory
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CORE = ROOT / "packages" / "smeta_core"
 PRICES = ROOT / "packages" / "smeta_prices"
@@ -156,6 +158,35 @@ def test_handlers_do_not_compute_totals_themselves():
         source = path.read_text(encoding="utf-8")
         assert "func.sum" not in source
         assert "TAX_RATE" not in source
+
+
+def test_the_schema_holds_no_personal_field_but_the_one_it_must():
+    """Доказательство схемой, а не обещанием (DoD Sprint 6a).
+
+    user_id разрешён явным списком: он уже есть в positions, и история цен
+    без него не отличила бы своё от чужого. Всё остальное — имя, телефон,
+    почта, telegram-id, псевдоним автора — в базе не появляется. Спецификация
+    price-radar предлагала HMAC от tg_user_id; это псевдонимизация, а не
+    анонимность, и крауд всё равно живёт в 6b (ADR-017).
+    """
+    allowed = {"user_id"}
+    forbidden = {"username", "user_name", "phone", "email", "tg_id", "telegram_id",
+                 "first_name", "last_name", "full_name", "contributor_key"}
+    found = {
+        f"{table.name}.{column.name}"
+        for table in Base.metadata.sorted_tables
+        for column in table.columns
+        if column.name in forbidden or (column.name.endswith("_id")
+                                        and column.name in forbidden - allowed)
+    }
+    assert not found, f"персональные поля в схеме: {sorted(found)}"
+
+
+def test_price_history_stores_five_fields_and_no_sixth():
+    """Цена — пять полей, а не документ. Разрастётся — заметим здесь."""
+    columns = {column.name for column in PriceHistory.__table__.columns}
+    assert columns == {"id", "user_id", "name_norm", "unit", "unit_spoken",
+                       "price_kop", "observed_on"}
 
 
 def test_the_monolith_is_gone():
