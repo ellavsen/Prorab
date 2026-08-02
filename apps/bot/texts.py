@@ -190,11 +190,14 @@ def render_pending(estimate, rows, computed: dict, totals) -> str:
         # Показываем сказанное: человек должен узнать свои слова (ADR-015).
         spoken = position.unit_spoken or position.unit
         quantity = f"{format_qty(position.qty)} {spoken}".strip()
+        # Модель не поняла, за единицу цена или за всё. Считаем за единицу —
+        # третьей ветки расчёта нет, — но говорим об этом вслух.
+        unclear = " ⚠️ если это за всё — нажми «÷»" if row.price_scope == "unknown" else ""
         out.append(
             f"{row.ordinal}. {esc(position.name)} — "
             f"{esc(CATEGORY_LABEL.get(position.category, position.category)).lower()}\n"
             f"    {quantity} × {format_money(position.price)} = "
-            f"<b>{format_money(line.total)}</b>"
+            f"<b>{format_money(line.total)}</b>{unclear}"
         )
 
     broken = [row for row in rows if row.ordinal not in computed]

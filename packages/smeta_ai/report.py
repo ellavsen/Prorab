@@ -107,6 +107,35 @@ def report_to_dict(report: Report) -> dict:
     }
 
 
+def format_comparison(left_name: str, left: Report, right_name: str, right: Report) -> str:
+    """Две версии промпта на одном наборе: поле -> было/стало.
+
+    Метод важнее результата: видно не только что стало лучше, но и чем именно
+    правка формулировки это купила.
+    """
+    before, after = field_disagreements(left), field_disagreements(right)
+    out = [
+        f"{'':<20} {left_name:>10} {right_name:>10} {'дельта':>8}",
+        f"  {'recall':<18} {left.recall:>10.3f} {right.recall:>10.3f} "
+        f"{right.recall - left.recall:>+8.3f}",
+        f"  {'precision':<18} {left.precision:>10.3f} {right.precision:>10.3f} "
+        f"{right.precision - left.precision:>+8.3f}",
+        f"  {'целиком верных':<18} {left.exact_examples:>10} {right.exact_examples:>10} "
+        f"{right.exact_examples - left.exact_examples:>+8}",
+        "",
+        "Поле -> было/стало:",
+    ]
+    for name in sorted(set(before) | set(after), key=lambda n: -after.get(n, 0)):
+        was, now = before.get(name, 0), after.get(name, 0)
+        out.append(f"  {name:<18} {was:>10} {now:>10} {now - was:>+8}")
+
+    for title, report in ((left_name, left), (right_name, right)):
+        if report.assert_failures:
+            out.append(f"\nНарушенные запреты, {title}:")
+            out.extend(f"  {text}" for text in report.assert_failures)
+    return "\n".join(out)
+
+
 def format_report(report: Report, verbose: bool = False) -> str:
     """Отчёт текстом. Ничего не печатает сам — возвращает строку."""
     out = [

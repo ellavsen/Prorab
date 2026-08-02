@@ -22,20 +22,14 @@ from smeta_ai import (
     Quantity,
     check_candidate,
     collapse_total_scope,
-    counted_name,
     pick_category,
     to_position,
 )
 from smeta_core import (
-    ZERO,
     Category,
     PositionData,
     calculate_estimate,
     default_unit,
-    parse_price,
-    parse_quantity,
-    unit_decision,
-    unit_price,
 )
 from smeta_storage import (
     PendingRow,
@@ -46,15 +40,15 @@ from smeta_storage import (
     user_state,
 )
 
-from ..keyboards import pending_keyboard, split_keyboard
+from ..keyboards import pending_keyboard
 from ..texts import (
     AI_NOTHING,
     PREVIEW_CANCELLED,
     esc,
     render_pending,
-    render_split,
     render_units_substituted,
 )
+from . import split
 
 
 def _check(position, estimate) -> str | None:
@@ -91,6 +85,7 @@ def build_rows(extraction, estimate, fallback: Category, source: str | None):
                 name=candidate.name or "(без наименования)",
                 qty=candidate.qty.value, price=candidate.price.value,
                 unit=candidate.unit, unit_spoken=candidate.unit_spoken,
+                price_scope=original.price.scope,
                 problem=problem, **totals,
             ))
             continue
@@ -108,6 +103,7 @@ def build_rows(extraction, estimate, fallback: Category, source: str | None):
             price=str(position.price),
             unit=position.unit,
             unit_spoken=position.unit_spoken,
+            price_scope=original.price.scope,
             problem=_check(position, estimate),
             **totals,
         ))
@@ -115,14 +111,25 @@ def build_rows(extraction, estimate, fallback: Category, source: str | None):
 
 
 def _total_fields(original, collapsed) -> dict:
-    """Что было сказано до схлопывания. Пусто, если схлопывать было нечего."""
-    if collapsed is original:
-        return {}
-    return {
-        "total_price": original.price.value,
-        "total_qty": original.qty.value,
-        "total_unit": original.unit_spoken or original.unit,
-    }
+    """Что было сказано до схлопывания — по этому работает кнопка «÷».
+
+    Заполняется в двух случаях: строку схлопнули из «за всё», либо модель не
+    поняла, за единицу цена или за всё. Во втором считаем как за единицу —
+    третьей ветки расчёта нет, — но кнопку оставляем под рукой (ADR-012).
+    """
+    unclear = (
+        collapsed is original
+        and original.price.scope == PriceScope.UNKNOWN
+        and original.price.value
+        and original.qty.value
+    )
+    if collapsed is not original or unclear:
+        return {
+            "total_price": original.price.value,
+            "total_qty": original.qty.value,
+            "total_unit": original.unit_spoken or original.unit,
+        }
+    return {}
 
 
 def _position_of(row) -> PositionData:
@@ -187,28 +194,6 @@ async def offer(message: Message, db, uid: int, extraction, source: str | None =
     await show_preview(message, db, uid)
 
 
-# --- Разбиение строки «за всё» ---
-
-def split_math(row):
-    """Что получится при делении. Умножения тут нет — считает домен."""
-    total, count = parse_price(row.total_price), parse_quantity(row.total_qty)
-    each = unit_price(total, count)
-    probe = PositionData(
-        category=Category(row.category), name=row.name, qty=count, price=each
-    )
-    restored = calculate_estimate([probe], ZERO, ZERO).subtotal
-    return each, count, restored, total - restored
-
-
-def original_name(row) -> str:
-    """Убирает суффикс, который приписало схлопывание, — ровно тот же."""
-    probe = PositionCandidate(
-        name="", qty=Quantity(status=FieldStatus.STATED, value=row.total_qty or ""),
-        unit_spoken=row.total_unit or "",
-    )
-    return row.name.removesuffix(counted_name(probe))
-
-
 async def handle_action(query, db, uid: int, action: str) -> None:
     verb, _, value = action.partition(":")
 
@@ -226,11 +211,12 @@ async def handle_action(query, db, uid: int, action: str) -> None:
         return
 
     if verb == "split":
-        await _offer_split(query, db, uid, int(value))
+        if not await split.offer(query, db, uid, int(value)):
+            await show_preview(query, db, uid, edit=True)
         return
 
     if verb == "dosplit":
-        _apply_split(db, uid, int(value))
+        split.apply(db, uid, int(value))
         await show_preview(query, db, uid, edit=True)
         return
 
@@ -239,34 +225,6 @@ async def handle_action(query, db, uid: int, action: str) -> None:
         return
 
     await _add_all(query, db, uid)
-
-
-async def _offer_split(query, db, uid: int, ordinal: int) -> None:
-    row = pending.get(db, uid, ordinal)
-    if row is None or not row.total_price:
-        await show_preview(query, db, uid, edit=True)
-        return
-    each, count, restored, delta = split_math(row)
-    await query.edit_message_text(
-        render_split(original_name(row), count, each, restored, delta,
-                     parse_price(row.total_price), row.total_unit or ""),
-        parse_mode=ParseMode.HTML,
-        reply_markup=split_keyboard(ordinal),
-    )
-
-
-def _apply_split(db, uid: int, ordinal: int) -> None:
-    row = pending.get(db, uid, ordinal)
-    if row is None or not row.total_price:
-        return
-    each, count, _restored, _delta = split_math(row)
-    row.name = original_name(row)
-    row.qty = str(count)
-    row.price = str(each)
-    row.unit_spoken = row.total_unit or ""
-    row.unit = unit_decision("", row.unit_spoken)
-    row.total_price = row.total_qty = row.total_unit = None
-    db.commit()
 
 
 async def _add_all(query, db, uid: int) -> None:

@@ -104,6 +104,9 @@ class PendingPosition(Base):
     name: Mapped[str] = mapped_column(String(255))
     unit: Mapped[str] = mapped_column(String(32), default="")
     unit_spoken: Mapped[str] = mapped_column(String(64), default="")
+    # Как модель поняла цену: per_unit | total | unknown. unknown считается
+    # как per_unit, но подсказывает человеку кнопку «÷» (ADR-012).
+    price_scope: Mapped[str] = mapped_column(String(16), default="per_unit")
     qty: Mapped[str] = mapped_column(String(32), default="")
     price: Mapped[str] = mapped_column(String(32), default="")
     # Что было сказано до схлопывания «за всё» — по этим полям кнопка

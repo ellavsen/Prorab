@@ -26,6 +26,7 @@ PENDING_COLUMNS = {
     "total_price": "VARCHAR(32)",
     "total_qty": "VARCHAR(32)",
     "total_unit": "VARCHAR(64)",
+    "price_scope": "VARCHAR(16)",
 }
 
 # Черновик пошагового ввода, добавлен в Sprint 4 (ADR-010).

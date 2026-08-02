@@ -21,9 +21,10 @@ import traceback
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "packages"))
 
-from smeta_ai import OpenAIProvider, RecordedProvider, StubProvider  # noqa: E402
+from smeta_ai import PROMPT_VERSION, OpenAIProvider, RecordedProvider, StubProvider  # noqa: E402
 from smeta_ai.evaluation import evaluate, load_dataset  # noqa: E402
-from smeta_ai.report import format_report, report_to_dict  # noqa: E402
+from smeta_ai.recorded import version_dir  # noqa: E402
+from smeta_ai.report import format_comparison, format_report, report_to_dict  # noqa: E402
 
 EVAL_DIR = ROOT / "tests" / "eval"
 FIXTURES = EVAL_DIR / "fixtures"
@@ -32,6 +33,14 @@ LAST_REPORT = EVAL_DIR / "last_report.json"
 
 def load_config() -> dict:
     return json.loads((EVAL_DIR / "config.json").read_text(encoding="utf-8"))
+
+
+def replay(model: str, prompt_version: str = PROMPT_VERSION, inner=None):
+    """Проигрыватель ответов конкретной версии промпта."""
+    return RecordedProvider(
+        version_dir(FIXTURES, prompt_version), model=model, inner=inner,
+        prompt_version=prompt_version,
+    )
 
 
 def build_extractor(mode: str, model: str):
@@ -44,7 +53,19 @@ def build_extractor(mode: str, model: str):
         if not key:
             raise SystemExit("Для записи нужен OPENAI_API_KEY. Запись живая и платная.")
         inner = OpenAIProvider(api_key=key, model=model)
-    return RecordedProvider(FIXTURES, model=model, inner=inner)
+    return replay(model, inner=inner)
+
+
+def run_comparison(config: dict, dataset: list[dict], versions: list[str]) -> int:
+    """Две версии промпта на одном наборе. Ничего не записывает."""
+    left, right = versions
+    reports = {
+        version: evaluate(replay(config["model"], version), dataset)
+        for version in (left, right)
+    }
+    print(f"Сравнение промптов на одном наборе, модель {config['model']}\n")
+    print(format_comparison(f"v{left}", reports[left], f"v{right}", reports[right]))
+    return 0
 
 
 def save_report(report) -> None:
@@ -60,11 +81,19 @@ def main() -> int:
     parser.add_argument("--record", action="store_true", help="записать живые ответы")
     parser.add_argument("--stub", action="store_true", help="прогнать на стабе")
     parser.add_argument("--verbose", action="store_true", help="показать расхождения")
+    parser.add_argument(
+        "--compare", nargs=2, metavar=("СТАРАЯ", "НОВАЯ"),
+        help="сравнить две версии промпта на одном наборе: --compare v2 v3",
+    )
     args = parser.parse_args()
 
     config = load_config()
-    mode = "record" if args.record else ("stub" if args.stub else "replay")
     dataset = load_dataset(EVAL_DIR / "dataset.jsonl")
+
+    if args.compare:
+        return run_comparison(config, dataset, [v.lstrip("v") for v in args.compare])
+
+    mode = "record" if args.record else ("stub" if args.stub else "replay")
     report = evaluate(build_extractor(mode, config["model"]), dataset)
 
     # Всё, что ниже, идёт ПОСЛЕ совершённых (и оплаченных) вызовов, поэтому

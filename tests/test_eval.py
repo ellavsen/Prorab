@@ -16,6 +16,7 @@ import pathlib
 import pytest
 
 from smeta_ai import (
+    PROMPT_VERSION,
     Extraction,
     FieldStatus,
     IgnoredFragment,
@@ -40,9 +41,12 @@ from smeta_ai.evaluation import (
     load_dataset,
     normalize_name,
 )
+from smeta_ai.recorded import version_dir
+from smeta_ai.report import format_comparison
 
 EVAL_DIR = pathlib.Path(__file__).resolve().parent / "eval"
 FIXTURES = EVAL_DIR / "fixtures"
+CURRENT = version_dir(FIXTURES, PROMPT_VERSION)
 
 DATASET = load_dataset(EVAL_DIR / "dataset.jsonl")
 CONFIG = json.loads((EVAL_DIR / "config.json").read_text(encoding="utf-8"))
@@ -227,16 +231,18 @@ def test_metrics_can_be_read_per_tag():
 
 def test_recorded_answers_meet_the_threshold():
     """Единственный настоящий замер модели — на записанных ответах."""
-    recordings = sorted(FIXTURES.glob("*.json")) if FIXTURES.is_dir() else []
+    recordings = sorted(CURRENT.glob("*.json")) if CURRENT.is_dir() else []
     if not recordings:
         if os.getenv("REQUIRE_EVAL_FIXTURES") == "1":
             pytest.fail(
-                "Нет записанных ответов модели в tests/eval/fixtures. "
+                f"Нет записанных ответов модели в {CURRENT}. "
                 "Записать: OPENAI_API_KEY=... python scripts/run_eval.py --record"
             )
-        pytest.skip("нет записанных ответов модели — замер модели не выполнен")
+        pytest.skip(
+            f"нет записей для промпта v{PROMPT_VERSION} — замер модели не выполнен"
+        )
 
-    report = evaluate(RecordedProvider(FIXTURES, model=CONFIG["model"]), DATASET)
+    report = evaluate(RecordedProvider(CURRENT, model=CONFIG["model"]), DATASET)
     assert report.recall >= CONFIG["min_recall"]
     assert report.precision >= CONFIG["min_precision"]
     assert report.assert_failures == []
@@ -324,3 +330,36 @@ def test_every_ban_in_the_dataset_is_a_known_one():
     for example in DATASET:
         failures = check_asserts(example.get("assert", {}), Extraction(status="empty"))
         assert not any("неизвестный запрет" in text for text in failures), example["id"]
+
+
+# --- Версии промпта живут порознь (ADR-014) ---
+
+def replayer(version: str):
+    return RecordedProvider(
+        version_dir(FIXTURES, version), model=CONFIG["model"], prompt_version=version
+    )
+
+
+def test_answers_of_an_older_prompt_stay_replayable():
+    """Оплаченный замер не должен пропадать при смене формулировки.
+
+    Иначе каждая правка промпта стоила бы возможности сравнить «было/стало».
+    """
+    old = version_dir(FIXTURES, "2")
+    if not old.is_dir() or not any(old.glob("*.json")):
+        pytest.skip("записей промпта v2 нет")
+    report = evaluate(replayer("2"), DATASET)
+    assert report.predicted > 0
+
+
+def test_versions_do_not_share_a_directory():
+    """Ключ включает версию, но и каталог тоже: два барьера, не один."""
+    assert version_dir(FIXTURES, "2") != version_dir(FIXTURES, "3")
+    assert version_dir(FIXTURES, PROMPT_VERSION).name == f"v{PROMPT_VERSION}"
+
+
+def test_the_comparison_names_what_changed():
+    left = evaluate(StubProvider(), DATASET)
+    right = evaluate(StubProvider(), DATASET)
+    text = format_comparison("v2", left, "v3", right)
+    assert "recall" in text and "было/стало" in text

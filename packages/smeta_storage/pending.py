@@ -29,6 +29,7 @@ class PendingRow:
     price: str
     unit: str = ""
     unit_spoken: str = ""
+    price_scope: str = "per_unit"
     total_price: str | None = None
     total_qty: str | None = None
     total_unit: str | None = None
@@ -47,6 +48,7 @@ def replace(db: Session, uid: int, estimate_id: int, rows: list[PendingRow]) -> 
             name=row.name[:255],
             unit=row.unit[:32],
             unit_spoken=row.unit_spoken[:64],
+            price_scope=row.price_scope,
             qty=row.qty[:32],
             price=row.price[:32],
             total_price=row.total_price,
