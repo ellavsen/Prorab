@@ -1,0 +1,92 @@
+"""Предпросмотр пачки: то, что распознала модель, до подтверждения человеком.
+
+Хранилище здесь ничего не решает. Оно кладёт строки, как их отдали, и отдаёт
+обратно. Годится строка или нет — вопрос домена, и ответ на него приходит
+сюда уже готовым, в поле problem.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from sqlalchemy import delete, select
+from sqlalchemy.orm import Session
+
+from .models import PendingPosition
+
+
+@dataclass(frozen=True)
+class PendingRow:
+    """Одна строка предпросмотра, как её вернула модель.
+
+    total_price/total_qty заполняются только у строк, схлопнутых из «за всё»:
+    по ним кнопка «Разбить на позиции» знает, что делить и на сколько.
+    """
+
+    category: str
+    name: str
+    qty: str
+    price: str
+    unit: str = ""
+    unit_spoken: str = ""
+    total_price: str | None = None
+    total_qty: str | None = None
+    total_unit: str | None = None
+    problem: str | None = None
+
+
+def replace(db: Session, uid: int, estimate_id: int, rows: list[PendingRow]) -> None:
+    """Новое распознавание вытесняет предыдущее: двух предпросмотров не бывает."""
+    clear(db, uid)
+    for ordinal, row in enumerate(rows, start=1):
+        db.add(PendingPosition(
+            user_id=uid,
+            estimate_id=estimate_id,
+            ordinal=ordinal,
+            category=row.category,
+            name=row.name[:255],
+            unit=row.unit[:32],
+            unit_spoken=row.unit_spoken[:64],
+            qty=row.qty[:32],
+            price=row.price[:32],
+            total_price=row.total_price,
+            total_qty=row.total_qty,
+            total_unit=row.total_unit,
+            problem=None if row.problem is None else row.problem[:200],
+        ))
+    db.commit()
+
+
+def load(db: Session, uid: int) -> list[PendingPosition]:
+    return list(db.execute(
+        select(PendingPosition)
+        .where(PendingPosition.user_id == uid)
+        .order_by(PendingPosition.ordinal)
+    ).scalars().all())
+
+
+def get(db: Session, uid: int, ordinal: int) -> PendingPosition | None:
+    return db.execute(
+        select(PendingPosition).where(
+            PendingPosition.user_id == uid, PendingPosition.ordinal == ordinal
+        )
+    ).scalars().first()
+
+
+def drop(db: Session, uid: int, ordinal: int) -> bool:
+    """Убирает строку из предпросмотра. Нумерация остальных не меняется.
+
+    Перенумеровать значило бы поменять подписи на кнопках у человека под
+    пальцами: он метил в четвёртую, а попал бы в бывшую пятую.
+    """
+    row = get(db, uid, ordinal)
+    if row is None:
+        return False
+    db.delete(row)
+    db.commit()
+    return True
+
+
+def clear(db: Session, uid: int) -> None:
+    db.execute(delete(PendingPosition).where(PendingPosition.user_id == uid))
+    db.commit()

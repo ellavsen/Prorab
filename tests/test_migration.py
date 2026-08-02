@@ -75,6 +75,15 @@ def test_g1_migration_creates_the_user_state_table(legacy_db):
     assert "user_state" in tables
 
 
+def test_migration_creates_the_preview_table(legacy_db):
+    """Старая база догоняется до Sprint 5, а не падает на первом предпросмотре."""
+    open_storage(legacy_db)
+    con = sqlite3.connect(legacy_db)
+    tables = {row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    con.close()
+    assert "pending_positions" in tables
+
+
 def test_g2_real_storage_imprecision_is_quantized_not_carried_over(legacy_db):
     """0.1 в REAL — это 0.1000000000000000055…, в копейках это ровно 10."""
     con = sqlite3.connect(legacy_db)
@@ -158,3 +167,48 @@ def test_migration_is_idempotent(legacy_db):
     with Session() as db:
         totals = positions.totals(db, 42, db.get(Estimate, 1))
     assert totals.total == D("424.45")
+
+
+# --- Категории уехали в english, Sprint 5 ---
+
+def test_categories_become_english(legacy_db):
+    open_storage(legacy_db)
+    con = sqlite3.connect(legacy_db)
+    stored = {row[0] for row in con.execute("SELECT DISTINCT category FROM positions")}
+    con.close()
+    assert stored == {"work", "material"}
+
+
+def test_the_category_migration_is_idempotent(legacy_db):
+    """Второй прогон не должен ничего трогать: WHERE берёт оба значения."""
+    from smeta_storage import build_engine, migrate_categories
+
+    open_storage(legacy_db)
+    engine = build_engine(f"sqlite:///{legacy_db}")
+    with engine.begin() as conn:
+        assert migrate_categories(conn) == 0
+    engine.dispose()
+
+
+def test_the_category_migration_can_be_rolled_back(legacy_db):
+    """Обратная миграция существует на случай отката коммита."""
+    from smeta_storage import build_engine, migrate_categories
+
+    open_storage(legacy_db)
+    engine = build_engine(f"sqlite:///{legacy_db}")
+    with engine.begin() as conn:
+        assert migrate_categories(conn, reverse=True) > 0
+    engine.dispose()
+
+    con = sqlite3.connect(legacy_db)
+    stored = {row[0] for row in con.execute("SELECT DISTINCT category FROM positions")}
+    con.close()
+    assert stored == {"Работа", "Материал"}
+
+
+def test_spoken_unit_column_is_added(legacy_db):
+    open_storage(legacy_db)
+    con = sqlite3.connect(legacy_db)
+    columns = {row[1] for row in con.execute("PRAGMA table_info(positions)")}
+    con.close()
+    assert "unit_spoken" in columns

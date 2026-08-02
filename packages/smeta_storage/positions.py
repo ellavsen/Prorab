@@ -83,6 +83,8 @@ def add(db: Session, uid: int, estimate_id: int, position: PositionData) -> Posi
         twin.qty_milli = to_milli(merged.qty)
         if not twin.unit:
             twin.unit = position.unit
+        if not twin.unit_spoken:
+            twin.unit_spoken = position.unit_spoken
         return twin
 
     row = Position(
@@ -91,6 +93,7 @@ def add(db: Session, uid: int, estimate_id: int, position: PositionData) -> Posi
         category=position.category.value,
         name=position.name,
         unit=position.unit,
+        unit_spoken=position.unit_spoken,
         qty_milli=to_milli(position.qty),
         price_kop=to_kop(position.price),
     )

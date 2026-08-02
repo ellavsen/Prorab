@@ -54,9 +54,12 @@ class Position(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(Integer, index=True)
     estimate_id: Mapped[int | None] = mapped_column(ForeignKey("estimates.id"), nullable=True)
-    category: Mapped[str] = mapped_column(String(16))  # "Материал" | "Работа"
+    category: Mapped[str] = mapped_column(String(16))  # "material" | "work"
     name: Mapped[str] = mapped_column(String(255))
     unit: Mapped[str] = mapped_column(String(32), default="")
+    # Единица так, как её назвал человек: «мешков», «квадратов». Печатается
+    # в документе заказчику; канон выше — для аналитики (ADR-015).
+    unit_spoken: Mapped[str] = mapped_column(String(64), default="")
     # Целые минорные единицы: SQLite хранит NUMERIC как REAL, то есть деньги
     # в Numeric(18,2) лежали бы в binary float (ADR-004).
     qty_milli: Mapped[int] = mapped_column(Integer, default=0)
@@ -78,7 +81,38 @@ class Position(Base):
             qty=self.qty,
             price=self.price,
             unit=self.unit or "",
+            unit_spoken=self.unit_spoken or "",
         )
+
+
+class PendingPosition(Base):
+    """Позиция, распознанная моделью, но ещё не подтверждённая человеком.
+
+    Хранится ровно так, как её вернула модель — строками. Деньгами это станет
+    только после проверки доменом, и только если человек нажмёт «Добавить»
+    (ADR-012). Причина, по которой строка не годится, тоже хранится: пустой
+    предпросмотр вместо объяснения — это тихая потеря данных.
+    """
+
+    __tablename__ = "pending_positions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    estimate_id: Mapped[int] = mapped_column(ForeignKey("estimates.id"))
+    ordinal: Mapped[int] = mapped_column(Integer)  # номер в предпросмотре, 1..N
+    category: Mapped[str] = mapped_column(String(16))
+    name: Mapped[str] = mapped_column(String(255))
+    unit: Mapped[str] = mapped_column(String(32), default="")
+    unit_spoken: Mapped[str] = mapped_column(String(64), default="")
+    qty: Mapped[str] = mapped_column(String(32), default="")
+    price: Mapped[str] = mapped_column(String(32), default="")
+    # Что было сказано до схлопывания «за всё» — по этим полям кнопка
+    # «Разбить на позиции» знает, что делить, на сколько и как это назвать.
+    total_price: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    total_qty: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    total_unit: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    problem: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class UserState(Base):

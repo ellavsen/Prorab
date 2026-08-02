@@ -205,3 +205,18 @@ def test_both_sheets_survive_a_recalculation(tmp_path):
 
     goods = book["Материалы и расходники"]
     assert D(str(goods[f"G{FIRST_DATA_ROW}"].value)) == materials_expected.lines[0].total
+
+
+def test_the_report_prints_the_unit_as_it_was_said():
+    """Заказчик читает «мешков», а не канон справочника (ADR-015)."""
+    said = [PositionData(Category.MATERIAL, "Цемент", D("20"), D("350.00"),
+                         unit="шт", unit_spoken="мешков")]
+    book = load_workbook(io.BytesIO(build_workbook(said, [], RATE, RATE).getvalue()))
+    sheet = book["Материалы и расходники"]
+    assert sheet[f"C{FIRST_DATA_ROW}"].value == "мешков"
+
+
+def test_without_a_spoken_unit_the_canon_is_printed():
+    canon_only = [PositionData(Category.MATERIAL, "Гвозди", D("100"), D("20.00"), unit="шт")]
+    book = load_workbook(io.BytesIO(build_workbook(canon_only, [], RATE, RATE).getvalue()))
+    assert book["Материалы и расходники"][f"C{FIRST_DATA_ROW}"].value == "шт"
