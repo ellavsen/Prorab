@@ -1,6 +1,44 @@
 {
   "components": {
     "schemas": {
+      "CatalogOut": {
+        "description": "Позиция справочника. Поля цены здесь нет и не будет (ADR-017).",
+        "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Aliases",
+            "type": "array"
+          },
+          "found": {
+            "title": "Found",
+            "type": "boolean"
+          },
+          "kind": {
+            "default": "",
+            "description": "work или material",
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "unit": {
+            "default": "",
+            "description": "Каноническая единица из /units",
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "found"
+        ],
+        "title": "CatalogOut",
+        "type": "object"
+      },
       "Category": {
         "description": "Значения английские: это код, а не экран (конституция про язык).\n\nРусские подписи живут в адаптерах — в текстах бота и заголовках листов\nExcel. До Sprint 5 здесь лежали «Работа»/«Материал», и они же попадали в\nбазу и в HTTP-контракт; миграция переводит старые значения.\n\nИменно StrEnum, а не (str, Enum): у второго str(Category.WORK) даёт\n\"Category.WORK\", и любое сравнение со строкой из базы тихо не срабатывает.",
         "enum": [
@@ -456,6 +494,49 @@
         "summary": "Calculate",
         "tags": [
           "расчёт"
+        ]
+      }
+    },
+    "/catalog/lookup": {
+      "get": {
+        "description": "Позиция справочника по любому её написанию: канон, единица, категория.\n\nЦены не отдаёт и отдавать не может: их в справочнике нет вовсе (ADR-017).\nПодсказку цены даёт бот — она построена на личной истории, а API без\nсостояния и базы не касается (ADR-008).\n\nНе уверен — `found: false`, а не догадка: «плитка» это и керамическая, и\nкерамогранит, и тротуарная.",
+        "operationId": "catalog_lookup_catalog_lookup_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Catalog Lookup",
+        "tags": [
+          "справочники"
         ]
       }
     },

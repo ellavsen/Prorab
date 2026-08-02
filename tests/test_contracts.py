@@ -28,7 +28,8 @@ def test_openapi_json_matches_the_code():
 
 def test_openapi_declares_every_route():
     schema = json.loads((ROOT / "docs" / "openapi.json").read_text(encoding="utf-8"))
-    assert set(schema["paths"]) == {"/healthz", "/units", "/calculate", "/xlsx", "/parse"}
+    assert set(schema["paths"]) == {"/healthz", "/units", "/catalog/lookup",
+                                   "/calculate", "/xlsx", "/parse"}
 
 
 def test_openapi_documents_money_as_strings():

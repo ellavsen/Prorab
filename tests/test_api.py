@@ -51,6 +51,24 @@ def test_units_are_the_domain_reference():
     assert client.get("/units").json() == list(UNITS)
 
 
+def test_catalog_lookup_returns_the_canon_and_its_unit():
+    body = client.get("/catalog/lookup", params={"name": "ЦЕМ II 42.5"}).json()
+    assert body["found"] is True
+    assert (body["name"], body["unit"], body["kind"]) == ("Цемент М500", "т", "material")
+
+
+def test_catalog_lookup_admits_when_it_does_not_know():
+    body = client.get("/catalog/lookup", params={"name": "генератор идей"}).json()
+    assert body == {"found": False, "name": "", "unit": "", "kind": "", "aliases": []}
+
+
+def test_the_api_never_returns_a_price_from_the_catalog():
+    """Подсказка цены живёт в боте: она из личной истории, а API без состояния."""
+    body = client.get("/catalog/lookup", params={"name": "цемент м500"}).json()
+    assert "price" not in body
+    assert not any("price" in path for path in client.get("/openapi.json").json()["paths"])
+
+
 def test_calculate_matches_the_domain_exactly():
     body = client.post("/calculate", json=ESTIMATE).json()
     expected = domain_totals()

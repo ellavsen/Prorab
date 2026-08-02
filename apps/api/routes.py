@@ -13,9 +13,19 @@ from smeta_core import (
     parse_position_line,
 )
 from smeta_export import build_workbook
+from smeta_prices import CATALOG
 
 from .convert import positions_of, to_schema
-from .schemas import EstimateIn, Health, ParseError, ParseIn, ParseOut, PositionIn, TotalsOut
+from .schemas import (
+    CatalogOut,
+    EstimateIn,
+    Health,
+    ParseError,
+    ParseIn,
+    ParseOut,
+    PositionIn,
+    TotalsOut,
+)
 
 router = APIRouter()
 
@@ -31,6 +41,24 @@ def healthz() -> Health:
 def units() -> list[str]:
     """Канонические единицы измерения."""
     return list(UNITS)
+
+
+@router.get("/catalog/lookup", response_model=CatalogOut, tags=["справочники"])
+def catalog_lookup(name: str) -> CatalogOut:
+    """Позиция справочника по любому её написанию: канон, единица, категория.
+
+    Цены не отдаёт и отдавать не может: их в справочнике нет вовсе (ADR-017).
+    Подсказку цены даёт бот — она построена на личной истории, а API без
+    состояния и базы не касается (ADR-008).
+
+    Не уверен — `found: false`, а не догадка: «плитка» это и керамическая, и
+    керамогранит, и тротуарная.
+    """
+    item = CATALOG.find(name)
+    if item is None:
+        return CatalogOut(found=False)
+    return CatalogOut(found=True, name=item.name, unit=item.unit,
+                      kind=item.kind, aliases=list(item.aliases))
 
 
 @router.post("/calculate", response_model=TotalsOut, tags=["расчёт"])

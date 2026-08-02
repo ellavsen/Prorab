@@ -93,6 +93,16 @@ class ParseOut(BaseModel):
     errors: list[ParseError]
 
 
+class CatalogOut(BaseModel):
+    """Позиция справочника. Поля цены здесь нет и не будет (ADR-017)."""
+
+    found: bool
+    name: str = ""
+    unit: str = Field(default="", description="Каноническая единица из /units")
+    kind: str = Field(default="", description="work или material")
+    aliases: list[str] = Field(default_factory=list)
+
+
 class Health(BaseModel):
     status: str
     core: str
