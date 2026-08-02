@@ -82,6 +82,15 @@ class RecordedProvider:
         )
         return result
 
+    def has_extract(self, text: str) -> bool:
+        """Есть ли ответ на этот вход.
+
+        Набор растёт, а записи старых версий — нет. Сравнивать версии можно
+        только на том, что записано в обеих; молча подставить пустой ответ
+        значило бы приписать старой версии промах, которого она не делала.
+        """
+        return self._path("extract", text.encode("utf-8")).exists()
+
     def transcribe(self, audio: bytes, filename: str) -> str:
         return self._replay(
             "transcribe", audio, filename, lambda: self.inner.transcribe(audio, filename)

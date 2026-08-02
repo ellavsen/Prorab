@@ -1,0 +1,80 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3",
+  "input": "Смета подрядчика\nДемонтаж старой стяжки 55 м² 340,00\nВывоз строительного мусора 3 т 2 100,00\nПодъём материалов 8 час 900,00\nВСЕГО: 31 300,00",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Демонтаж старой стяжки",
+        "qty": {
+          "status": "stated",
+          "value": "55"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "340.00"
+        },
+        "unit": "м²",
+        "unit_spoken": "м²",
+        "category": "work",
+        "source_quote": "Демонтаж старой стяжки 55 м² 340,00",
+        "confidence": "high"
+      },
+      {
+        "name": "Вывоз строительного мусора",
+        "qty": {
+          "status": "stated",
+          "value": "3"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "2100.00"
+        },
+        "unit": "т",
+        "unit_spoken": "т",
+        "category": "work",
+        "source_quote": "Вывоз строительного мусора 3 т 2 100,00",
+        "confidence": "high"
+      },
+      {
+        "name": "Подъём материалов",
+        "qty": {
+          "status": "stated",
+          "value": "8"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "900.00"
+        },
+        "unit": "час",
+        "unit_spoken": "час",
+        "category": "work",
+        "source_quote": "Подъём материалов 8 час 900,00",
+        "confidence": "high"
+      },
+      {
+        "name": "ВСЕГО",
+        "qty": {
+          "status": "missing",
+          "value": ""
+        },
+        "price": {
+          "status": "stated",
+          "scope": "total",
+          "value": "31300.00"
+        },
+        "unit": "",
+        "unit_spoken": "",
+        "category": "unknown",
+        "source_quote": "ВСЕГО: 31 300,00",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

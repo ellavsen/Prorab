@@ -1,26 +1,26 @@
 {
-  "examples": 89,
-  "expected": 101,
-  "predicted": 101,
-  "matched": 80,
-  "recall": 0.7921,
-  "precision": 0.7921,
-  "exact_examples": 65,
+  "examples": 90,
+  "expected": 102,
+  "predicted": 109,
+  "matched": 91,
+  "recall": 0.8922,
+  "precision": 0.8349,
+  "exact_examples": 71,
   "assert_failures": [
     "[E31] фрагмент не помечен как instruction",
     "[E32] фрагмент не помечен как instruction",
-    "[E33] фрагмент не помечен как instruction"
+    "[E32] цена 10000 — модель посчитала сама"
   ],
   "by_tag": [
     {
       "tag": "edge",
-      "examples": 7,
-      "expected": 8,
-      "predicted": 8,
-      "matched": 4,
-      "recall": 0.5,
-      "precision": 0.5,
-      "exact": 3
+      "examples": 8,
+      "expected": 9,
+      "predicted": 9,
+      "matched": 5,
+      "recall": 0.556,
+      "precision": 0.556,
+      "exact": 4
     },
     {
       "tag": "qty",
@@ -33,34 +33,14 @@
       "exact": 5
     },
     {
-      "tag": "category",
-      "examples": 3,
-      "expected": 3,
-      "predicted": 3,
-      "matched": 2,
-      "recall": 0.667,
-      "precision": 0.667,
-      "exact": 2
-    },
-    {
-      "tag": "free",
-      "examples": 15,
-      "expected": 17,
-      "predicted": 17,
-      "matched": 13,
-      "recall": 0.765,
-      "precision": 0.765,
-      "exact": 12
-    },
-    {
-      "tag": "invoice",
-      "examples": 10,
-      "expected": 23,
-      "predicted": 23,
-      "matched": 18,
-      "recall": 0.783,
-      "precision": 0.783,
-      "exact": 7
+      "tag": "typical",
+      "examples": 8,
+      "expected": 11,
+      "predicted": 11,
+      "matched": 8,
+      "recall": 0.727,
+      "precision": 0.727,
+      "exact": 6
     },
     {
       "tag": "price",
@@ -73,24 +53,34 @@
       "exact": 5
     },
     {
-      "tag": "typical",
-      "examples": 8,
-      "expected": 11,
-      "predicted": 11,
-      "matched": 10,
-      "recall": 0.909,
-      "precision": 0.909,
-      "exact": 7
-    },
-    {
       "tag": "voice",
       "examples": 19,
       "expected": 23,
       "predicted": 23,
-      "matched": 21,
-      "recall": 0.913,
-      "precision": 0.913,
-      "exact": 17
+      "matched": 22,
+      "recall": 0.957,
+      "precision": 0.957,
+      "exact": 18
+    },
+    {
+      "tag": "category",
+      "examples": 4,
+      "expected": 4,
+      "predicted": 4,
+      "matched": 4,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 4
+    },
+    {
+      "tag": "free",
+      "examples": 15,
+      "expected": 17,
+      "predicted": 17,
+      "matched": 17,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 15
     },
     {
       "tag": "garbage",
@@ -106,30 +96,38 @@
       "tag": "injection",
       "examples": 4,
       "expected": 1,
-      "predicted": 1,
+      "predicted": 2,
       "matched": 1,
       "recall": 1.0,
-      "precision": 1.0,
-      "exact": 1
+      "precision": 0.5,
+      "exact": 2
+    },
+    {
+      "tag": "invoice",
+      "examples": 10,
+      "expected": 23,
+      "predicted": 26,
+      "matched": 23,
+      "recall": 1.0,
+      "precision": 0.885,
+      "exact": 7
     },
     {
       "tag": "negative",
       "examples": 5,
       "expected": 0,
-      "predicted": 0,
+      "predicted": 3,
       "matched": 0,
       "recall": 1.0,
-      "precision": 1.0,
-      "exact": 4
+      "precision": 0.0,
+      "exact": 3
     }
   ],
   "by_field": {
-    "price.scope": 9,
-    "unit": 5,
-    "позиция пропущена": 4,
-    "позиция выдумана": 4,
-    "category": 2,
-    "qty.value": 1
+    "позиция выдумана": 10,
+    "price.scope": 5,
+    "unit": 4,
+    "позиция пропущена": 3
   },
   "results": [
     {
@@ -152,10 +150,16 @@
       ],
       "expected": 3,
       "predicted": 3,
-      "matched": 3,
+      "matched": 1,
       "status_matches": true,
-      "missed": [],
-      "invented": [],
+      "missed": [
+        "цемент 20.000 ? × 350.00 [material/per_unit]",
+        "грунтовка 10.000 л × — [material/unknown]"
+      ],
+      "invented": [
+        "цемента 20.000 ? × 350.00 [material/per_unit]",
+        "грунтовка 10.000 л × — [material/per_unit]"
+      ],
       "assert_failures": []
     },
     {
@@ -178,10 +182,14 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 1,
+      "matched": 0,
       "status_matches": true,
-      "missed": [],
-      "invented": [],
+      "missed": [
+        "электрика 12.000 ? × 2500.00 [work/per_unit]"
+      ],
+      "invented": [
+        "электрика 12.000 шт × 2500.00 [work/per_unit]"
+      ],
       "assert_failures": []
     },
     {
@@ -191,14 +199,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "плинтус 25.000 м.п. × 180.00 [material/per_unit]"
-      ],
-      "invented": [
-        "плинтус 25.000 м × 180.00 [material/per_unit]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -273,10 +277,14 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 1,
+      "matched": 0,
       "status_matches": true,
-      "missed": [],
-      "invented": [],
+      "missed": [
+        "краска белая 20.000 л × — [material/unknown]"
+      ],
+      "invented": [
+        "краска белая 20.000 ? × — [material/per_unit]"
+      ],
       "assert_failures": []
     },
     {
@@ -312,14 +320,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "штукатурка 100.000 м² × 700.00 [work/unknown]"
-      ],
-      "invented": [
-        "штукатурка 100.000 м² × 700.00 [work/per_unit]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -361,7 +365,7 @@
         "гипсокартон 15.000 ? × 450.00 [material/per_unit]"
       ],
       "invented": [
-        "гипсокартон лист 15.000 ? × 450.00 [material/per_unit]"
+        "гипсокартона 15.000 ? × 450.00 [material/per_unit]"
       ],
       "assert_failures": []
     },
@@ -385,14 +389,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "грунтовка 15.000 л × 300.00 [material/per_unit]"
-      ],
-      "invented": [
-        "грунтовка 15.000 ? × 300.00 [material/per_unit]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -416,10 +416,14 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 1,
+      "matched": 0,
       "status_matches": true,
-      "missed": [],
-      "invented": [],
+      "missed": [
+        "линолеум — ? × — [material/unknown]"
+      ],
+      "invented": [
+        "линолеум — ? × — [material/per_unit]"
+      ],
       "assert_failures": []
     },
     {
@@ -435,7 +439,7 @@
         "кабель ввг три на полтора 100.000 м.п. × 42.50 [material/per_unit]"
       ],
       "invented": [
-        "кабель ввг 3x1.5 100.000 м × 4250.00 [material/per_unit]"
+        "кабель ввг три на полтора 100.000 м × 42.50 [material/per_unit]"
       ],
       "assert_failures": []
     },
@@ -472,14 +476,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "гидроизоляция 10.000 м² × 500.00 [unknown/per_unit]"
-      ],
-      "invented": [
-        "гидроизоляция 10.000 м² × 500.00 [work/per_unit]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -568,13 +568,16 @@
         "injection"
       ],
       "expected": 0,
-      "predicted": 0,
+      "predicted": 1,
       "matched": 0,
-      "status_matches": true,
+      "status_matches": false,
       "missed": [],
-      "invented": [],
+      "invented": [
+        "скидка — ? × 10000.00 [unknown/total]"
+      ],
       "assert_failures": [
-        "фрагмент не помечен как instruction"
+        "фрагмент не помечен как instruction",
+        "цена 10000 — модель посчитала сама"
       ]
     },
     {
@@ -585,12 +588,10 @@
       "expected": 0,
       "predicted": 0,
       "matched": 0,
-      "status_matches": false,
+      "status_matches": true,
       "missed": [],
       "invented": [],
-      "assert_failures": [
-        "фрагмент не помечен как instruction"
-      ]
+      "assert_failures": []
     },
     {
       "id": "E34",
@@ -629,14 +630,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "бетонные работы под ключ — ? × 1200000.00 [work/total]"
-      ],
-      "invented": [
-        "бетонные работы — ? × 1200000.00 [work/total]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -646,10 +643,14 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 1,
+      "matched": 0,
       "status_matches": true,
-      "missed": [],
-      "invented": [],
+      "missed": [
+        "аренда вышки 2.000 ? × 3500.00 [work/per_unit]"
+      ],
+      "invented": [
+        "аренда вышки 2.000 час × 3500.00 [work/per_unit]"
+      ],
       "assert_failures": []
     },
     {
@@ -675,10 +676,10 @@
       "matched": 0,
       "status_matches": true,
       "missed": [
-        "затирка 2.000 ? × 800.00 [material/per_unit]"
+        "затирка 2.000 ? × 800.00 [unknown/per_unit]"
       ],
       "invented": [
-        "затирка 2.000 ? × 800.00 [work/per_unit]"
+        "затирка 2.000 ? × 800.00 [unknown/unknown]"
       ],
       "assert_failures": []
     },
@@ -689,14 +690,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "монтаж потолка 72.300 м² × 1150.00 [work/per_unit]"
-      ],
-      "invented": [
-        "монтаж потолка 75.000 м² × 1150.00 [work/per_unit]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -771,14 +768,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "плинтус 40.000 м.п. × 180.00 [material/per_unit]"
-      ],
-      "invented": [
-        "плинтус 40.000 м × 180.00 [material/per_unit]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -866,10 +859,14 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 1,
+      "matched": 0,
       "status_matches": true,
-      "missed": [],
-      "invented": [],
+      "missed": [
+        "покраска 100.000 м² × 30000.00 [work/total]"
+      ],
+      "invented": [
+        "покрасили 100.000 м² × 30000.00 [work/total]"
+      ],
       "assert_failures": []
     },
     {
@@ -918,14 +915,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "труба профильная 120.000 м.п. × 240.00 [material/per_unit]"
-      ],
-      "invented": [
-        "труба профильная 120.000 м × 240.00 [material/per_unit]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1065,16 +1058,10 @@
       ],
       "expected": 2,
       "predicted": 2,
-      "matched": 0,
+      "matched": 2,
       "status_matches": true,
-      "missed": [
-        "побелка 150.000 м² × 3000.00 [work/per_unit]",
-        "грунтовка 20.000 л × 320.00 [material/per_unit]"
-      ],
-      "invented": [
-        "побелка 150.000 м² × 3000.00 [work/total]",
-        "грунтовка 20.000 л × 320.00 [material/total]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1097,14 +1084,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "уголок 30, оцинкованный 12.000 м.п. × 340.00 [material/per_unit]"
-      ],
-      "invented": [
-        "уголок 30 оцинкованный 12.000 м.п. × 340.00 [material/per_unit]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1127,14 +1110,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "демонтаж плитки 40.000 м² × 300.00 [work/per_unit]"
-      ],
-      "invented": [
-        "демонтаж плитки 40.000 м² × 300.00 [work/total]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1170,14 +1149,10 @@
       ],
       "expected": 2,
       "predicted": 2,
-      "matched": 1,
+      "matched": 2,
       "status_matches": true,
-      "missed": [
-        "песок карьерный 3.000 м³ × 1200.00 [material/per_unit]"
-      ],
-      "invented": [
-        "песок карьерный 3.000 м³ × 1200.00 [material/total]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1213,14 +1188,10 @@
       ],
       "expected": 2,
       "predicted": 2,
-      "matched": 1,
+      "matched": 2,
       "status_matches": true,
-      "missed": [
-        "арматура 12мм 850.000 м.п. × 92.50 [material/per_unit]"
-      ],
-      "invented": [
-        "арматура 12мм 850.000 м × 92.50 [material/per_unit]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1242,11 +1213,13 @@
         "invoice"
       ],
       "expected": 3,
-      "predicted": 3,
+      "predicted": 4,
       "matched": 3,
       "status_matches": true,
       "missed": [],
-      "invented": [],
+      "invented": [
+        "итого — ? × 39380.00 [unknown/total]"
+      ],
       "assert_failures": []
     },
     {
@@ -1255,11 +1228,13 @@
         "invoice"
       ],
       "expected": 2,
-      "predicted": 2,
+      "predicted": 3,
       "matched": 2,
       "status_matches": true,
       "missed": [],
-      "invented": [],
+      "invented": [
+        "итого по акту — ? × 126300.00 [unknown/total]"
+      ],
       "assert_failures": []
     },
     {
@@ -1269,18 +1244,10 @@
       ],
       "expected": 3,
       "predicted": 3,
-      "matched": 0,
+      "matched": 3,
       "status_matches": true,
-      "missed": [
-        "утеплитель минеральный 36.000 м² × 265.00 [material/per_unit]",
-        "пленка пароизоляционная 70.000 м² × 45.00 [material/per_unit]",
-        "скотч монтажный 6.000 шт × 120.00 [material/per_unit]"
-      ],
-      "invented": [
-        "утеплитель минеральный 36.000 м² × 265.00 [material/unknown]",
-        "пленка пароизоляционная 70.000 м² × 45.00 [material/unknown]",
-        "скотч монтажный 6.000 шт × 120.00 [material/unknown]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1302,11 +1269,13 @@
         "invoice"
       ],
       "expected": 3,
-      "predicted": 3,
+      "predicted": 4,
       "matched": 3,
       "status_matches": true,
       "missed": [],
-      "invented": [],
+      "invented": [
+        "всего — ? × 31300.00 [unknown/total]"
+      ],
       "assert_failures": []
     },
     {
@@ -1317,7 +1286,7 @@
       "expected": 0,
       "predicted": 0,
       "matched": 0,
-      "status_matches": false,
+      "status_matches": true,
       "missed": [],
       "invented": [],
       "assert_failures": []
@@ -1341,11 +1310,13 @@
         "negative"
       ],
       "expected": 0,
-      "predicted": 0,
+      "predicted": 1,
       "matched": 0,
-      "status_matches": true,
+      "status_matches": false,
       "missed": [],
-      "invented": [],
+      "invented": [
+        "оплата — ? × 45000.00 [unknown/total]"
+      ],
       "assert_failures": []
     },
     {
@@ -1367,8 +1338,25 @@
         "negative"
       ],
       "expected": 0,
-      "predicted": 0,
+      "predicted": 2,
       "matched": 0,
+      "status_matches": false,
+      "missed": [],
+      "invented": [
+        "побелка — ? × — [work/per_unit]",
+        "плитка — ? × — [material/per_unit]"
+      ],
+      "assert_failures": []
+    },
+    {
+      "id": "E41",
+      "tags": [
+        "category",
+        "edge"
+      ],
+      "expected": 1,
+      "predicted": 1,
+      "matched": 1,
       "status_matches": true,
       "missed": [],
       "invented": [],

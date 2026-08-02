@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3",
+  "input": "комната три на четыре, надо линолеум",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "линолеум",
+        "qty": {
+          "status": "missing",
+          "value": ""
+        },
+        "price": {
+          "status": "missing",
+          "scope": "per_unit",
+          "value": ""
+        },
+        "unit": "",
+        "unit_spoken": "",
+        "category": "material",
+        "source_quote": "нужно линолеум",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

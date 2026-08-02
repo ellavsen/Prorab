@@ -21,6 +21,15 @@ import traceback
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "packages"))
 
+# Ключ живёт в .env, как и у бота: команда из README должна работать
+# из чистой оболочки, а не только там, где его уже экспортировали.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(ROOT / ".env")
+except ImportError:  # pragma: no cover — dotenv есть в requirements
+    pass
+
 from smeta_ai import PROMPT_VERSION, OpenAIProvider, RecordedProvider, StubProvider  # noqa: E402
 from smeta_ai.evaluation import evaluate, load_dataset  # noqa: E402
 from smeta_ai.recorded import version_dir  # noqa: E402
@@ -57,13 +66,25 @@ def build_extractor(mode: str, model: str):
 
 
 def run_comparison(config: dict, dataset: list[dict], versions: list[str]) -> int:
-    """Две версии промпта на одном наборе. Ничего не записывает."""
+    """Две версии промпта на общем подмножестве. Ничего не записывает."""
     left, right = versions
-    reports = {
-        version: evaluate(replay(config["model"], version), dataset)
-        for version in (left, right)
-    }
-    print(f"Сравнение промптов на одном наборе, модель {config['model']}\n")
+    players = {v: replay(config["model"], v) for v in (left, right)}
+
+    common = [
+        example for example in dataset
+        if all(player.has_extract(example["input"]) for player in players.values())
+    ]
+    missing = [e["id"] for e in dataset if e not in common]
+
+    print(f"Сравнение промптов, модель {config['model']}")
+    print(f"Общих примеров: {len(common)} из {len(dataset)}")
+    if missing:
+        # Набор растёт; приписывать старой версии промах на примере, которого
+        # она не видела, нельзя.
+        print(f"Записаны не в обеих версиях, из сравнения исключены: {', '.join(missing)}")
+    print()
+
+    reports = {v: evaluate(player, common) for v, player in players.items()}
     print(format_comparison(f"v{left}", reports[left], f"v{right}", reports[right]))
     return 0
 

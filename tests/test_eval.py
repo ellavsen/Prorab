@@ -348,8 +348,12 @@ def test_answers_of_an_older_prompt_stay_replayable():
     old = version_dir(FIXTURES, "2")
     if not old.is_dir() or not any(old.glob("*.json")):
         pytest.skip("записей промпта v2 нет")
-    report = evaluate(replayer("2"), DATASET)
-    assert report.predicted > 0
+
+    player = replayer("2")
+    # Набор растёт; у старой версии есть ответы не на все примеры.
+    answerable = [e for e in DATASET if player.has_extract(e["input"])]
+    assert len(answerable) >= 80, "записи v2 должны покрывать почти весь набор"
+    assert evaluate(player, answerable).predicted > 0
 
 
 def test_versions_do_not_share_a_directory():
@@ -363,3 +367,9 @@ def test_the_comparison_names_what_changed():
     right = evaluate(StubProvider(), DATASET)
     text = format_comparison("v2", left, "v3", right)
     assert "recall" in text and "было/стало" in text
+
+
+def test_a_missing_recording_is_visible_not_silent():
+    """Пример, которого старая версия не видела, обязан быть заметен."""
+    player = replayer("2")
+    assert not player.has_extract("такого входа в наборе никогда не было")
