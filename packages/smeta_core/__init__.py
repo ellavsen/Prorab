@@ -8,6 +8,7 @@ tests/test_architecture.py.
 from .calculate import calculate_estimate
 from .merge import merge_duplicates
 from .models import (
+    NAME_MAX_LEN,
     Category,
     EstimateTotals,
     LineTotal,
@@ -34,11 +35,13 @@ from .money import (
     to_bp,
     to_kop,
     to_milli,
+    unit_price,
 )
 from .parsing import AmbiguousLine, parse_position_line, split_qty_unit
-from .units import UNITS, default_unit, normalize_unit
+from .units import UNITS, can_substitute_price, default_unit, normalize_unit, unit_decision
 
 __all__ = [
+    "NAME_MAX_LEN",
     "PRICE_MAX",
     "QTY_MAX",
     "RATE_MAX",
@@ -50,6 +53,7 @@ __all__ = [
     "LineTotal",
     "PositionData",
     "calculate_estimate",
+    "can_substitute_price",
     "check_name",
     "check_price",
     "check_quantity",
@@ -71,4 +75,6 @@ __all__ = [
     "to_bp",
     "to_kop",
     "to_milli",
+    "unit_decision",
+    "unit_price",
 ]

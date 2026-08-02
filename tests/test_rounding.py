@@ -58,3 +58,36 @@ def test_a9_markup_disappears_on_one_kopek():
 def test_a10_second_cascade_boundary():
     _, total = line("1", "0.50", D("1.00"))   # 0.50 * 1.01 = 0.505
     assert total == D("0.51")
+
+
+# --- Деление «за всё»: только по явной просьбе (ADR-012) ---
+
+def test_a11_unit_price_divides_and_rounds():
+    from smeta_core import unit_price
+    assert unit_price(D("30000.00"), D("7")) == D("4285.71")
+
+
+def test_a12_division_does_not_come_back_to_the_same_sum():
+    """Причина, по которой «за всё» схлопывается, а не делится.
+
+    Человек назвал 30 000; разделив и умножив обратно, получаем 29 999,97.
+    Три копейки — это ровно тот баг доверия, ради которого писался Sprint 1.
+    """
+    from smeta_core import Category, PositionData, calculate_estimate, unit_price
+
+    each = unit_price(D("30000.00"), D("7"))
+    restored = calculate_estimate(
+        [PositionData(Category.WORK, "Покраска", D("7"), each)], D("0"), D("0")
+    ).subtotal
+    assert restored == D("29999.97")
+    assert D("30000.00") - restored == D("0.03")
+
+
+def test_a13_division_that_is_exact_loses_nothing():
+    from smeta_core import Category, PositionData, calculate_estimate, unit_price
+
+    each = unit_price(D("30000.00"), D("100"))
+    restored = calculate_estimate(
+        [PositionData(Category.WORK, "Покраска", D("100"), each)], D("0"), D("0")
+    ).subtotal
+    assert (each, restored) == (D("300.00"), D("30000.00"))

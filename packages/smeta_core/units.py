@@ -30,7 +30,32 @@ def default_unit(category: str) -> str:
     Подстановка обязана быть видимой: вызывающий сообщает о ней пользователю,
     иначе это тихое домысливание данных.
     """
-    return "шт" if str(category) == "Материал" else "м²"
+    return "шт" if str(category) == "material" else "м²"
+
+
+def unit_decision(unit: str, unit_spoken: str) -> str:
+    """Канон best-effort: явный, иначе выведенный из сказанного, иначе "".
+
+    Неуверенность здесь не беда: единица не участвует в арифметике,
+    qty × price считается одинаково при любом каноне (ADR-015).
+    """
+    return normalize_unit(unit) or normalize_unit(unit_spoken)
+
+
+def can_substitute_price(unit: str, blocking_enabled: bool = True) -> bool:
+    """Можно ли подставлять цену за пользователя.
+
+    Единственный случай, когда неоднозначная единица опасна. Названную
+    человеком цену она не портит: «20 мешков по 350» это 7000 при любом
+    каноне. Но подстановка из справочника без подтверждённой единицы даёт
+    ошибку в разы — «350 за мешок» против «350 за кг» (ADR-015).
+
+    Вызывать обязан тот, кто подставляет цену: сейчас таких мест нет,
+    справочник цен появится в price-radar.
+    """
+    if not blocking_enabled:
+        return True
+    return bool(normalize_unit(unit))
 
 
 def normalize_unit(raw: str) -> str:

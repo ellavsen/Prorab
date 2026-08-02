@@ -145,7 +145,11 @@ def test_ambiguity_needs_the_money_to_differ():
 
 
 @given(
-    st.text(min_size=1, max_size=60).filter(lambda s: s.strip() and "\n" not in s),
+    # Запятые из имени вырезаются ниже, поэтому годным должно быть то, что
+    # останется: имя «,» после замены превращается в пустое и валидным не будет.
+    st.text(min_size=1, max_size=60).filter(
+        lambda s: s.replace(",", " ").strip() and "\n" not in s
+    ),
     st.integers(min_value=1, max_value=99_999_999),
     st.integers(min_value=0, max_value=999_999_999),
 )
@@ -170,3 +174,38 @@ def test_decimal_reading_wins_when_the_plain_one_is_invalid():
 def test_when_neither_reading_works_the_error_is_about_the_fields():
     with pytest.raises(ValueError, match="нужно 3"):
         parse_position_line("1,5", Category.WORK)
+
+
+# --- Единицы: канон best-effort, блокировка только для подстановки цены (ADR-015) ---
+
+def test_canonical_unit_is_derived_from_what_was_said():
+    from smeta_core import unit_decision
+
+    assert unit_decision("", "м2") == "м²"
+    assert unit_decision("м.п.", "погонных") == "м.п."
+    assert unit_decision("", "мешков") == ""      # упаковка, канона нет
+
+
+def test_an_unknown_unit_does_not_affect_the_money():
+    """Обоснование ADR-015: единица в арифметике не участвует.
+
+    «20 мешков по 350» даёт 7000 при любом каноне, поэтому блокировать ввод
+    из-за незнакомой единицы незачем.
+    """
+    from smeta_core import calculate_estimate
+
+    bags = PositionData(Category.MATERIAL, "Цемент", D("20"), D("350"),
+                        unit="", unit_spoken="мешков")
+    kilos = PositionData(Category.MATERIAL, "Цемент", D("20"), D("350"), unit="кг")
+    assert (calculate_estimate([bags], D("0"), D("0")).total
+            == calculate_estimate([kilos], D("0"), D("0")).total == D("7000.00"))
+
+
+def test_price_may_be_substituted_only_for_a_confirmed_unit():
+    """Единственный опасный случай: цену подставляет система, а не человек."""
+    from smeta_core import can_substitute_price
+
+    assert can_substitute_price("кг") is True
+    assert can_substitute_price("") is False
+    # Флаг выключает проверку без правки кода.
+    assert can_substitute_price("", blocking_enabled=False) is True
