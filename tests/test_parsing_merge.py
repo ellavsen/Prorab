@@ -227,3 +227,14 @@ def test_price_may_be_substituted_only_for_a_confirmed_unit():
     assert can_substitute_price("") is False
     # Флаг выключает проверку без правки кода.
     assert can_substitute_price("", blocking_enabled=False) is True
+
+
+def test_a_known_source_makes_the_question_sharper():
+    """С источником вопрос не «годится ли единица», а «та же ли она» (ADR-017)."""
+    from smeta_core import can_substitute_price
+
+    assert can_substitute_price("кг", "кг") is True
+    assert can_substitute_price("м²", "м.п.") is False   # площадь против длины
+    assert can_substitute_price("кг", "") is False       # неизвестно, за что цена
+    assert can_substitute_price("", "кг") is False
+    assert can_substitute_price("", "") is False         # судить нечем

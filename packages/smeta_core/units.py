@@ -50,20 +50,32 @@ def unit_decision(unit: str, unit_spoken: str) -> str:
     return normalize_unit(unit) or normalize_unit(unit_spoken)
 
 
-def can_substitute_price(unit: str, blocking_enabled: bool = True) -> bool:
+def can_substitute_price(
+    unit: str, source_unit: str | None = None, blocking_enabled: bool = True
+) -> bool:
     """Можно ли подставлять цену за пользователя.
 
     Единственный случай, когда неоднозначная единица опасна. Названную
     человеком цену она не портит: «20 мешков по 350» это 7000 при любом
-    каноне. Но подстановка из справочника без подтверждённой единицы даёт
-    ошибку в разы — «350 за мешок» против «350 за кг» (ADR-015).
+    каноне. Но подстановка без подтверждённой единицы даёт ошибку в разы —
+    «350 за мешок» против «350 за кг» (ADR-015).
 
-    Вызывать обязан тот, кто подставляет цену: сейчас таких мест нет,
-    справочник цен появится в price-radar.
+    Без source_unit вопрос прежний: годится ли эта единица под чужое число
+    неизвестной привязки. С source_unit вопрос точнее — та же ли это
+    величина, что у цены-источника; разные каноны не сходятся никогда, и
+    цена за м² не подставляется в позицию в м.п.
+
+    Про случай «канона нет ни у той, ни у другой» эта функция не судит: ей
+    нечем отличить «мешок» от «мешка». Сказанное слово сравнивает
+    smeta_prices.same_unit, и он же зовёт эту функцию для канонической
+    половины правила — чтобы правило осталось одно (ADR-017).
     """
     if not blocking_enabled:
         return True
-    return bool(normalize_unit(unit))
+    canon = normalize_unit(unit)
+    if source_unit is None:
+        return bool(canon)
+    return bool(canon) and canon == normalize_unit(source_unit)
 
 
 def normalize_unit(raw: str) -> str:

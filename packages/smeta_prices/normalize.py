@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import re
 
-from smeta_core import normalize_unit
+from smeta_core import can_substitute_price, normalize_unit, unit_decision
 
 from .packaging import FORMS
 
@@ -96,12 +96,12 @@ def same_unit(unit: str, unit_spoken: str, other_unit: str, other_spoken: str) -
     Конвертации не будет ни при каких условиях: цена за м² и цена за м.п. не
     сравниваются никогда.
     """
-    canon, other_canon = (
-        normalize_unit(unit) or normalize_unit(unit_spoken),
-        normalize_unit(other_unit) or normalize_unit(other_spoken),
-    )
+    canon = unit_decision(unit, unit_spoken)
+    other_canon = unit_decision(other_unit, other_spoken)
     if canon or other_canon:
-        return canon == other_canon
+        # Каноническую половину правила судит ядро — там же, где живёт запрет
+        # подставлять цену без подтверждённой единицы (ADR-015).
+        return can_substitute_price(canon, other_canon)
     spoken = packaging_form(unit_spoken) or fold(unit_spoken)
     other = packaging_form(other_spoken) or fold(other_spoken)
     return bool(spoken) and spoken == other
