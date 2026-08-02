@@ -1,0 +1,16 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1b",
+  "input": "привет, как дела? как сам вообще?",
+  "result": {
+    "status": "empty",
+    "positions": [],
+    "ignored": [
+      {
+        "quote": "привет, как дела? как сам вообще?",
+        "reason": "chatter"
+      }
+    ]
+  }
+}

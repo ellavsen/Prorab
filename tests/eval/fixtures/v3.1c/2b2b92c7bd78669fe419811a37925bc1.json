@@ -1,0 +1,46 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1c",
+  "input": "разгрузка машины четыре часа по тысяче двести, песок шесть кубов по тысяче четыреста",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "разгрузка машины",
+        "qty": {
+          "status": "stated",
+          "value": "4"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "1200"
+        },
+        "unit": "час",
+        "unit_spoken": "часа",
+        "category": "work",
+        "source_quote": "разгрузка машины четыре часа по тысяче двести",
+        "confidence": "high"
+      },
+      {
+        "name": "песок",
+        "qty": {
+          "status": "stated",
+          "value": "6"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "1400"
+        },
+        "unit": "м³",
+        "unit_spoken": "кубов",
+        "category": "material",
+        "source_quote": "песок шесть кубов по тысяче четыреста",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

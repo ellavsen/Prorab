@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1b",
+  "input": "Шпаклевка стен - 80 м2, 350 руб/м2",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "шпаклевка стен",
+        "qty": {
+          "status": "stated",
+          "value": "80"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "350"
+        },
+        "unit": "м²",
+        "unit_spoken": "м2",
+        "category": "work",
+        "source_quote": "Шпаклевка стен - 80 м2, 350 руб/м2",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

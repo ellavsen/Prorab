@@ -1,0 +1,11 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1c",
+  "input": "надо будет на неделе посчитать смету на ванную, напомни мне",
+  "result": {
+    "status": "empty",
+    "positions": [],
+    "ignored": []
+  }
+}

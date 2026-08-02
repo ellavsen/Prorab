@@ -1,0 +1,46 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1b",
+  "input": "Товарная накладная\nНаименование | Кол-во | Ед. | Цена\nПлита OSB 9мм | 30 | шт | 890,00\nБрус 50х50 | 120 | м.п. | 145,00\nВсего к оплате: 44 100,00",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Плита OSB 9мм",
+        "qty": {
+          "status": "stated",
+          "value": "30"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "890.00"
+        },
+        "unit": "шт",
+        "unit_spoken": "шт",
+        "category": "material",
+        "source_quote": "Плита OSB 9мм",
+        "confidence": "high"
+      },
+      {
+        "name": "Брус 50х50",
+        "qty": {
+          "status": "stated",
+          "value": "120"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "145.00"
+        },
+        "unit": "м.п.",
+        "unit_spoken": "м.п.",
+        "category": "material",
+        "source_quote": "Брус 50х50",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1b",
+  "input": "Итого 45 000 рублей, оплата до пятницы",
+  "result": {
+    "status": "empty",
+    "positions": [],
+    "ignored": []
+  }
+}

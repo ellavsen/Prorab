@@ -1,0 +1,46 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1b",
+  "input": "нужно посчитать побелку и плитку, цены пришлю позже",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "побелка",
+        "qty": {
+          "status": "missing",
+          "value": ""
+        },
+        "price": {
+          "status": "missing",
+          "scope": "unknown",
+          "value": ""
+        },
+        "unit": "",
+        "unit_spoken": "",
+        "category": "work",
+        "source_quote": "побелку",
+        "confidence": "high"
+      },
+      {
+        "name": "плитка",
+        "qty": {
+          "status": "missing",
+          "value": ""
+        },
+        "price": {
+          "status": "missing",
+          "scope": "unknown",
+          "value": ""
+        },
+        "unit": "",
+        "unit_spoken": "",
+        "category": "material",
+        "source_quote": "плитку",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

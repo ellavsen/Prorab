@@ -1,0 +1,11 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1c",
+  "input": "нужно посчитать побелку и плитку, цены пришлю позже",
+  "result": {
+    "status": "empty",
+    "positions": [],
+    "ignored": []
+  }
+}

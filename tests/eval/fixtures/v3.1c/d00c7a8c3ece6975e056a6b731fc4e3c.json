@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1c",
+  "input": "Проволока вязальная 8 кг по 145",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Проволока вязальная",
+        "qty": {
+          "status": "stated",
+          "value": "8"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "145"
+        },
+        "unit": "кг",
+        "unit_spoken": "кг",
+        "category": "material",
+        "source_quote": "Проволока вязальная 8 кг по 145",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}
