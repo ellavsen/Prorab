@@ -1,0 +1,16 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1a",
+  "input": "Привет, как дела? Когда сможешь подъехать?",
+  "result": {
+    "status": "empty",
+    "positions": [],
+    "ignored": [
+      {
+        "quote": "Привет, как дела? Когда сможешь подъехать?",
+        "reason": "chatter"
+      }
+    ]
+  }
+}

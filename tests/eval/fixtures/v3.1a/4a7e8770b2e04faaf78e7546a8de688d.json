@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1a",
+  "input": "стяжка пола сорок квадратных метров по тысяче двести",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "стяжка пола",
+        "qty": {
+          "status": "stated",
+          "value": "40"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "1200"
+        },
+        "unit": "м²",
+        "unit_spoken": "квадратных метров",
+        "category": "work",
+        "source_quote": "стяжка пола сорок квадратных метров по тысяче двести",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

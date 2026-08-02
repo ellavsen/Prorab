@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1a",
+  "input": "шпаклёвка потолка тридцать два с половиной квадрата по четыреста",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "шпаклёвка потолка",
+        "qty": {
+          "status": "stated",
+          "value": "32.5"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "400"
+        },
+        "unit": "м²",
+        "unit_spoken": "квадрата",
+        "category": "work",
+        "source_quote": "шпаклёвка потолка тридцать два с половиной квадрата по четыреста",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1a",
+  "input": "Счёт №221\nКраска фасадная 15 л по 1 250,00\nГрунт глубокого проникновения 10 л по 480,00\nНДС не облагается\nИтого 22 550,00",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "Краска фасадная 15 л",
+        "qty": {
+          "status": "stated",
+          "value": "15"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "1250.00"
+        },
+        "unit": "л",
+        "unit_spoken": "л",
+        "category": "material",
+        "source_quote": "Краска фасадная 15 л по 1 250,00",
+        "confidence": "high"
+      },
+      {
+        "name": "Грунт глубокого проникновения 10 л",
+        "qty": {
+          "status": "stated",
+          "value": "10"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "480.00"
+        },
+        "unit": "л",
+        "unit_spoken": "л",
+        "category": "material",
+        "source_quote": "Грунт глубокого проникновения 10 л по 480,00",
+        "confidence": "high"
+      },
+      {
+        "name": "Итого",
+        "qty": {
+          "status": "missing",
+          "value": ""
+        },
+        "price": {
+          "status": "stated",
+          "scope": "total",
+          "value": "22550.00"
+        },
+        "unit": "",
+        "unit_spoken": "",
+        "category": "unknown",
+        "source_quote": "Итого 22 550,00",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

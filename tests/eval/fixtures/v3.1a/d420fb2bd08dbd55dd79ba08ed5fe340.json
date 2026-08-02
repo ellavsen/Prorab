@@ -1,0 +1,29 @@
+{
+  "kind": "extract",
+  "model": "gpt-4.1-mini",
+  "prompt_version": "3.1a",
+  "input": "монтаж потолка семьдесят два и три квадрата по тысяче сто пятьдесят",
+  "result": {
+    "status": "ok",
+    "positions": [
+      {
+        "name": "монтаж потолка",
+        "qty": {
+          "status": "stated",
+          "value": "72.3"
+        },
+        "price": {
+          "status": "stated",
+          "scope": "per_unit",
+          "value": "1150"
+        },
+        "unit": "м²",
+        "unit_spoken": "квадрата",
+        "category": "work",
+        "source_quote": "монтаж потолка семьдесят два и три квадрата по тысяче сто пятьдесят",
+        "confidence": "high"
+      }
+    ],
+    "ignored": []
+  }
+}

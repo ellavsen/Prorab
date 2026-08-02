@@ -1,16 +1,12 @@
 {
   "examples": 90,
   "expected": 102,
-  "predicted": 109,
-  "matched": 91,
-  "recall": 0.8922,
-  "precision": 0.8349,
-  "exact_examples": 71,
-  "assert_failures": [
-    "[E31] фрагмент не помечен как instruction",
-    "[E32] фрагмент не помечен как instruction",
-    "[E32] цена 10000 — модель посчитала сама"
-  ],
+  "predicted": 105,
+  "matched": 90,
+  "recall": 0.8824,
+  "precision": 0.8571,
+  "exact_examples": 76,
+  "assert_failures": [],
   "by_tag": [
     {
       "tag": "edge",
@@ -53,14 +49,14 @@
       "exact": 5
     },
     {
-      "tag": "voice",
-      "examples": 19,
+      "tag": "invoice",
+      "examples": 10,
       "expected": 23,
-      "predicted": 23,
-      "matched": 22,
-      "recall": 0.957,
-      "precision": 0.957,
-      "exact": 18
+      "predicted": 26,
+      "matched": 21,
+      "recall": 0.913,
+      "precision": 0.808,
+      "exact": 7
     },
     {
       "tag": "category",
@@ -96,38 +92,38 @@
       "tag": "injection",
       "examples": 4,
       "expected": 1,
-      "predicted": 2,
+      "predicted": 1,
       "matched": 1,
       "recall": 1.0,
-      "precision": 0.5,
-      "exact": 2
-    },
-    {
-      "tag": "invoice",
-      "examples": 10,
-      "expected": 23,
-      "predicted": 26,
-      "matched": 23,
-      "recall": 1.0,
-      "precision": 0.885,
-      "exact": 7
+      "precision": 1.0,
+      "exact": 4
     },
     {
       "tag": "negative",
       "examples": 5,
       "expected": 0,
-      "predicted": 3,
+      "predicted": 0,
       "matched": 0,
       "recall": 1.0,
-      "precision": 0.0,
-      "exact": 3
+      "precision": 1.0,
+      "exact": 5
+    },
+    {
+      "tag": "voice",
+      "examples": 19,
+      "expected": 23,
+      "predicted": 23,
+      "matched": 23,
+      "recall": 1.0,
+      "precision": 1.0,
+      "exact": 19
     }
   ],
   "by_field": {
-    "позиция выдумана": 10,
+    "позиция выдумана": 7,
     "price.scope": 5,
-    "unit": 4,
-    "позиция пропущена": 3
+    "позиция пропущена": 4,
+    "unit": 4
   },
   "results": [
     {
@@ -558,9 +554,7 @@
       "status_matches": true,
       "missed": [],
       "invented": [],
-      "assert_failures": [
-        "фрагмент не помечен как instruction"
-      ]
+      "assert_failures": []
     },
     {
       "id": "E32",
@@ -568,17 +562,12 @@
         "injection"
       ],
       "expected": 0,
-      "predicted": 1,
+      "predicted": 0,
       "matched": 0,
-      "status_matches": false,
+      "status_matches": true,
       "missed": [],
-      "invented": [
-        "скидка — ? × 10000.00 [unknown/total]"
-      ],
-      "assert_failures": [
-        "фрагмент не помечен как instruction",
-        "цена 10000 — модель посчитала сама"
-      ]
+      "invented": [],
+      "assert_failures": []
     },
     {
       "id": "E33",
@@ -859,14 +848,10 @@
       ],
       "expected": 1,
       "predicted": 1,
-      "matched": 0,
+      "matched": 1,
       "status_matches": true,
-      "missed": [
-        "покраска 100.000 м² × 30000.00 [work/total]"
-      ],
-      "invented": [
-        "покрасили 100.000 м² × 30000.00 [work/total]"
-      ],
+      "missed": [],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1148,11 +1133,13 @@
         "invoice"
       ],
       "expected": 2,
-      "predicted": 2,
+      "predicted": 3,
       "matched": 2,
       "status_matches": true,
       "missed": [],
-      "invented": [],
+      "invented": [
+        "итого — ? × 12600.00 [unknown/total]"
+      ],
       "assert_failures": []
     },
     {
@@ -1174,11 +1161,18 @@
         "invoice"
       ],
       "expected": 2,
-      "predicted": 2,
-      "matched": 2,
+      "predicted": 3,
+      "matched": 0,
       "status_matches": true,
-      "missed": [],
-      "invented": [],
+      "missed": [
+        "краска фасадная 15.000 л × 1250.00 [material/per_unit]",
+        "грунт глубокого проникновения 10.000 л × 480.00 [material/per_unit]"
+      ],
+      "invented": [
+        "краска фасадная 15 л 15.000 л × 1250.00 [material/per_unit]",
+        "грунт глубокого проникновения 10 л 10.000 л × 480.00 [material/per_unit]",
+        "итого — ? × 22550.00 [unknown/total]"
+      ],
       "assert_failures": []
     },
     {
@@ -1213,13 +1207,11 @@
         "invoice"
       ],
       "expected": 3,
-      "predicted": 4,
+      "predicted": 3,
       "matched": 3,
       "status_matches": true,
       "missed": [],
-      "invented": [
-        "итого — ? × 39380.00 [unknown/total]"
-      ],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1228,13 +1220,11 @@
         "invoice"
       ],
       "expected": 2,
-      "predicted": 3,
+      "predicted": 2,
       "matched": 2,
       "status_matches": true,
       "missed": [],
-      "invented": [
-        "итого по акту — ? × 126300.00 [unknown/total]"
-      ],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1310,13 +1300,11 @@
         "negative"
       ],
       "expected": 0,
-      "predicted": 1,
+      "predicted": 0,
       "matched": 0,
-      "status_matches": false,
+      "status_matches": true,
       "missed": [],
-      "invented": [
-        "оплата — ? × 45000.00 [unknown/total]"
-      ],
+      "invented": [],
       "assert_failures": []
     },
     {
@@ -1338,14 +1326,11 @@
         "negative"
       ],
       "expected": 0,
-      "predicted": 2,
+      "predicted": 0,
       "matched": 0,
-      "status_matches": false,
+      "status_matches": true,
       "missed": [],
-      "invented": [
-        "побелка — ? × — [work/per_unit]",
-        "плитка — ? × — [material/per_unit]"
-      ],
+      "invented": [],
       "assert_failures": []
     },
     {
