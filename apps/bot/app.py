@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 
 from .config import require_token
-from .handlers import estimates, files, positions, stepwise
+from .handlers import ai, estimates, files, positions, stepwise
 from .handlers.callbacks import on_callback
 
 
@@ -38,6 +38,10 @@ def build_app():
     app.add_handler(
         MessageHandler(filters.Regex(r"(?i)^(работа|материал)$"), estimates.handle_category)
     )
+
+    # Голос и фото — отдельных команд нет, бот сам понимает, что прислали.
+    app.add_handler(MessageHandler(filters.VOICE, ai.on_voice))
+    app.add_handler(MessageHandler(filters.PHOTO, ai.on_photo))
 
     # Свободный текст: шаг пошагового ввода либо строки позиций.
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, positions.on_text))

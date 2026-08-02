@@ -16,9 +16,9 @@ client = TestClient(app)
 
 ESTIMATE = {
     "positions": [
-        {"category": "Работа", "name": "Побелка", "qty": "1.5", "price": "100.10"},
-        {"category": "Работа", "name": "Стяжка", "qty": "2.5", "price": "100.10"},
-        {"category": "Материал", "name": "Гвозди", "qty": "1000", "price": "0.37"},
+        {"category": "work", "name": "Побелка", "qty": "1.5", "price": "100.10"},
+        {"category": "work", "name": "Стяжка", "qty": "2.5", "price": "100.10"},
+        {"category": "material", "name": "Гвозди", "qty": "1000", "price": "0.37"},
     ],
     "markup_work_rate": "6.00",
     "markup_material_rate": "6.00",
@@ -32,7 +32,7 @@ def domain_totals(payload=ESTIMATE):
             name=p["name"],
             qty=D(p["qty"]),
             price=D(p["price"]),
-            unit=p.get("unit", "") or ("шт" if p["category"] == "Материал" else "м²"),
+            unit=p.get("unit", "") or ("шт" if p["category"] == "material" else "м²"),
         )
         for p in payload["positions"]
     ]
@@ -82,7 +82,7 @@ def test_precision_survives_the_round_trip():
     body = client.post(
         "/calculate",
         json={"positions": [
-            {"category": "Работа", "name": "Тысячные", "qty": "0.007", "price": "5.00"},
+            {"category": "work", "name": "Тысячные", "qty": "0.007", "price": "5.00"},
         ], "markup_work_rate": "0.00", "markup_material_rate": "0.00"},
     ).json()
     assert body["lines"][0]["qty"] == "0.007"
@@ -114,7 +114,7 @@ def test_unit_filling_can_be_switched_off():
 def test_domain_refusals_become_422_with_a_readable_reason(qty, price, expected):
     response = client.post(
         "/calculate",
-        json={"positions": [{"category": "Работа", "name": "x", "qty": qty, "price": price}]},
+        json={"positions": [{"category": "work", "name": "x", "qty": qty, "price": price}]},
     )
     assert response.status_code == 422
     assert expected in response.json()["detail"]
@@ -124,7 +124,7 @@ def test_line_ceiling_is_enforced_over_http():
     response = client.post(
         "/calculate",
         json={"positions": [
-            {"category": "Работа", "name": "x", "qty": "99999.999", "price": "9999999.99"},
+            {"category": "work", "name": "x", "qty": "99999.999", "price": "9999999.99"},
         ]},
     )
     assert response.status_code == 422
@@ -157,7 +157,7 @@ def test_xlsx_refuses_an_estimate_the_calculator_refuses():
     response = client.post(
         "/xlsx",
         json={"positions": [
-            {"category": "Работа", "name": "x", "qty": "99999.999", "price": "9999999.99"},
+            {"category": "work", "name": "x", "qty": "99999.999", "price": "9999999.99"},
         ]},
     )
     assert response.status_code == 422
@@ -165,7 +165,7 @@ def test_xlsx_refuses_an_estimate_the_calculator_refuses():
 
 def test_parse_returns_positions_and_reasons_side_by_side():
     body = client.post("/parse", json={
-        "category": "Работа",
+        "category": "work",
         "text": "Побелка, 150 м2, 3000\nкривая строка\nСтяжка, 40.5, 1200",
     }).json()
     assert [p["name"] for p in body["positions"]] == ["Побелка", "Стяжка"]
@@ -175,7 +175,7 @@ def test_parse_returns_positions_and_reasons_side_by_side():
 
 
 def test_parse_of_an_empty_text():
-    body = client.post("/parse", json={"category": "Материал", "text": "\n  \n"}).json()
+    body = client.post("/parse", json={"category": "material", "text": "\n  \n"}).json()
     assert body == {"positions": [], "errors": []}
 
 

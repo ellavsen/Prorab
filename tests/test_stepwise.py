@@ -58,7 +58,7 @@ def bot(tmp_path):
     with Session() as db:
         estimate = create_estimate(db, UID, name="Смета")
         set_current_estimate(db, UID, estimate.id)
-        set_category(db, UID, "Работа")
+        set_category(db, UID, "work")
     return stepwise, Session, estimate.id
 
 

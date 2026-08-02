@@ -32,7 +32,7 @@ from ..texts import (
     render_estimate,
     render_units_substituted,
 )
-from . import stepwise
+from . import ai, stepwise
 
 EDIT_PATTERN = re.compile(r"^/edit\s+(\d+)(.*)$", flags=re.IGNORECASE)
 
@@ -61,11 +61,13 @@ async def on_text(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def _add_bulk(update: Update, db, uid: int, category: Category) -> None:
-    lines = [line.strip() for line in (update.message.text or "").split("\n") if line.strip()]
+    text = update.message.text or ""
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
 
     added = 0
     substituted: dict[str, list[str]] = {}
     ambiguous: list[AmbiguousLine] = []
+    failed: list[tuple[str, ValueError]] = []
     estimate = current_estimate(db, uid)
 
     for line in lines:
@@ -75,11 +77,7 @@ async def _add_bulk(update: Update, db, uid: int, category: Category) -> None:
             ambiguous.append(error)
             continue
         except ValueError as error:
-            await update.message.reply_text(
-                f"❗️Не удалось добавить строку:\n<code>{esc(line)}</code>\n"
-                f"Причина: {esc(error)}",
-                parse_mode=ParseMode.HTML,
-            )
+            failed.append((line, error))
             continue
 
         if not position.unit:
@@ -88,7 +86,21 @@ async def _add_bulk(update: Update, db, uid: int, category: Category) -> None:
             substituted.setdefault(unit, []).append(position.name)
         positions.add(db, uid, estimate.id, position)
         added += 1
+
+    # Строгий формат не дал ничего — значит, это живая речь, а не список.
+    # Отвечать ошибкой на каждую строку тут бесполезно: пусть разбирает модель.
+    if failed and not added and not ambiguous:
+        await ai.demo_note(update.message)
+        await ai.extract_and_offer(update.message, db, uid, text)
+        return
+
     touch_estimate(db, estimate)
+    for line, error in failed:
+        await update.message.reply_text(
+            f"❗️Не удалось добавить строку:\n<code>{esc(line)}</code>\n"
+            f"Причина: {esc(error)}",
+            parse_mode=ParseMode.HTML,
+        )
 
     for unit, names in substituted.items():
         await update.message.reply_text(render_units_substituted(names, unit))
@@ -118,12 +130,10 @@ async def cmd_unit(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("ID должен быть числом. Пример: /unit 12 м2")
         return
 
-    unit = normalize_unit(" ".join(args[2:]))
-    if not unit:
-        await update.message.reply_text(
-            f"Не знаю такую единицу. Доступны: {', '.join(UNITS)}"
-        )
-        return
+    # Единица не участвует в арифметике, поэтому незнакомая — не ошибка:
+    # печатаем сказанное, канон остаётся пустым (ADR-015).
+    spoken = " ".join(args[2:])
+    unit = normalize_unit(spoken)
 
     uid = update.effective_user.id
     with SessionLocal() as db:
@@ -133,10 +143,18 @@ async def cmd_unit(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text("Позиция не найдена в текущей смете.")
             return
         row.unit = unit
+        row.unit_spoken = spoken
         touch_estimate(db, estimate)
         name = row.name
 
-    await update.message.reply_text(f"#{position_id} {esc(name)} — теперь в «{unit}».")
+    note = "" if unit else (
+        f"\nВ справочнике такой единицы нет — в отчёт пойдёт «{esc(spoken)}», "
+        f"а для аналитики она останется без канона. Канонические: {', '.join(UNITS)}"
+    )
+    await update.message.reply_text(
+        f"#{position_id} {esc(name)} — теперь в «{esc(spoken)}».{note}",
+        parse_mode=ParseMode.HTML,
+    )
 
 
 async def cmd_list(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:

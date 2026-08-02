@@ -7,7 +7,7 @@
 export type Money = { value: string; text: string };
 
 export type Position = {
-  category: "Работа" | "Материал";
+  category: "work" | "material";
   name: string;
   unit: string;
   qty: string;

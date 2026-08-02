@@ -63,6 +63,46 @@ def draft_keyboard() -> InlineKeyboardMarkup:
     ]])
 
 
+DROPS_PER_ROW = 5
+
+
+def _chunked(values: list[int]):
+    return (values[i:i + DROPS_PER_ROW] for i in range(0, len(values), DROPS_PER_ROW))
+
+
+def pending_keyboard(
+    ordinals: list[int], addable: int, splittable: list[int] | None = None
+) -> InlineKeyboardMarkup:
+    """Предпросмотр распознанной пачки: убрать лишнее, добавить остальное.
+
+    Кнопки «Добавить» нет, когда добавлять нечего: она обещала бы действие,
+    которого не будет. «÷» появляется только у строк, сказанных «за всё».
+    """
+    rows = [
+        [InlineKeyboardButton(f"🗑 {o}", callback_data=f"ai:drop:{o}") for o in chunk]
+        for chunk in _chunked(ordinals)
+    ]
+    for chunk in _chunked(splittable or []):
+        rows.append([
+            InlineKeyboardButton(f"÷ {o}", callback_data=f"ai:split:{o}") for o in chunk
+        ])
+
+    tail = []
+    if addable:
+        tail.append(InlineKeyboardButton(f"✅ Добавить {addable}", callback_data="ai:add"))
+    tail.append(InlineKeyboardButton("Отменить", callback_data="ai:cancel"))
+    rows.append(tail)
+    return InlineKeyboardMarkup(rows)
+
+
+def split_keyboard(ordinal: int) -> InlineKeyboardMarkup:
+    """Разбить «за всё» на позиции. Потеря копеек показана до нажатия."""
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton("Разбить", callback_data=f"ai:dosplit:{ordinal}"),
+        InlineKeyboardButton("Оставить как есть", callback_data="ai:back"),
+    ]])
+
+
 def readings_keyboard() -> InlineKeyboardMarkup:
     """Выбор прочтения неоднозначной строки. Молча выбирать нельзя (ADR-011)."""
     return InlineKeyboardMarkup([

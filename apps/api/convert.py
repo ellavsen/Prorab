@@ -15,6 +15,7 @@ def to_domain(position: PositionIn, fill_missing_unit: bool = True) -> PositionD
         qty=position.qty,
         price=position.price,
         unit=position.unit,
+        unit_spoken=position.unit_spoken,
     )
     if not domain.unit and fill_missing_unit:
         domain = replace(domain, unit=default_unit(position.category))
@@ -32,6 +33,7 @@ def to_schema(totals: EstimateTotals) -> TotalsOut:
                 category=line.position.category,
                 name=line.position.name,
                 unit=line.position.unit,
+                unit_spoken=line.position.unit_spoken,
                 qty=line.position.qty,
                 price=line.position.price,
                 base=line.base,
