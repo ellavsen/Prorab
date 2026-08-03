@@ -13,8 +13,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from ..database import SessionLocal
-from ..provider import DEMO, PROVIDER
-from ..texts import (
+from ..preview_texts import (
     AI_DEMO_NOTE,
     AI_FAILED,
     AI_LISTENING,
@@ -22,6 +21,7 @@ from ..texts import (
     AI_NOTHING,
     render_recognized,
 )
+from ..provider import DEMO, PROVIDER
 from .preview import offer
 
 PHOTO_MEDIA_TYPE = "image/jpeg"

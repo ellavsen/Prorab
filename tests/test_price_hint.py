@@ -199,7 +199,7 @@ def test_the_dictionary_form_is_used_only_where_the_unit_stands_alone():
 
 
 def test_the_russian_plural_of_times_is_not_a_placeholder():
-    from bot.texts import _times
+    from bot.preview_texts import _times
 
     assert (_times(1), _times(2), _times(4), _times(5)) == ("1 раз", "2 раза", "4 раза", "5 раз")
     assert (_times(11), _times(21), _times(22)) == ("11 раз", "21 раз", "22 раза")

@@ -39,6 +39,7 @@ from ..texts import (
     ASK_UNIT,
     CATEGORY_PROMPT,
     DRAFT_CANCELLED,
+    DRAFT_GONE,
     esc,
     render_draft,
     render_readings,
@@ -127,6 +128,12 @@ async def handle_text_step(message: Message, db, uid: int, category: Category, t
 
 async def handle_unit_choice(query, db, uid: int, value: str) -> None:
     state = user_state(db, uid)
+    if not state.draft_step:
+        # Кнопка из прошлого разговора. Без этой проверки нажатие заводило
+        # черновик на шаге «цена», и следующее сообщение человека — о чём бы
+        # оно ни было — уходило в цену.
+        await query.edit_message_text(DRAFT_GONE)
+        return
     category = Category(state.category or Category.MATERIAL)
     unit = default_unit(category) if value == "-" else value
     update_draft(db, uid, draft_unit=unit, draft_step=PRICE)
@@ -137,6 +144,9 @@ async def handle_unit_choice(query, db, uid: int, value: str) -> None:
 
 async def handle_draft_action(query, db, uid: int, action: str) -> None:
     state = user_state(db, uid)
+    if not state.draft_step and action != "cancel":
+        await query.edit_message_text(DRAFT_GONE)
+        return
     category = Category(state.category or Category.MATERIAL)
 
     if action == "cancel":

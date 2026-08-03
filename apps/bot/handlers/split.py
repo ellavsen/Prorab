@@ -26,7 +26,9 @@ from smeta_core import (
 from smeta_storage import pending
 
 from ..keyboards import split_keyboard
-from ..texts import render_split
+from ..preview_texts import (
+    render_split,
+)
 
 
 def split_math(row):

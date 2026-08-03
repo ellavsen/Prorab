@@ -9,7 +9,7 @@ from smeta_storage import Estimate, create_new_estimate_like, positions, share, 
 from ..config import share_base_url
 from ..database import SessionLocal
 from ..keyboards import confirm_keyboard
-from ..texts import BULK_HINT, esc
+from ..texts import BULK_HINT, STALE_BUTTON, esc
 from . import preview, stepwise
 from .share import RELINKED, REVOKED, link_block
 
@@ -18,7 +18,17 @@ CANCELLED = "Отменено."
 
 
 def _owned_estimate(db, uid: int, data: str) -> Estimate | None:
-    estimate = db.get(Estimate, int(data.split(":")[1]))
+    """Смета из callback_data — только если она принадлежит нажавшему.
+
+    callback_data приходит от клиента и содержит id, поэтому проверяется и то,
+    и другое: что это вообще число (кнопка могла остаться от другой версии
+    бота) и что смета чужому не отдаётся. uid берётся из апдейта, а не из
+    данных кнопки, — подменить его нажимающий не может.
+    """
+    _, _, raw = data.partition(":")
+    if not raw.isdigit():
+        return None
+    estimate = db.get(Estimate, int(raw))
     return estimate if estimate is not None and estimate.user_id == uid else None
 
 
@@ -109,3 +119,8 @@ async def on_callback(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> No
                 f"Очищены позиции сметы {estimate.name} (№{estimate.number})."
             )
             return
+
+    # Сюда попадает кнопка, которой этот бот больше не отправляет: сообщение
+    # из прошлой версии или из очень старого разговора. Молчание в ответ
+    # человек читает как поломку и жмёт ещё несколько раз.
+    await query.edit_message_text(STALE_BUTTON)

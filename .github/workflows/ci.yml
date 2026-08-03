@@ -72,9 +72,13 @@ jobs:
       - name: Пересчитать формулы и сверить с ядром
         # REQUIRE_LIBREOFFICE=1: если движка нет, задание падает, а не
         # «проходит» с пропущенными тестами.
+        #
+        # test_parity.py здесь же: там XLSX сверяется не с ядром, а с
+        # замороженным итогом отправленной сметы — вместе с тремя остальными
+        # поверхностями (ADR-020, money.md И3).
         env:
           REQUIRE_LIBREOFFICE: "1"
-        run: pytest tests/test_xlsx.py -v
+        run: pytest tests/test_xlsx.py tests/test_parity.py -v
 
   eval:
     name: Извлечение — набор, метрика и нижняя граница

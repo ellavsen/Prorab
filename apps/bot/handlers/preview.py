@@ -32,20 +32,26 @@ from smeta_core import (
     default_unit,
 )
 from smeta_storage import (
+    FrozenEstimateError,
     PendingRow,
     current_estimate,
     pending,
     positions,
+    require_draft,
     touch_estimate,
     user_state,
 )
 
 from ..keyboards import pending_keyboard
-from ..texts import (
+from ..preview_texts import (
     AI_NOTHING,
     PREVIEW_CANCELLED,
-    esc,
+    PREVIEW_GONE,
+    PREVIEW_KEPT,
     render_pending,
+)
+from ..texts import (
+    esc,
     render_units_substituted,
 )
 from . import hints, split
@@ -239,7 +245,24 @@ async def handle_action(query, db, uid: int, action: str) -> None:
 
 async def _add_all(query, db, uid: int) -> None:
     rows = pending.load(db, uid)
+    if not rows:
+        # Двойное нажатие или кнопка из прошлого разговора. «Добавлено: 0» на
+        # это отвечать нельзя: человек прочтёт его как «ничего не добавилось»
+        # и продиктует всё заново поверх уже добавленного.
+        await query.edit_message_text(PREVIEW_GONE)
+        return
+
     estimate = current_estimate(db, uid)
+    try:
+        require_draft(estimate)
+    except FrozenEstimateError as error:
+        # Смету отправили, пока предпросмотр висел. Предпросмотр НЕ трогаем и
+        # сообщение с кнопками не переписываем: человек это продиктовал, и
+        # терять надиктованное из-за смены статуса — та же тихая потеря
+        # данных, ради которой негодные строки вообще показываются (ADR-012).
+        await query.message.reply_text(f"{error}\n{PREVIEW_KEPT}")
+        return
+
     by_ordinal, _ = computed(rows, estimate)
 
     added, refused = 0, []
