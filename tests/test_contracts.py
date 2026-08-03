@@ -80,6 +80,40 @@ def test_bridge_uses_the_same_calculator_as_everything_else(bridge):
     assert not multiplications, f"в мосте появилось умножение: строки {multiplications}"
 
 
+def test_the_browser_demo_does_not_need_the_pdf_dependency():
+    """Демо на Pyodide ставит колёса руками: openpyxl есть, reportlab нет.
+
+    Дефект, который этот тест закрывает, прожил два коммита и был невидим:
+    smeta_export.__init__ импортировал .pdf на уровне модуля, а тот —
+    reportlab. В боте и тестах это ничего не ломало, потому что reportlab там
+    стоит. В браузере демо просто не поднялось бы, и узнали бы мы об этом от
+    того, кто открыл ссылку.
+
+    Проверяется в отдельном процессе с заглушкой вместо reportlab: внутри
+    текущего он уже импортирован другими тестами.
+    """
+    guard = (
+        "import sys;"
+        "sys.modules['reportlab'] = None;"
+        "from smeta_export import build_workbook, build_page, DocumentMeta;"
+        "assert 'smeta_export.pdf' not in sys.modules"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", guard], cwd=ROOT, capture_output=True, text=True
+    )
+    assert result.returncode == 0, (
+        "smeta_export тянет reportlab при импорте — демо на Pyodide не поднимется:\n"
+        f"{result.stderr}"
+    )
+
+
+def test_the_pdf_generator_is_still_reachable_the_usual_way():
+    """Ленивость не должна стоить читаемости на стороне вызывающего."""
+    from smeta_export import build_pdf
+
+    assert callable(build_pdf)
+
+
 def test_installed_distribution_is_importable():
     """Ловит молчаливо сломанную установку.
 
