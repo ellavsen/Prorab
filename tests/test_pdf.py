@@ -18,7 +18,7 @@ from test_document_naming import UID, FakeDocumentMessage, FakeUpdate
 from conftest import async_test, open_storage
 from smeta_core import Category, PositionData, calculate_estimate, format_money
 from smeta_export import DocumentMeta, build_pdf
-from smeta_export.pdf import FONT_PATH
+from smeta_export.pdf import FONT_PATH, printable
 from smeta_storage import create_estimate, positions, send, set_current_estimate
 
 RATE = D("6.00")
@@ -151,8 +151,28 @@ def test_a_long_estimate_repeats_the_header_on_every_page():
 
 def test_the_font_travels_inside_the_repository():
     assert FONT_PATH.exists(), "шрифт должен лежать в репозитории, а не в системе"
-    assert FONT_PATH.stat().st_size < 60_000, "урезанный шрифт не должен разрастаться"
+    assert FONT_PATH.stat().st_size < 80_000, "урезанный шрифт не должен разрастаться"
     assert (FONT_PATH.parent / "OFL.txt").exists(), "лицензия лежит рядом со шрифтом"
+
+
+def test_a_character_the_font_lacks_never_becomes_a_silent_box():
+    """Найдено рендером страницы: «·» печатался пустым квадратом (ADR-021).
+
+    Извлечение текста этого не видит — текстовый слой цел, сломана отрисовка.
+    Поэтому символ вне шрифта заменяется знаком вопроса: он честнее квадрата
+    и заметен тому, кто откроет документ.
+    """
+    assert printable("Побелка 🙂 потолка") == "Побелка ? потолка"
+    assert printable("Смета · ред. 2 — «под ключ», 40,5 м² × 700 ₽") == (
+        "Смета · ред. 2 — «под ключ», 40,5 м² × 700 ₽"
+    )
+
+
+def test_a_name_with_an_unrenderable_character_still_produces_a_document():
+    """Эмодзи в наименовании не повод не выдать смету заказчику."""
+    odd = [PositionData(Category.WORK, "Побелка 🙂 потолка", D("1"), D("100"))]
+    _totals, reader = rendered(odd)
+    assert "Побелка ? потолка" in text_of(reader)
 
 
 def test_the_font_is_embedded_in_the_document():

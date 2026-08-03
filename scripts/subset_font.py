@@ -32,8 +32,15 @@ LICENSE_SOURCE = "https://github.com/google/fonts/raw/main/ofl/ptsans/OFL.txt"
 
 FAMILY = "ProrabSans"
 
-# Кириллица, латиница, цифры и то, что реально печатается в смете.
-ALPHABET = (
+# Берём ВЕСЬ набор символов исходного шрифта, а не «то, что нужно смете».
+# Закрытый список из 171 символа стоил бы 21 КБ вместо 58, но наименование
+# позиции пишет человек, и любой символ вне списка стал бы в документе
+# заказчика пустым квадратом — молча. Найдено рендером страницы: разделитель
+# «·» в шапке был именно таким квадратом, а извлечение текста этого не видит.
+#
+# Ниже — то, что обязано быть в шрифте при любой пересборке. Это проверка
+# покрытия, а не список для урезания.
+REQUIRED = (
     "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
     "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
     "abcdefghijklmnopqrstuvwxyz"
@@ -41,8 +48,8 @@ ALPHABET = (
     "0123456789"
     " .,:;!?()[]{}«»\"'—–-−+*/\\%№#@&_="
     "×÷²³°₽$€"
-    "…✓→"
-)
+    "…·"
+)  # ✓ и → в PT Sans отсутствуют вовсе — в документе их не используем
 
 
 def fetch(url: str) -> bytes:
@@ -55,6 +62,7 @@ def subset(raw: bytes) -> bytes:
     from fontTools.ttLib import TTFont
 
     font = TTFont(io.BytesIO(raw))
+    covered = list(font.getBestCmap())
     options = fs.Options()
     # Кернинг оставляем: он видно влияет на плотность строки. Лигатуры — нет:
     # в русской смете они не встречаются, а стоят 5 КБ.
@@ -71,7 +79,7 @@ def subset(raw: bytes) -> bytes:
     options.drop_tables += ["DSIG"]
 
     subsetter = fs.Subsetter(options=options)
-    subsetter.populate(text=ALPHABET)
+    subsetter.populate(unicodes=covered)
     subsetter.subset(font)
     _rename(font)
 
@@ -103,10 +111,16 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="только показать размеры")
     args = parser.parse_args()
 
+    from fontTools.ttLib import TTFont
+
     raw = fetch(SOURCE)
     trimmed = subset(raw)
     print(f"исходный:  {len(raw) / 1024:.1f} КБ")
-    print(f"урезанный: {len(trimmed) / 1024:.1f} КБ  ({len(ALPHABET)} символов)")
+    covered = len(TTFont(io.BytesIO(trimmed)).getBestCmap())
+    missing = [c for c in REQUIRED if ord(c) not in TTFont(io.BytesIO(trimmed)).getBestCmap()]
+    print(f"урезанный: {len(trimmed) / 1024:.1f} КБ  ({covered} символов)")
+    if missing:
+        raise SystemExit(f"в шрифте нет обязательных символов: {''.join(missing)}")
     if args.check:
         return 0
 

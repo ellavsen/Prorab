@@ -62,6 +62,22 @@ def _register_font() -> None:
         pdfmetrics.registerFont(TTFont(FONT_NAME, str(FONT_PATH)))
 
 
+def printable(text: str) -> str:
+    """Символы, которых нет в шрифте, заменяет на «?».
+
+    Иначе они превращаются в пустой квадрат — и, что хуже, молча: извлечение
+    текста из PDF показывает исходную строку, потому что текстовый слой цел, а
+    сломана только отрисовка. Именно так в шапке документа жил квадрат вместо
+    «·», и нашёлся он рендером страницы, а не тестом на текст.
+
+    Наименование пишет человек; эмодзи или иероглиф в нём — редкость, но
+    документ уходит заказчику, и знак вопроса там честнее квадрата.
+    """
+    _register_font()
+    charset = pdfmetrics.getFont(FONT_NAME).face.charToGlyph
+    return "".join(char if ord(char) in charset else "?" for char in text)
+
+
 def _style(name: str, size: float, **kwargs) -> ParagraphStyle:
     return ParagraphStyle(name, fontName=FONT_NAME, fontSize=size,
                           leading=size + 3, **kwargs)
@@ -100,8 +116,8 @@ def _rows(lines) -> list[list[str]]:
         position = line.position
         body.append([
             str(index),
-            position.name,
-            display_unit(position.unit, position.unit_spoken) or "—",
+            printable(position.name),
+            printable(display_unit(position.unit, position.unit_spoken)) or "—",
             format_qty(position.qty),
             format_money(position.price),
             format_money(line.total),
@@ -139,7 +155,7 @@ def build_pdf(totals: EstimateTotals, meta: DocumentMeta) -> io.BytesIO:
     story: list = [
         Paragraph(f"Смета № {meta.number}, ред. {meta.version}", styles["title"]),
         Spacer(1, 2 * mm),
-        Paragraph(meta.title, styles["meta"]),
+        Paragraph(printable(meta.title), styles["meta"]),
         Paragraph(
             " · ".join(part for part in (spell_date(meta.on), meta.status) if part),
             styles["meta"],
