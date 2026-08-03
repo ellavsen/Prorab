@@ -8,6 +8,7 @@ tests/test_architecture.py.
 from .calculate import calculate_estimate, sum_lines
 from .diff import Change, VersionDiff, diff_positions
 from .freeze import (
+    STATUS_LABEL,
     EstimateStatus,
     IntegrityError,
     canonical_form,
@@ -53,6 +54,7 @@ __all__ = [
     "PRICE_MAX",
     "QTY_MAX",
     "RATE_MAX",
+    "STATUS_LABEL",
     "UNITS",
     "ZERO",
     "AmbiguousLine",

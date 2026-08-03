@@ -4,12 +4,13 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
-from smeta_storage import Estimate, create_new_estimate_like, positions, touch_estimate
+from smeta_storage import Estimate, create_new_estimate_like, positions, share, touch_estimate
 
 from ..database import SessionLocal
 from ..keyboards import confirm_keyboard
 from ..texts import BULK_HINT, esc
 from . import preview, stepwise
+from .share import REVOKED
 
 NOT_FOUND = "Смета не найдена."
 CANCELLED = "Отменено."
@@ -26,7 +27,7 @@ async def on_callback(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> No
     data = query.data or ""
     uid = update.effective_user.id
 
-    if data.startswith(("renew_no:", "clear_no:")):
+    if data.startswith(("renew_no:", "clear_no:", "revoke_no:")):
         await query.edit_message_text(CANCELLED)
         return
 
@@ -75,6 +76,13 @@ async def on_callback(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> No
                 f"Старая смета №{estimate.number} осталась без изменений.",
                 parse_mode=ParseMode.HTML,
             )
+            return
+
+        if data.startswith("revoke_yes:"):
+            link = share.latest_for(db, estimate.id)
+            if link is not None:
+                share.revoke(db, link)
+            await query.edit_message_text(REVOKED)
             return
 
         if data.startswith("clear_yes:"):

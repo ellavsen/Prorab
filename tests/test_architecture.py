@@ -17,6 +17,7 @@ EXPORT = ROOT / "packages" / "smeta_export"
 AI = ROOT / "packages" / "smeta_ai"
 BOT = ROOT / "apps" / "bot"
 API = ROOT / "apps" / "api"
+SHARE = ROOT / "apps" / "share"
 
 MAX_FILE_LINES = 300
 
@@ -40,14 +41,28 @@ FORBIDDEN = {
     BOT: {"sqlalchemy", "openpyxl", "openai"},
     # API без состояния: базы он не касается вовсе (ADR-008).
     API: {"telegram", "sqlalchemy", "openpyxl", "smeta_storage", "openai"},
+    # Публичная страница базу читает — иначе показывать нечего, — но напрямую
+    # не разговаривает с ней ни строчкой: sqlalchemy здесь запрещён, и всё
+    # общение идёт через smeta_storage.share (ADR-020).
+    SHARE: {"telegram", "sqlalchemy", "openpyxl", "openai", "smeta_ai",
+            "requests", "httpx", "aiohttp"},
 }
+
+# Что публичное приложение вправе взять из хранилища. Список закрыт: новая
+# функция записи не появится здесь незаметно.
+SHARE_MAY_IMPORT = {"share", "build_engine", "build_sessionmaker"}
+
+# Глаголы записи SQLAlchemy. Без них apps/share не может сохранить ничего —
+# ни отметку просмотра, ни согласование, ни тем более чужую смету. Обе
+# разрешённые записи живут в smeta_storage.share и вызываются оттуда.
+WRITE_VERBS = {"add", "add_all", "delete", "commit", "flush", "execute", "merge"}
 
 
 def python_files(*roots: pathlib.Path) -> list[pathlib.Path]:
     return sorted(path for root in roots for path in root.rglob("*.py"))
 
 
-ALL_FILES = python_files(CORE, PRICES, STORAGE, EXPORT, AI, BOT, API)
+ALL_FILES = python_files(CORE, PRICES, STORAGE, EXPORT, AI, BOT, API, SHARE)
 
 
 def _imported_roots(tree: ast.AST) -> set[str]:
@@ -92,9 +107,45 @@ def _module_level_imports(tree: ast.AST) -> set[str]:
 
 
 def test_every_layer_is_present():
-    for layer in (CORE, PRICES, STORAGE, EXPORT, AI, BOT, API):
+    for layer in (CORE, PRICES, STORAGE, EXPORT, AI, BOT, API, SHARE):
         assert layer.is_dir(), f"нет слоя {layer}"
     assert len(ALL_FILES) > 15
+
+
+@pytest.mark.parametrize("path", python_files(SHARE), ids=lambda p: p.name)
+def test_the_public_app_takes_from_storage_only_what_is_listed(path):
+    """Первый сервис, отдающий данные наружу без входа (ADR-020).
+
+    Ограничение не в том, что он «старается» не писать, а в том, что писать
+    ему нечем: доступ к хранилищу сведён к трём именам, и все они ведут в
+    smeta_storage.share, где записей ровно две — отметка просмотра и статус
+    согласования.
+    """
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("smeta_storage"):
+            leaked = {alias.name for alias in node.names} - SHARE_MAY_IMPORT
+            assert not leaked, f"{path.name}: из хранилища взято лишнее — {sorted(leaked)}"
+
+
+@pytest.mark.parametrize("path", python_files(SHARE), ids=lambda p: p.name)
+def test_the_public_app_cannot_write_anything_by_itself(path):
+    """Без commit/flush/execute изменение не переживёт запрос.
+
+    Проверка синтаксическая, и этого достаточно: чтобы сохранить что-нибудь
+    мимо smeta_storage.share, публичному приложению пришлось бы вызвать один
+    из этих глаголов. Поведенческая пара к этому тесту — в test_share.py:
+    там смета сравнивается до и после открытия страницы.
+    """
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    offenders = [
+        f"{node.func.attr}() в строке {node.lineno}"
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr in WRITE_VERBS
+    ]
+    assert not offenders, f"{path.name}: запись из публичного приложения — {offenders}"
 
 
 @pytest.mark.parametrize("path", python_files(AI), ids=lambda p: p.name)

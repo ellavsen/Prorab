@@ -1,6 +1,6 @@
 """smeta-storage — хранение смет. Знает про SQLAlchemy и ничего про Telegram."""
 
-from . import guards, history, pending, positions, versions
+from . import guards, history, pending, positions, share, versions
 from .db import build_engine, build_sessionmaker
 from .guards import FROZEN_HINT, FrozenEstimateError, require_draft, require_draft_by_id
 from .history import WINDOW_DAYS
@@ -10,6 +10,7 @@ from .migrations import (
     migrate_estimate_versions,
     migrate_money_to_integers,
     migrate_price_history,
+    migrate_share_links,
 )
 from .models import (
     DEFAULT_MARKUP_BP,
@@ -18,6 +19,7 @@ from .models import (
     PendingPosition,
     Position,
     PriceHistory,
+    ShareLink,
     UserState,
     utcnow,
 )
@@ -55,6 +57,7 @@ __all__ = [
     "PendingRow",
     "Position",
     "PriceHistory",
+    "ShareLink",
     "StateError",
     "UserState",
     "bootstrap",
@@ -76,6 +79,7 @@ __all__ = [
     "migrate_estimate_versions",
     "migrate_money_to_integers",
     "migrate_price_history",
+    "migrate_share_links",
     "newest_estimate",
     "next_estimate_number",
     "pending",
@@ -87,6 +91,7 @@ __all__ = [
     "set_category",
     "set_current_estimate",
     "set_rates",
+    "share",
     "touch_estimate",
     "update_draft",
     "user_state",

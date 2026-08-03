@@ -6,7 +6,12 @@ from decimal import Decimal as D
 import pytest
 
 from conftest import open_storage
-from smeta_storage import DEFAULT_MARKUP_BP, Estimate, positions
+from smeta_storage import (
+    DEFAULT_MARKUP_BP,
+    Estimate,
+    migrate_share_links,
+    positions,
+)
 
 OLD_SCHEMA = """
 CREATE TABLE estimates (
@@ -82,6 +87,25 @@ def test_migration_creates_the_preview_table(legacy_db):
     tables = {row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     con.close()
     assert "pending_positions" in tables
+
+
+def test_migration_creates_the_share_link_table(legacy_db):
+    """Старая база догоняется до Sprint 7, а не падает на первом /send."""
+    open_storage(legacy_db)
+    con = sqlite3.connect(legacy_db)
+    tables = {row[0] for row in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    con.close()
+    assert "share_links" in tables
+
+
+def test_the_share_link_migration_is_idempotent_and_reversible(legacy_db):
+    """Откат сносит таблицу целиком: все выданные ссылки перестают работать сразу."""
+    engine, _Session = open_storage(legacy_db)
+    with engine.begin() as conn:
+        assert migrate_share_links(conn) is False, "таблица уже есть — делать нечего"
+        assert migrate_share_links(conn, reverse=True) is True
+        assert migrate_share_links(conn, reverse=True) is False
+        assert migrate_share_links(conn) is True
 
 
 def test_g2_real_storage_imprecision_is_quantized_not_carried_over(legacy_db):

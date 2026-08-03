@@ -10,8 +10,9 @@ from telegram.ext import (
 )
 
 from .config import require_token
-from .handlers import ai, estimates, files, positions, stepwise
+from .handlers import ai, estimates, files, positions, share, stepwise
 from .handlers.callbacks import on_callback
+from .handlers.errors import on_error
 
 
 def build_app():
@@ -34,6 +35,12 @@ def build_app():
     app.add_handler(CommandHandler("generate", files.cmd_generate))
     app.add_handler(CommandHandler("pdf", files.cmd_pdf))
 
+    # Документооборот: отправка замораживает смету, ревизия открывает новую.
+    app.add_handler(CommandHandler("send", share.cmd_send))
+    app.add_handler(CommandHandler("revise", share.cmd_revise))
+    app.add_handler(CommandHandler("link", share.cmd_link))
+    app.add_handler(CommandHandler("revoke", share.cmd_revoke))
+
     # Кнопки и категории, регистронезависимо.
     app.add_handler(MessageHandler(filters.Regex(r"(?i)^начнём$"), estimates.handle_begin))
     app.add_handler(
@@ -48,6 +55,9 @@ def build_app():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, positions.on_text))
 
     app.add_handler(CallbackQueryHandler(on_callback))
+    # Один перехват на всё приложение: отказ охраны должен доходить до
+    # человека с любого пути записи, а не только с тех, где о нём вспомнили.
+    app.add_error_handler(on_error)
     return app
 
 

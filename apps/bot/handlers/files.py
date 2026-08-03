@@ -10,12 +10,12 @@ from datetime import datetime
 from telegram import InputFile, Update
 from telegram.ext import ContextTypes
 
-from smeta_core import IntegrityError, format_money
+from smeta_core import STATUS_LABEL, IntegrityError, format_money
 from smeta_export import DocumentMeta, build_pdf, build_workbook, document_filename
 from smeta_storage import current_estimate, positions, verified_totals
 
 from ..database import SessionLocal
-from ..texts import STATUS_LABEL, markup_caption
+from ..texts import markup_caption
 
 EMPTY = "Нет данных для отчёта в текущей смете. Добавь позиции и повтори {command}."
 BROKEN = (

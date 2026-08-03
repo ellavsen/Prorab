@@ -14,6 +14,7 @@ from .models import (
     PendingPosition,
     Position,
     PriceHistory,
+    ShareLink,
     UserState,
     utcnow,
 )
@@ -172,22 +173,41 @@ def migrate_estimate_versions(conn: Connection, reverse: bool = False) -> bool:
     return True
 
 
-def migrate_price_history(conn: Connection, reverse: bool = False) -> bool:
-    """Заводит таблицу истории своих цен, Sprint 6a (ADR-017).
+def _ensure_table(conn: Connection, table, reverse: bool) -> bool:
+    """Заводит одну таблицу целиком. Идемпотентна в обе стороны.
 
-    Идемпотентна: таблица уже есть — ничего не делает. Обратная сносит её
-    целиком, и это осознанно: история восстановима из смет ровно настолько,
-    насколько сметы ещё живы, а полумеры при откате хуже честной потери.
+    Возвращает True, если что-то сделала. Обратный ход сносит таблицу — для
+    новой таблицы это и есть полный откат.
     """
-    present = "price_history" in set(sa_inspect(conn).get_table_names())
+    present = table.name in set(sa_inspect(conn).get_table_names())
     if reverse:
         if present:
-            conn.execute(text("DROP TABLE price_history"))
+            conn.execute(text(f"DROP TABLE {table.name}"))
         return present
     if present:
         return False
-    Base.metadata.create_all(bind=conn, tables=[PriceHistory.__table__])
+    Base.metadata.create_all(bind=conn, tables=[table])
     return True
+
+
+def migrate_price_history(conn: Connection, reverse: bool = False) -> bool:
+    """Заводит таблицу истории своих цен, Sprint 6a (ADR-017).
+
+    Откат сносит её целиком, и это осознанно: история восстановима из смет
+    ровно настолько, насколько сметы ещё живы, а полумеры при откате хуже
+    честной потери.
+    """
+    return _ensure_table(conn, PriceHistory.__table__, reverse)
+
+
+def migrate_share_links(conn: Connection, reverse: bool = False) -> bool:
+    """Заводит таблицу публичных ссылок, Sprint 7 (ADR-020).
+
+    Откат сносит её целиком — и это именно то поведение, которое нужно:
+    выданные ссылки перестают работать все сразу. Ничего, кроме доступа, в
+    таблице не хранится, восстанавливать нечего.
+    """
+    return _ensure_table(conn, ShareLink.__table__, reverse)
 
 
 def _migrate_orphan_positions(conn: Connection) -> None:
@@ -232,6 +252,7 @@ def bootstrap(engine: Engine) -> None:
 
         migrate_price_history(conn)
         migrate_estimate_versions(conn)
+        migrate_share_links(conn)
 
         if "estimates" not in tables:
             Base.metadata.create_all(bind=conn, tables=[Estimate.__table__])

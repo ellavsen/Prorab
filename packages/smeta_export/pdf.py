@@ -13,8 +13,6 @@
 from __future__ import annotations
 
 import io
-from dataclasses import dataclass
-from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -30,30 +28,16 @@ from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Space
 from smeta_core import Category, EstimateTotals, format_money, format_qty, sum_lines
 from smeta_prices import display_unit
 
+from .document import DocumentMeta, document_subtitle, document_title
+
 FONT_NAME = "ProrabSans"
 FONT_PATH = Path(__file__).parent / "fonts" / "ProrabSans-Regular.ttf"
-
-MONTHS = ("января", "февраля", "марта", "апреля", "мая", "июня",
-          "июля", "августа", "сентября", "октября", "ноября", "декабря")
 
 COLUMN_WIDTHS = (12 * mm, 74 * mm, 16 * mm, 20 * mm, 24 * mm, 26 * mm)
 HEADERS = ("№", "Наименование", "Ед.", "Кол-во", "Цена", "Сумма")
 
 GRID = colors.HexColor("#BFBFBF")
 HEADER_BG = colors.HexColor("#EFEFEF")
-
-
-@dataclass(frozen=True)
-class DocumentMeta:
-    """Шапка документа. Ничего о владельце здесь нет и быть не может."""
-
-    number: int
-    version: int
-    title: str
-    on: date
-    work_rate: Decimal
-    material_rate: Decimal
-    status: str = ""
 
 
 def _register_font() -> None:
@@ -81,10 +65,6 @@ def printable(text: str) -> str:
 def _style(name: str, size: float, **kwargs) -> ParagraphStyle:
     return ParagraphStyle(name, fontName=FONT_NAME, fontSize=size,
                           leading=size + 3, **kwargs)
-
-
-def spell_date(on: date) -> str:
-    return f"{on.day} {MONTHS[on.month - 1]} {on.year}"
 
 
 def _table_style(rows: int) -> TableStyle:
@@ -153,13 +133,10 @@ def build_pdf(totals: EstimateTotals, meta: DocumentMeta) -> io.BytesIO:
     materials = [line for line in totals.lines if line.position.category == Category.MATERIAL]
 
     story: list = [
-        Paragraph(f"Смета № {meta.number}, ред. {meta.version}", styles["title"]),
+        Paragraph(document_title(meta), styles["title"]),
         Spacer(1, 2 * mm),
         Paragraph(printable(meta.title), styles["meta"]),
-        Paragraph(
-            " · ".join(part for part in (spell_date(meta.on), meta.status) if part),
-            styles["meta"],
-        ),
+        Paragraph(document_subtitle(meta), styles["meta"]),
         Spacer(1, 7 * mm),
     ]
     story += _section("Работы", works, meta.work_rate, styles)
@@ -181,7 +158,7 @@ def build_pdf(totals: EstimateTotals, meta: DocumentMeta) -> io.BytesIO:
         buffer, pagesize=A4,
         leftMargin=18 * mm, rightMargin=18 * mm,
         topMargin=16 * mm, bottomMargin=16 * mm,
-        title=f"Смета № {meta.number}, ред. {meta.version}",
+        title=document_title(meta),
         author="",       # автор пуст намеренно: документ уходит заказчику
         creator="Прораб",
         subject="",

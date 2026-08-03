@@ -203,6 +203,43 @@ class PriceHistory(Base):
         return from_kop(self.price_kop)
 
 
+class ShareLink(Base):
+    """Публичная ссылка на смету. Предъявительская: кто знает адрес, тот и смотрит.
+
+    В базе лежит только SHA-256 от токена. Открытым текстом токен существует
+    один раз — в сообщении бота в момент выдачи. Ни дамп таблицы, ни бэкап, ни
+    отладочный SELECT не содержат работающего адреса (ADR-020).
+
+    Про того, кто открыл, не хранится ничего: ни адрес, ни браузер, ни счётчик
+    заходов. Прораб видит два факта — открыли и когда, — потому что без них
+    ссылка не даёт доверия, которое обычно даёт регистрация. Больше ему знать
+    не нужно, а нам — тем более.
+
+    Владельца здесь нет: он определяется через смету. Токен ничего не выводит
+    ни из её id, ни из user_id — урок Sprint 0, где user_id утёк в имя файла.
+    """
+
+    __tablename__ = "share_links"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    token_sha256: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    estimate_id: Mapped[int] = mapped_column(ForeignKey("estimates.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    # Согласованная смета живёт, пока владелец не отозвал: approved_at снимает
+    # срок (ADR-020). Поэтому здесь NULL — это «бессрочно», а не «просрочено».
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    first_viewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_viewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    @property
+    def is_live(self) -> bool:
+        return self.revoked_at is None and (
+            self.expires_at is None or self.expires_at > utcnow()
+        )
+
+
 class UserState(Base):
     """Состояние диалога. Раньше жило в dict'ах процесса и умирало с рестартом.
 

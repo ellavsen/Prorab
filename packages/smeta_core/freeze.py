@@ -33,6 +33,17 @@ class EstimateStatus(StrEnum):
     CANCELLED = "cancelled"    # отменено; мягкая пометка, не удаление
 
 
+# Как статус называется человеку. Живёт рядом с самим статусом, потому что
+# читателей теперь трое — бот, PDF и публичная страница, — и три копии этого
+# словаря разошлись бы так же, как расходились четыре вычислителя до Sprint 1.
+STATUS_LABEL = {
+    EstimateStatus.DRAFT: "Черновик",
+    EstimateStatus.SENT: "Отправлена заказчику",
+    EstimateStatus.SUPERSEDED: "Заменена новой редакцией",
+    EstimateStatus.CANCELLED: "Отменена",
+}
+
+
 class IntegrityError(ValueError):
     """Пересчёт разошёлся с замороженным. Документ не выдаётся."""
 
