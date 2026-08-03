@@ -5,6 +5,7 @@
 появляется в ней ровно по нажатию.
 """
 
+from dataclasses import replace
 from decimal import Decimal as D
 
 import pytest
@@ -61,8 +62,10 @@ async def test_a_price_you_paid_before_is_offered_but_not_filled_in(bot):  # noq
         assert row.problem, "строка без цены остаётся негодной"
         assert row.hint_price == "380.00"
 
-    assert "вы брали по 380,00" in message.last
-    assert "мешков" in message.last
+    # «₽/мешок», а не «₽/мешков»: здесь единица стоит сама по себе, в позиции
+    # «за одну», и родительный падеж — обрывок фразы, а не единица.
+    assert "вы брали по 380,00 ₽/мешок —" in message.last
+    assert "мешков" not in message.last
     assert positions.load(db, UID, estimate_id) == []
 
 
@@ -162,6 +165,37 @@ async def test_the_hint_survives_the_estimate_that_taught_it(bot):  # noqa: F811
         await preview.offer(message, db, UID, priceless())
         assert pending.load(db, UID)[0].hint_price == "380.00"
     assert "вы брали по 380,00" in message.last
+
+
+@async_test
+async def test_the_quantity_phrase_keeps_the_case_it_was_said_in(bot):  # noqa: F811
+    """«20 мешков» словарной формой ломать нельзя — «20 мешок» не по-русски.
+
+    Тот же unit_spoken, но позиция во фразе другая: здесь он согласован с
+    количеством, а в подсказке цены стоит сам по себе.
+    """
+    _ai, preview, _positions, Session, _estimate_id = bot
+    priced = replace(
+        priceless().positions[0],
+        price=Price(status=FieldStatus.STATED, scope=PriceScope.PER_UNIT, value="380"),
+    )
+    message = FakeMessage()
+    with Session() as db:
+        await preview.offer(
+            message, db, UID,
+            Extraction(status=ExtractionStatus.OK, positions=(priced,)),
+        )
+    assert "20 мешков × 380,00" in message.last
+
+
+def test_the_dictionary_form_is_used_only_where_the_unit_stands_alone():
+    from smeta_prices import display_unit
+
+    assert display_unit("", "мешков") == "мешок"
+    assert display_unit("шт", "мешков") == "мешок"      # канон не подменяет сказанное
+    assert display_unit("м²", "") == "м²"
+    assert display_unit("", "бухточек") == "бухточек"   # вне словаря — как сказано
+    assert display_unit("", "") == ""
 
 
 def test_the_russian_plural_of_times_is_not_a_placeholder():

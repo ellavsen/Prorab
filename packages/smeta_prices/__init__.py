@@ -6,7 +6,7 @@ Telegram. Цену он не придумывает — он умеет узна
 """
 
 from .catalog import CATALOG, Catalog, CatalogError, Item
-from .normalize import fold, normalize_name, packaging_form, same_unit
+from .normalize import display_unit, fold, normalize_name, packaging_form, same_unit
 from .packaging import BASES, FORM_GROUPS, FORMS, FormCollision, build_forms
 from .stats import (
     MIN_FOR_SPREAD,
@@ -32,6 +32,7 @@ __all__ = [
     "Item",
     "PricePoint",
     "build_forms",
+    "display_unit",
     "fold",
     "from_history",
     "median",

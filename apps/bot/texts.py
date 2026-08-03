@@ -4,6 +4,7 @@ import html
 from decimal import Decimal
 
 from smeta_core import EstimateTotals, format_money, format_qty
+from smeta_prices import display_unit
 from smeta_storage import Estimate, Position
 
 START_TEXT = (
@@ -195,7 +196,7 @@ def render_price_hint(row) -> str:
     """
     if not row.hint_price:
         return ""
-    unit = row.unit_spoken or row.unit
+    unit = display_unit(row.unit, row.unit_spoken)
     per = f"/{esc(unit)}" if unit else ""
     when = f"{row.hint_on.day} {MONTHS[row.hint_on.month - 1]}" if row.hint_on else ""
     parts = [f"    💡 вы брали по {format_money(Decimal(row.hint_price))} ₽{per}"]

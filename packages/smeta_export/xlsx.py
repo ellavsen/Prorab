@@ -13,6 +13,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from smeta_core import PositionData
+from smeta_prices import display_unit
 
 THIN = Side(border_style="thin", color="000000")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
@@ -49,9 +50,12 @@ def build_sheet(ws, title: str, rows: list[PositionData], rate: Decimal, is_work
         row = FIRST_DATA_ROW + index - 1
         ws.cell(row=row, column=1, value=index)
         ws.cell(row=row, column=2, value=position.name)
-        # Заказчику печатается сказанное («мешков»), а не канон: документ
-        # должен читаться как разговор с прорабом (ADR-015).
-        ws.cell(row=row, column=3, value=position.unit_spoken or position.unit or "—")
+        # Заказчику печатается сказанное («мешок»), а не канон «шт»: документ
+        # должен читаться как разговор с прорабом (ADR-015). Падеж при этом
+        # приводится к словарному: в колонке «Ед.» слово стоит само по себе,
+        # а не согласовано с количеством из соседней колонки.
+        ws.cell(row=row, column=3,
+                value=display_unit(position.unit, position.unit_spoken) or "—")
         ws.cell(row=row, column=4, value=position.qty)
         ws.cell(row=row, column=5, value=position.price)
         ws.cell(row=row, column=6, value=f"=ROUND(D{row}*E{row},2)")

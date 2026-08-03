@@ -208,12 +208,25 @@ def test_both_sheets_survive_a_recalculation(tmp_path):
 
 
 def test_the_report_prints_the_unit_as_it_was_said():
-    """Заказчик читает «мешков», а не канон справочника (ADR-015)."""
+    """Заказчик читает «мешок», а не канон справочника «шт» (ADR-015).
+
+    Падеж при этом словарный: в колонке «Ед.» слово стоит само по себе, а не
+    согласовано с количеством из колонки D. «20 | мешков» читается как обрывок
+    фразы, «20 | мешок» — как строка спецификации.
+    """
     said = [PositionData(Category.MATERIAL, "Цемент", D("20"), D("350.00"),
                          unit="шт", unit_spoken="мешков")]
     book = load_workbook(io.BytesIO(build_workbook(said, [], RATE, RATE).getvalue()))
     sheet = book["Материалы и расходники"]
-    assert sheet[f"C{FIRST_DATA_ROW}"].value == "мешков"
+    assert sheet[f"C{FIRST_DATA_ROW}"].value == "мешок"
+
+
+def test_a_spoken_unit_outside_the_dictionary_is_printed_as_it_was_said():
+    """Морфологию не изобретаем: незнакомое слово печатается как сказано."""
+    said = [PositionData(Category.MATERIAL, "Плёнка", D("3"), D("500.00"),
+                         unit="", unit_spoken="бухточек")]
+    book = load_workbook(io.BytesIO(build_workbook(said, [], RATE, RATE).getvalue()))
+    assert book["Материалы и расходники"][f"C{FIRST_DATA_ROW}"].value == "бухточек"
 
 
 def test_without_a_spoken_unit_the_canon_is_printed():
