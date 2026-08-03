@@ -21,7 +21,13 @@ from smeta_core import (
     to_kop,
     to_milli,
 )
-from smeta_storage import current_estimate, positions, touch_estimate, user_state
+from smeta_storage import (
+    current_estimate,
+    positions,
+    touch_estimate,
+    user_state,
+    verified_totals,
+)
 
 from ..database import SessionLocal
 from ..keyboards import categories_keyboard, confirm_keyboard
@@ -162,7 +168,9 @@ async def cmd_list(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
     with SessionLocal() as db:
         estimate = current_estimate(db, uid)
         rows = positions.load(db, uid, estimate.id)
-        totals = positions.totals(db, uid, estimate)
+        # Сверка со слепком у отправленной сметы: список обязан показывать то
+        # же, что готов выдать документ. Отказ ловит on_error (errors.py).
+        totals = verified_totals(db, estimate)
 
     if not rows:
         await update.message.reply_text(EMPTY_ESTIMATE, reply_markup=categories_keyboard())

@@ -15,6 +15,7 @@ from smeta_storage import (
     set_current_estimate,
     touch_estimate,
     user_state,
+    verified_totals,
 )
 
 UID = 42
@@ -152,8 +153,8 @@ def test_totals_use_the_estimate_own_rate(tmp_path):
         positions.add(db, UID, rich.id, line)
         db.commit()
 
-        assert positions.totals(db, UID, cheap).total == D("1000.00")
-        assert positions.totals(db, UID, rich).total == D("1100.00")
+        assert verified_totals(db, cheap).total == D("1000.00")
+        assert verified_totals(db, rich).total == D("1100.00")
 
 
 def test_renewing_an_estimate_copies_name_and_rates(tmp_path):
@@ -240,8 +241,8 @@ def test_rate_change_touches_only_the_current_estimate(tmp_path):
 
         set_rates(db, first, work_bp=1000, material_bp=1000)
 
-        assert positions.totals(db, UID, first).total == D("1100.00")
-        assert positions.totals(db, UID, second).total == D("1060.00")   # не тронута
+        assert verified_totals(db, first).total == D("1100.00")
+        assert verified_totals(db, second).total == D("1060.00")   # не тронута
         assert second.markup_work_bp == 600
 
 
@@ -257,10 +258,10 @@ def test_rate_change_is_visible_immediately_without_touching_positions(tmp_path)
         before = positions.load(db, UID, estimate.id)[0].price_kop
 
         set_rates(db, estimate, work_bp=0, material_bp=0)
-        assert positions.totals(db, UID, estimate).total == D("100.00")
+        assert verified_totals(db, estimate).total == D("100.00")
 
         set_rates(db, estimate, work_bp=5000, material_bp=5000)
-        assert positions.totals(db, UID, estimate).total == D("150.00")
+        assert verified_totals(db, estimate).total == D("150.00")
         # Позиции при этом никто не переписывал.
         assert positions.load(db, UID, estimate.id)[0].price_kop == before
 
@@ -278,7 +279,7 @@ def test_separate_rates_for_work_and_materials(tmp_path):
         db.commit()
 
         set_rates(db, estimate, work_bp=1000, material_bp=0)
-        totals = positions.totals(db, UID, estimate)
+        totals = verified_totals(db, estimate)
 
     assert totals.total == D("2100.00")
     assert totals.markup == D("100.00")
@@ -322,3 +323,26 @@ def test_draft_fields_are_added_to_an_existing_user_state_table(tmp_path):
         # бы первый же хендлер.
         assert user_state(db, 7).category == "work"
         assert user_state(db, 7).draft_step is None
+
+
+def test_switch_lands_on_the_current_revision(tmp_path):
+    """С версиями `.first()` без сортировки уводил на заменённую редакцию.
+
+    Молча: бот отвечал «переключился», а следующая позиция упиралась в охрану.
+    Найдено сквозным прогоном цикла из бота (Sprint 7).
+    """
+    from smeta_storage import find_by_number, revise, send
+
+    _, Session = open_storage(tmp_path / "switch.db")
+    with Session() as db:
+        estimate = create_estimate(db, UID, name="Ремонт")
+        positions.add(db, UID, estimate.id, parse_position_line(
+            "Побелка, 1, 100", Category.WORK))
+        db.commit()
+        send(db, estimate)
+        revision = revise(db, estimate)
+
+        found = find_by_number(db, UID, estimate.number)
+        assert found.id == revision.id
+        assert found.version == 2
+        assert found.is_draft, "переключаться нужно на ту редакцию, которую можно править"

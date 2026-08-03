@@ -121,8 +121,16 @@ def current_estimate(db: Session, uid: int) -> Estimate:
 
 
 def find_by_number(db: Session, uid: int, number: int) -> Estimate | None:
+    """Действующая редакция номера, а не первая попавшаяся.
+
+    До Sprint 7 у номера была ровно одна смета, и `.first()` без сортировки
+    был честен. С версиями их несколько, и без ORDER BY /switch уводил на
+    заменённую редакцию — молча, а следующая же позиция упиралась в охрану.
+    """
     return db.execute(
-        select(Estimate).where(Estimate.user_id == uid, Estimate.number == number)
+        select(Estimate)
+        .where(Estimate.user_id == uid, Estimate.number == number)
+        .order_by(Estimate.version.desc())
     ).scalars().first()
 
 

@@ -68,6 +68,10 @@ class Estimate(Base):
     frozen_markup_kop: Mapped[int | None] = mapped_column(Integer, nullable=True)
     frozen_total_kop: Mapped[int | None] = mapped_column(Integer, nullable=True)
     frozen_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Согласована смета, а не ссылка, по которой её открыли: адрес можно
+    # отозвать и выдать новый, а согласие заказчика от этого не исчезает
+    # (ADR-020). Ссылке остаётся доступ — срок, отзыв, отметки просмотра.
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     @property
     def markup_work_rate(self) -> Decimal:
@@ -210,6 +214,10 @@ class ShareLink(Base):
     один раз — в сообщении бота в момент выдачи. Ни дамп таблицы, ни бэкап, ни
     отладочный SELECT не содержат работающего адреса (ADR-020).
 
+    Здесь только доступ: срок, отзыв, отметки просмотра. Факт согласования
+    живёт на смете — согласовывают документ, а не адрес, по которому его
+    открыли, и переезд на новую ссылку не должен его терять.
+
     Про того, кто открыл, не хранится ничего: ни адрес, ни браузер, ни счётчик
     заходов. Прораб видит два факта — открыли и когда, — потому что без них
     ссылка не даёт доверия, которое обычно даёт регистрация. Больше ему знать
@@ -231,7 +239,6 @@ class ShareLink(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     first_viewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_viewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     @property
     def is_live(self) -> bool:

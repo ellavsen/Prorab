@@ -3,6 +3,10 @@
 Оба берут суммы у домена через verified_totals: у отправленной сметы это
 означает сверку со слепком, и документ не выдаётся вовсе, если данные
 разошлись с тем, что заказчик уже видел (money.md И3).
+
+Отказ здесь не перехватывается: с Sprint 7 его ловит on_error (errors.py) —
+одинаково для /list, /rate, /generate и /pdf. Иначе одна и та же поломка
+объяснялась бы разными словами в зависимости от того, какую команду ввели.
 """
 
 from datetime import datetime
@@ -10,7 +14,7 @@ from datetime import datetime
 from telegram import InputFile, Update
 from telegram.ext import ContextTypes
 
-from smeta_core import STATUS_LABEL, IntegrityError, format_money
+from smeta_core import STATUS_LABEL, format_money
 from smeta_export import DocumentMeta, build_pdf, build_workbook, document_filename
 from smeta_storage import current_estimate, positions, verified_totals
 
@@ -18,10 +22,6 @@ from ..database import SessionLocal
 from ..texts import markup_caption
 
 EMPTY = "Нет данных для отчёта в текущей смете. Добавь позиции и повтори {command}."
-BROKEN = (
-    "Документ не выдан: данные сметы разошлись с тем, что было заморожено при "
-    "отправке.\n{reason}"
-)
 
 
 def _meta(estimate, on) -> DocumentMeta:
@@ -45,12 +45,7 @@ async def cmd_generate(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> N
             await update.message.reply_text(EMPTY.format(command="/generate"))
             return
 
-        try:
-            totals = verified_totals(db, estimate)
-        except IntegrityError as error:
-            await update.message.reply_text(BROKEN.format(reason=error))
-            return
-
+        totals = verified_totals(db, estimate)
         buffer = build_workbook(
             materials, works, estimate.markup_work_rate, estimate.markup_material_rate
         )
@@ -81,12 +76,7 @@ async def cmd_pdf(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text(EMPTY.format(command="/pdf"))
             return
 
-        try:
-            totals = verified_totals(db, estimate)
-        except IntegrityError as error:
-            await update.message.reply_text(BROKEN.format(reason=error))
-            return
-
+        totals = verified_totals(db, estimate)
         buffer = build_pdf(totals, _meta(estimate, on))
         number, name, version = estimate.number, estimate.name, estimate.version
 

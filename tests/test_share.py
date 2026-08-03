@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from test_document_naming import UID, FakeDocumentMessage, FakeUpdate
 
-from conftest import async_test, open_storage
+from conftest import ErrorContext, ErrorUpdate, async_test, open_storage
 from smeta_core import Category, EstimateStatus, PositionData, format_money
 from smeta_storage import (
     Estimate,
@@ -149,12 +149,50 @@ def test_approval_takes_the_expiry_off(storage):
     """Согласованный документ живёт, пока владелец не отозвал (ADR-020)."""
     _estimate_id, token = sent_estimate(storage)
     with storage() as db:
-        link = share.approve(db, share.resolve(db, token))
-        assert link.approved_at is not None
+        link = share.resolve(db, token)
+        estimate = share.approve(db, link)
+        assert estimate.approved_at is not None
         assert link.expires_at is None
         link.created_at = utcnow() - timedelta(days=400)
         db.commit()
         assert share.resolve(db, token) is not None
+
+
+def test_approval_lives_on_the_estimate_and_not_on_the_address(storage):
+    """Согласовывают документ, а не адрес, по которому его открыли (ADR-020).
+
+    Отсюда следует всё остальное: перевыпуск ссылки не теряет согласия, и
+    копировать его со ссылки на ссылку — то есть заводить второй источник
+    истины про один факт — не приходится.
+    """
+    estimate_id, token = sent_estimate(storage)
+    with storage() as db:
+        share.approve(db, share.resolve(db, token))
+        assert db.get(Estimate, estimate_id).approved_at is not None
+    assert "approved_at" not in ShareLink.__table__.columns
+
+
+def test_a_reissued_link_keeps_the_approval_and_the_absence_of_a_deadline(storage):
+    """Заказчик потерял адрес — это не повод пересогласовывать смету."""
+    estimate_id, old = sent_estimate(storage)
+    with storage() as db:
+        share.approve(db, share.resolve(db, old))
+        new = share.reissue(db, db.get(Estimate, estimate_id))
+
+        assert share.resolve(db, old) is None, "старая закрывается сразу"
+        link = share.resolve(db, new)
+        assert link is not None
+        assert link.expires_at is None, "срок снят у сметы, а не у адреса"
+        assert share.document(db, link).approved_on is not None
+
+
+def test_reissuing_without_a_live_link_just_issues_one(storage):
+    """Ссылку отозвали, заказчик просит документ — тупика быть не должно."""
+    estimate_id, token = sent_estimate(storage)
+    with storage() as db:
+        share.revoke(db, share.resolve(db, token))
+        fresh = share.reissue(db, db.get(Estimate, estimate_id))
+        assert share.resolve(db, fresh) is not None
 
 
 def test_yesterdays_link_keeps_showing_yesterdays_document(storage):
@@ -194,10 +232,13 @@ def test_the_first_view_is_remembered_once_and_the_last_every_time(storage):
 
 
 def test_nothing_about_the_viewer_is_stored():
-    """Ни адреса, ни браузера, ни счётчика по адресам — это в схеме, не в коде."""
+    """Ни адреса, ни браузера, ни счётчика по адресам — это в схеме, не в коде.
+
+    Согласования здесь тоже нет: ссылка хранит только доступ.
+    """
     assert set(ShareLink.__table__.columns.keys()) == {
         "id", "token_sha256", "estimate_id", "created_at", "expires_at",
-        "revoked_at", "first_viewed_at", "last_viewed_at", "approved_at",
+        "revoked_at", "first_viewed_at", "last_viewed_at",
     }
 
 
@@ -270,25 +311,39 @@ def test_approving_from_the_page_records_it_and_redirects(storage, client):
     assert response.headers["location"] == f"/e/{token}"
 
     with storage() as db:
-        assert share.resolve(db, token).approved_at is not None
+        assert share.document(db, share.resolve(db, token)).approved_on is not None
     assert "Согласовано" in client.get(f"/e/{token}").text
 
 
-def test_opening_the_page_changes_the_estimate_in_no_way(storage, client):
-    """Поведенческая пара к запрету записи в тесте архитектуры."""
+def test_opening_the_page_changes_nothing_but_the_approval(storage, client):
+    """Поведенческая пара к запрету записи в тесте архитектуры.
+
+    Ровно одна колонка сметы может измениться от действий постороннего —
+    approved_at. Проверяется поимённо, а не «диффа нет»: иначе тест пришлось
+    бы ослаблять при каждом новом поле, и однажды он перестал бы ловить то,
+    ради чего написан.
+    """
     _estimate_id, token = sent_estimate(storage)
+    may_change = {"approved_at", "updated_at"}
 
     def snapshot():
         with storage() as db:
+            estimates = db.execute(text("SELECT * FROM estimates ORDER BY id")).mappings().all()
             return (
-                db.execute(text("SELECT * FROM estimates ORDER BY id")).fetchall(),
-                db.execute(text("SELECT * FROM positions ORDER BY id")).fetchall(),
+                [{k: v for k, v in row.items() if k not in may_change} for row in estimates],
+                [dict(row) for row in
+                 db.execute(text("SELECT * FROM positions ORDER BY id")).mappings().all()],
+                [row["approved_at"] for row in estimates],
             )
 
-    before = snapshot()
+    untouched_before, positions_before, approval_before = snapshot()
     client.get(f"/e/{token}")
     client.post(f"/e/{token}/approve", follow_redirects=False)
-    assert snapshot() == before
+    untouched_after, positions_after, approval_after = snapshot()
+
+    assert untouched_after == untouched_before, "смета изменилась не только согласованием"
+    assert positions_after == positions_before, "позиции не трогает никто извне"
+    assert approval_before == [None] and approval_after != [None]
 
 
 def test_a_document_that_disagrees_with_its_snapshot_is_not_shown(storage, client, caplog):
@@ -402,14 +457,7 @@ async def test_a_sent_estimate_answers_instead_of_crashing(storage):
             Category.WORK, "Поздняя правка", D("1"), D("100")))
 
     message = FakeDocumentMessage()
-
-    class FakeContext:
-        error = caught.value
-
-    class FakeUpdateWithMessage:
-        effective_message = message
-
-    await errors.on_error(FakeUpdateWithMessage(), FakeContext())
+    await errors.on_error(ErrorUpdate(message), ErrorContext(caught.value))
     assert "Сделай ревизию: /revise" in message.sent[0]
 
 
@@ -428,6 +476,136 @@ async def test_revoking_an_approved_link_asks_first(storage, monkeypatch):
 
     with storage() as db:
         assert share.resolve(db, token) is not None, "без подтверждения не отзываем"
+
+
+@async_test
+async def test_relink_asks_first_and_says_the_old_one_stops_working(storage, monkeypatch):
+    """Подтверждение объясняет цену действия, а не просто спрашивает «точно?»."""
+    from bot.handlers import share as handler
+
+    monkeypatch.setattr(handler, "SessionLocal", storage)
+    _estimate_id, token = sent_estimate(storage)
+
+    message = FakeDocumentMessage()
+    await handler.cmd_relink(FakeUpdate(message), None)
+    assert "перестанет открываться" in message.sent[0]
+    assert "нерабочий адрес" in message.sent[0]
+
+    with storage() as db:
+        assert share.resolve(db, token) is not None, "без подтверждения не трогаем"
+
+
+@async_test
+async def test_relink_without_a_live_link_does_not_ask_about_nothing(storage, monkeypatch):
+    """Обещать «старая перестанет работать», когда её нет, — неправда."""
+    from bot.handlers import share as handler
+
+    monkeypatch.setattr(handler, "SessionLocal", storage)
+    _estimate_id, token = sent_estimate(storage)
+    with storage() as db:
+        share.revoke(db, share.resolve(db, token))
+
+    message = FakeDocumentMessage()
+    await handler.cmd_relink(FakeUpdate(message), None)
+    assert "перестанет открываться" not in message.sent[0]
+    assert "/e/" in message.sent[0]
+
+
+@async_test
+async def test_relink_refuses_on_a_draft(storage, monkeypatch):
+    from bot.handlers import share as handler
+
+    monkeypatch.setattr(handler, "SessionLocal", storage)
+    with storage() as db:
+        estimate = create_estimate(db, UID, name="Черновик")
+        set_current_estimate(db, UID, estimate.id)
+
+    message = FakeDocumentMessage()
+    await handler.cmd_relink(FakeUpdate(message), None)
+    assert "/send" in message.sent[0]
+
+
+@async_test
+async def test_revise_works_on_an_approved_estimate(storage, monkeypatch):
+    """Передумали после согласования — это ревизия, а не тупик.
+
+    Отменить согласование заказчик не может (известный пробел), но владельцу
+    путь вперёд обязан оставаться открытым.
+    """
+    from bot.handlers import share as handler
+
+    monkeypatch.setattr(handler, "SessionLocal", storage)
+    estimate_id, token = sent_estimate(storage)
+    with storage() as db:
+        share.approve(db, share.resolve(db, token))
+
+    message = FakeDocumentMessage()
+    await handler.cmd_revise(FakeUpdate(message), None)
+    assert "ред. 2" in message.sent[0]
+
+    with storage() as db:
+        # Согласована прежняя редакция, новая начинается несогласованной.
+        assert db.get(Estimate, estimate_id).approved_at is not None
+        fresh = db.execute(
+            text("SELECT approved_at FROM estimates WHERE version = 2")
+        ).scalar()
+        assert fresh is None
+
+
+class FakeQuery:
+    """Инлайн-кнопка. Подтверждение — часть цепочки, а не украшение к ней."""
+
+    def __init__(self, data: str):
+        self.data = data
+        self.message = FakeDocumentMessage()
+        self.edits: list[str] = []
+
+    async def answer(self):
+        return None
+
+    async def edit_message_text(self, text, **_kwargs):
+        self.edits.append(text)
+
+
+class FakeCallbackUpdate:
+    def __init__(self, query):
+        self.callback_query = query
+        self.effective_user = FakeUpdate(None).effective_user
+
+
+@async_test
+async def test_confirming_relink_closes_the_old_link_and_hands_out_a_new_one(
+    storage, monkeypatch
+):
+    from bot.handlers import callbacks
+
+    monkeypatch.setattr(callbacks, "SessionLocal", storage)
+    estimate_id, old = sent_estimate(storage)
+
+    query = FakeQuery(f"relink_yes:{estimate_id}")
+    await callbacks.on_callback(FakeCallbackUpdate(query), None)
+
+    [answer] = query.edits
+    assert "/e/" in answer
+    new = answer.rsplit("/e/", 1)[1].split()[0]
+    with storage() as db:
+        assert share.resolve(db, old) is None, "старая закрыта"
+        assert share.resolve(db, new) is not None, "новая работает"
+
+
+@async_test
+async def test_declining_relink_leaves_the_link_alone(storage, monkeypatch):
+    from bot.handlers import callbacks
+
+    monkeypatch.setattr(callbacks, "SessionLocal", storage)
+    estimate_id, token = sent_estimate(storage)
+
+    query = FakeQuery(f"relink_no:{estimate_id}")
+    await callbacks.on_callback(FakeCallbackUpdate(query), None)
+
+    assert query.edits == ["Отменено."]
+    with storage() as db:
+        assert share.resolve(db, token) is not None
 
 
 @async_test

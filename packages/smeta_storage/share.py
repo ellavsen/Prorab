@@ -71,6 +71,9 @@ def issue(db: Session, estimate: Estimate, ttl_days: int = DEFAULT_TTL_DAYS) -> 
 
     Черновик наружу не отдаётся: у него нет замороженных итогов, и то, что
     заказчик увидел бы сегодня, завтра поменялось бы без следа (money.md И3).
+
+    У согласованной сметы срока нет: он снят один раз и навсегда, а не у
+    конкретного адреса, поэтому перевыпуск ссылки его не возвращает.
     """
     if estimate.status == EstimateStatus.DRAFT:
         raise StateError("Ссылка выдаётся только на отправленную смету: /send")
@@ -79,10 +82,26 @@ def issue(db: Session, estimate: Estimate, ttl_days: int = DEFAULT_TTL_DAYS) -> 
     db.add(ShareLink(
         token_sha256=digest(token),
         estimate_id=estimate.id,
-        expires_at=utcnow() + timedelta(days=ttl_days),
+        expires_at=None if estimate.approved_at else utcnow() + timedelta(days=ttl_days),
     ))
     db.commit()
     return token
+
+
+def reissue(db: Session, estimate: Estimate) -> str:
+    """Отзывает действующую ссылку и выдаёт новую — одним шагом.
+
+    Частый случай: заказчик потерял адрес, а у прораба его тоже нет — токен
+    хранится отпечатком, показать повторно неоткуда (ADR-020). Отзыв и выдача
+    здесь неразделимы намеренно: две живые ссылки на один документ означали
+    бы, что «отозвал» не значит «закрыл».
+
+    Согласование не теряется: оно на смете, а не на адресе.
+    """
+    live = latest_for(db, estimate.id)
+    if live is not None and live.is_live:
+        revoke(db, live)
+    return issue(db, estimate)
 
 
 def resolve(db: Session, token: str) -> ShareLink | None:
@@ -115,17 +134,23 @@ def mark_viewed(db: Session, link: ShareLink) -> None:
     db.commit()
 
 
-def approve(db: Session, link: ShareLink) -> ShareLink:
+def approve(db: Session, link: ShareLink) -> Estimate:
     """Согласовано — значит бессрочно, пока владелец не отозвал явно.
+
+    Отметка ставится на смету: согласовывают документ, а не адрес, по которому
+    его открыли. Иначе перевыпуск ссылки терял бы согласие заказчика, и его
+    пришлось бы копировать со ссылки на ссылку — то есть завести второй
+    источник истины про один и тот же факт (ADR-020).
 
     Срок снимается, а не продлевается: согласованный документ, исчезнувший
     через месяц, хуже отсутствующего — на него уже сослались.
     """
-    if link.approved_at is None:
-        link.approved_at = utcnow()
+    estimate = _estimate_of(db, link)
+    if estimate.approved_at is None:
+        estimate.approved_at = utcnow()
         link.expires_at = None
         db.commit()
-    return link
+    return estimate
 
 
 def revoke(db: Session, link: ShareLink) -> ShareLink:
@@ -136,6 +161,13 @@ def revoke(db: Session, link: ShareLink) -> ShareLink:
     return link
 
 
+def _estimate_of(db: Session, link: ShareLink) -> Estimate:
+    estimate = db.get(Estimate, link.estimate_id)
+    if estimate is None:
+        raise StateError("Смета, на которую выдана ссылка, не найдена.")
+    return estimate
+
+
 def document(db: Session, link: ShareLink) -> SharedEstimate:
     """Собирает то, что увидит заказчик. Суммы — только после сверки со слепком.
 
@@ -143,9 +175,7 @@ def document(db: Session, link: ShareLink) -> SharedEstimate:
     замороженным, нельзя, а решать, что ответить постороннему, — дело
     приложения, не хранилища.
     """
-    estimate = db.get(Estimate, link.estimate_id)
-    if estimate is None:
-        raise StateError("Смета, на которую выдана ссылка, не найдена.")
+    estimate = _estimate_of(db, link)
     totals = verified_totals(db, estimate)
     sent_at = estimate.sent_at or estimate.created_at
     return SharedEstimate(
@@ -157,7 +187,7 @@ def document(db: Session, link: ShareLink) -> SharedEstimate:
         work_rate=estimate.markup_work_rate,
         material_rate=estimate.markup_material_rate,
         totals=totals,
-        approved_on=_day(link.approved_at),
+        approved_on=_day(estimate.approved_at),
     )
 
 

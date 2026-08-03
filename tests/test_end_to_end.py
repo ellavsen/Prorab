@@ -11,7 +11,13 @@ from openpyxl import load_workbook
 from conftest import excel_round, open_storage
 from smeta_core import Category, calculate_estimate, default_unit, parse_position_line
 from smeta_export import FIRST_DATA_ROW, build_workbook
-from smeta_storage import Estimate, Position, create_estimate, positions
+from smeta_storage import (
+    Estimate,
+    Position,
+    create_estimate,
+    positions,
+    verified_totals,
+)
 
 UID = 42
 INPUT_LINES = [
@@ -67,7 +73,7 @@ def test_all_three_channels_agree_on_a_real_database(storage):
             estimate.markup_work_rate,
             estimate.markup_material_rate,
         )
-        summary = positions.totals(db, UID, estimate)
+        summary = verified_totals(db, estimate)
         materials, works = positions.by_category(db, UID, estimate_id)
         work_rate = estimate.markup_work_rate
         material_rate = estimate.markup_material_rate

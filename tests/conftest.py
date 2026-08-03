@@ -23,6 +23,23 @@ def async_test(function):
     return wrapper
 
 
+class ErrorUpdate:
+    """Апдейт для общего перехвата ошибок (bot.handlers.errors.on_error).
+
+    С Sprint 7 отказы домена — FrozenEstimateError и IntegrityError —
+    объясняются одним обработчиком, а не каждым хендлером по-своему. Значит,
+    и проверяются они через него.
+    """
+
+    def __init__(self, message):
+        self.effective_message = message
+
+
+class ErrorContext:
+    def __init__(self, error):
+        self.error = error
+
+
 _open_engines = []
 
 

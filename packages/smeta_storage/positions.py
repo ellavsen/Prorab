@@ -5,16 +5,14 @@ from sqlalchemy.orm import Session
 
 from smeta_core import (
     Category,
-    EstimateTotals,
     PositionData,
-    calculate_estimate,
     merge_duplicates,
     to_kop,
     to_milli,
 )
 
 from .guards import require_draft_by_id
-from .models import Estimate, Position
+from .models import Position
 
 
 def load(db: Session, uid: int, estimate_id: int) -> list[Position]:
@@ -25,14 +23,12 @@ def load(db: Session, uid: int, estimate_id: int) -> list[Position]:
     ).scalars().all())
 
 
-def totals(db: Session, uid: int, estimate: Estimate) -> EstimateTotals:
-    """Единственный способ узнать сумму сметы — один и тот же во всех каналах."""
-    rows = load(db, uid, estimate.id)
-    return calculate_estimate(
-        [r.to_domain() for r in rows],
-        estimate.markup_work_rate,
-        estimate.markup_material_rate,
-    )
+# Функция totals отсюда убрана в Sprint 7. Она считала сумму, не сверяясь со
+# слепком, и рядом с verified_totals стала вторым способом узнать сумму
+# сметы — то есть ровно тем, что этот проект вычищал в Sprint 1. Разошлось бы
+# так: /list показывает итог, /pdf по той же смете отказывается его выдать, и
+# человеку нечем объяснить разницу. Единственный способ теперь один —
+# smeta_storage.verified_totals.
 
 
 def by_category(

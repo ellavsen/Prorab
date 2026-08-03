@@ -117,8 +117,11 @@ def migrate_categories(conn: Connection, reverse: bool = False) -> int:
     return changed
 
 
-# Версии и статусы сметы, Sprint 7 (money.md §1.3–1.4).
+# Всё, что смета нажила после первой схемы: ставки наценки (Sprint 2),
+# версии и статусы (Sprint 7, money.md §1.3–1.4), отметка согласования.
 ESTIMATE_COLUMNS = {
+    "markup_work_bp": f"INTEGER NOT NULL DEFAULT {DEFAULT_MARKUP_BP}",
+    "markup_material_bp": f"INTEGER NOT NULL DEFAULT {DEFAULT_MARKUP_BP}",
     "version": "INTEGER NOT NULL DEFAULT 1",
     "supersedes_id": "INTEGER REFERENCES estimates(id)",
     "status": "VARCHAR(16) NOT NULL DEFAULT 'draft'",
@@ -127,17 +130,26 @@ ESTIMATE_COLUMNS = {
     "frozen_markup_kop": "INTEGER",
     "frozen_total_kop": "INTEGER",
     "frozen_hash": "VARCHAR(64)",
+    # Согласована смета, а не ссылка, по которой её открыли (ADR-020).
+    "approved_at": "DATETIME",
 }
+
+# Что снимается откатом версий: ставки к версиям отношения не имеют.
+VERSION_COLUMNS = tuple(ESTIMATE_COLUMNS)[2:]
 
 VERSION_INDEX = "uq_estimate_version"
 
 
 def migrate_estimate_versions(conn: Connection, reverse: bool = False) -> bool:
-    """Заводит версии и статусы у смет. Идемпотентна и обратима.
+    """Догоняет таблицу смет до текущей схемы. Идемпотентна и обратима.
 
     Существующие сметы становятся черновиками первой версии: до Sprint 7
     других состояний не было, и объявить их отправленными задним числом
     значило бы заморозить то, чего никто не отправлял.
+
+    Недостающие колонки добираются и тогда, когда версии уже есть: база могла
+    остановиться на середине Sprint 7, и молчаливый пропуск обнаружился бы
+    падением на первом же согласовании.
     """
     if "estimates" not in set(sa_inspect(conn).get_table_names()):
         return False
@@ -147,7 +159,7 @@ def migrate_estimate_versions(conn: Connection, reverse: bool = False) -> bool:
         if "version" not in existing:
             return False
         conn.execute(text(f"DROP INDEX IF EXISTS {VERSION_INDEX}"))
-        for name in ESTIMATE_COLUMNS:
+        for name in VERSION_COLUMNS:
             if name in existing:
                 try:
                     conn.execute(text(f"ALTER TABLE estimates DROP COLUMN {name}"))
@@ -155,9 +167,9 @@ def migrate_estimate_versions(conn: Connection, reverse: bool = False) -> bool:
                     logger.warning("Колонка estimates.%s не удалена", name)
         return True
 
+    _add_missing_columns(conn, "estimates", ESTIMATE_COLUMNS)
     if "version" in existing:
         return False
-    _add_missing_columns(conn, "estimates", ESTIMATE_COLUMNS)
     conn.execute(text(
         "UPDATE estimates SET version = 1 WHERE version IS NULL"
     ))
@@ -254,26 +266,14 @@ def bootstrap(engine: Engine) -> None:
         migrate_estimate_versions(conn)
         migrate_share_links(conn)
 
-        if "estimates" not in tables:
-            Base.metadata.create_all(bind=conn, tables=[Estimate.__table__])
-        else:
-            existing = {c["name"] for c in sa_inspect(conn).get_columns("estimates")}
-            for column in ("markup_work_bp", "markup_material_bp"):
-                if column not in existing:
-                    conn.execute(text(
-                        f"ALTER TABLE estimates ADD COLUMN {column} INTEGER"
-                        f" NOT NULL DEFAULT {DEFAULT_MARKUP_BP}"
-                    ))
+        # Ставки догоняются вместе с версиями: одна таблица — одно место.
+        _ensure_table(conn, Estimate.__table__, reverse=False)
 
-        if "user_state" not in tables:
-            Base.metadata.create_all(bind=conn, tables=[UserState.__table__])
-        else:
+        if not _ensure_table(conn, UserState.__table__, reverse=False):
             _add_missing_columns(conn, "user_state", DRAFT_COLUMNS)
 
         # Предпросмотр распознанной пачки, добавлен в Sprint 5 (ADR-012).
-        if "pending_positions" not in tables:
-            Base.metadata.create_all(bind=conn, tables=[PendingPosition.__table__])
-        else:
+        if not _ensure_table(conn, PendingPosition.__table__, reverse=False):
             _add_missing_columns(conn, "pending_positions", PENDING_COLUMNS)
 
         if "positions" not in tables:

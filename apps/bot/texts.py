@@ -3,7 +3,7 @@
 import html
 from decimal import Decimal
 
-from smeta_core import EstimateTotals, format_money, format_qty
+from smeta_core import STATUS_LABEL, EstimateTotals, format_money, format_qty
 from smeta_prices import display_unit
 from smeta_storage import Estimate, Position
 
@@ -32,8 +32,17 @@ START_TEXT = (
     "Заказчику:\n"
     "/send — отправить: смета замораживается, появляется ссылка\n"
     "/link — открыли ли смету и когда, согласована ли\n"
+    "/relink — новая ссылка взамен потерянной (старая закроется)\n"
     "/revise — новая редакция отправленной сметы\n"
     "/revoke — закрыть ссылку\n"
+)
+
+# Одна формулировка на все поверхности: /list, /generate и /pdf обязаны
+# отказывать одинаково, иначе человек увидит сумму в списке и необъяснимый
+# отказ в документе — ровно то расхождение, ради которого затевался Sprint 1.
+INTEGRITY_BROKEN = (
+    "Данные сметы разошлись с тем, что было заморожено при отправке.\n{reason}\n"
+    "Документ по ней не выдаётся. Что делать: /revise — новая редакция."
 )
 
 CATEGORY_PROMPT = "Сначала выбери категорию: «Работа» или «Материал»."
@@ -73,6 +82,18 @@ CATEGORY_LABEL = {"work": "Работа", "material": "Материал"}
 # бот, PDF и публичная страница, и три копии словаря разошлись бы.
 
 
+def describe_version(estimate: Estimate) -> str:
+    """«ред. 2 — отправлена заказчику». Словами человека, а не домена.
+
+    В базе статус называется `superseded`, и это правильно: значения статусов
+    английские, потому что это код. Но прорабу показывать их нельзя — он не
+    обязан знать, что такое superseded, а без подписи две сметы «№1» в списке
+    неразличимы.
+    """
+    status = STATUS_LABEL.get(estimate.status, estimate.status).lower()
+    return f"ред. {estimate.version} — {status}"
+
+
 def category_title(category: str) -> str:
     return "Материалы и расходники" if category == "material" else "Работы"
 
@@ -81,7 +102,9 @@ def render_estimate(
     estimate: Estimate, rows: list[Position], totals: EstimateTotals
 ) -> str:
     """Сообщение /list. Итог берётся из totals, суммирования в шаблоне нет."""
-    out = [f"<b>{esc(estimate.name)}</b> (№{estimate.number})"]
+    out = [
+        f"<b>{esc(estimate.name)}</b> (№{estimate.number}, {describe_version(estimate)})"
+    ]
     current = None
     # strict=True: если длины разошлись, это баг расчёта, а не повод молча урезать.
     for row, line in zip(rows, totals.lines, strict=True):
@@ -104,7 +127,8 @@ def render_estimate(
 def render_summary(estimate: Estimate, totals: EstimateTotals, is_active: bool) -> str:
     mark = " (активная)" if is_active else ""
     return (
-        f"№{estimate.number}: {estimate.name}{mark}\n"
+        f"№{estimate.number}, {describe_version(estimate)}{mark}\n"
+        f"{estimate.name}\n"
         f"Позиции: {len(totals.lines)}  Итого: {format_money(totals.total)}"
     )
 

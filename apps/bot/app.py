@@ -39,6 +39,7 @@ def build_app():
     app.add_handler(CommandHandler("send", share.cmd_send))
     app.add_handler(CommandHandler("revise", share.cmd_revise))
     app.add_handler(CommandHandler("link", share.cmd_link))
+    app.add_handler(CommandHandler("relink", share.cmd_relink))
     app.add_handler(CommandHandler("revoke", share.cmd_revoke))
 
     # Кнопки и категории, регистронезависимо.

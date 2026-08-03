@@ -14,19 +14,13 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from smeta_core import EstimateStatus
+from smeta_core import STATUS_LABEL, EstimateStatus
 
 from .models import Estimate
 
 # Что человеку делать, когда он упёрся в запрет. Без этого сообщение
 # «смета отправлена» выглядит поломкой, а не правилом.
 FROZEN_HINT = "Отправленная смета не меняется. Сделай ревизию: /revise"
-
-_LABELS = {
-    EstimateStatus.SENT: "отправлена заказчику",
-    EstimateStatus.SUPERSEDED: "заменена новой версией",
-    EstimateStatus.CANCELLED: "отменена",
-}
 
 
 class FrozenEstimateError(ValueError):
@@ -39,7 +33,7 @@ def require_draft(estimate: Estimate | None) -> Estimate:
         raise FrozenEstimateError("Смета не найдена.")
     if estimate.status == EstimateStatus.DRAFT:
         return estimate
-    label = _LABELS.get(estimate.status, estimate.status)
+    label = STATUS_LABEL.get(estimate.status, estimate.status).lower()
     raise FrozenEstimateError(
         f"Смета №{estimate.number} (ред. {estimate.version}) {label}. {FROZEN_HINT}"
     )

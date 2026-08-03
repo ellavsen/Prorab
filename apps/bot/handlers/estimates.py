@@ -4,24 +4,32 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
-from smeta_core import Category, parse_rate, to_bp
+from smeta_core import Category, IntegrityError, parse_rate, to_bp
 from smeta_storage import (
     create_estimate,
     current_estimate,
     enforce_retention,
     find_by_number,
     list_estimates,
-    positions,
     set_category,
     set_current_estimate,
     set_rates,
     touch_estimate,
     user_state,
+    verified_totals,
 )
 
 from ..database import SessionLocal
 from ..keyboards import categories_keyboard, mode_keyboard, renew_keyboard, start_keyboard
-from ..texts import CATEGORY_LABEL, START_TEXT, esc, render_rates, render_summary
+from ..texts import (
+    CATEGORY_LABEL,
+    INTEGRITY_BROKEN,
+    START_TEXT,
+    describe_version,
+    esc,
+    render_rates,
+    render_summary,
+)
 
 
 async def start(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -78,7 +86,7 @@ async def cmd_rate(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         estimate = current_estimate(db, uid)
         if not args:
             await update.message.reply_text(
-                render_rates(estimate, positions.totals(db, uid, estimate)),
+                render_rates(estimate, verified_totals(db, estimate)),
                 parse_mode=ParseMode.HTML,
             )
             return
@@ -105,7 +113,7 @@ async def cmd_rate(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
             material_bp=rate_bp if target in ("both", "material") else estimate.markup_material_bp,
         )
         await update.message.reply_text(
-            render_rates(estimate, positions.totals(db, uid, estimate)),
+            render_rates(estimate, verified_totals(db, estimate)),
             parse_mode=ParseMode.HTML,
         )
 
@@ -136,17 +144,29 @@ async def cmd_estimates(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> 
             return
 
         active_id = user_state(db, uid).current_estimate_id
-        # Итог считает домен. Денежных агрегатов в SQL нет — они дают другой
-        # ответ, чем /list и Excel (ADR-002).
-        summaries = [
-            (estimate, positions.totals(db, uid, estimate), estimate.id == active_id)
-            for estimate in estimates
-        ]
+        # Итог считает домен, у отправленной — после сверки со слепком.
+        # Денежных агрегатов в SQL нет: они дают другой ответ, чем /list и
+        # Excel (ADR-002).
+        #
+        # Отказ здесь ловится построчно, а не общим перехватом: одна битая
+        # смета не должна прятать остальные четыре.
+        summaries = []
+        for estimate in estimates:
+            try:
+                totals = verified_totals(db, estimate)
+            except IntegrityError as error:
+                summaries.append((estimate, None, estimate.id == active_id, error))
+                continue
+            summaries.append((estimate, totals, estimate.id == active_id, None))
 
-    for estimate, totals, is_active in summaries:
+    for estimate, totals, is_active, error in summaries:
+        text = (
+            render_summary(estimate, totals, is_active) if error is None
+            else f"№{estimate.number}, {describe_version(estimate)}\n"
+                 f"{estimate.name}\n{INTEGRITY_BROKEN.format(reason=error)}"
+        )
         await update.message.reply_text(
-            render_summary(estimate, totals, is_active),
-            reply_markup=renew_keyboard(estimate.id, estimate.number),
+            text, reply_markup=renew_keyboard(estimate.id, estimate.number)
         )
 
 
@@ -170,8 +190,12 @@ async def cmd_switch(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> Non
         set_current_estimate(db, uid, estimate.id)
         touch_estimate(db, estimate)
 
+    # Редакция и статус называются прямо: /switch попадает на действующую
+    # версию, и человек должен видеть, черновик это или уже отправленный
+    # документ — иначе следующая же позиция упрётся в охрану без объяснения.
     await update.message.reply_text(
-        f"Переключился на <b>Смета №{number}</b> — {esc(estimate.name)}",
+        f"Переключился на <b>Смета №{number}</b>, {describe_version(estimate)}\n"
+        f"{esc(estimate.name)}",
         parse_mode=ParseMode.HTML,
         reply_markup=categories_keyboard(),
     )

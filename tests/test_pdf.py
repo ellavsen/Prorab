@@ -15,8 +15,14 @@ from pypdf import PdfReader
 from sqlalchemy import text
 from test_document_naming import UID, FakeDocumentMessage, FakeUpdate
 
-from conftest import async_test, open_storage
-from smeta_core import Category, PositionData, calculate_estimate, format_money
+from conftest import ErrorContext, ErrorUpdate, async_test, open_storage
+from smeta_core import (
+    Category,
+    IntegrityError,
+    PositionData,
+    calculate_estimate,
+    format_money,
+)
 from smeta_export import DocumentMeta, build_pdf
 from smeta_export.pdf import FONT_PATH, printable
 from smeta_storage import create_estimate, positions, send, set_current_estimate
@@ -253,11 +259,17 @@ async def test_the_pdf_command_refuses_when_the_estimate_is_empty(tmp_path, monk
 
 @async_test
 async def test_a_document_is_not_issued_when_the_snapshot_disagrees(tmp_path, monkeypatch):
-    """Данные разошлись с замороженным — файла не будет вовсе (money.md И3)."""
+    """Данные разошлись с замороженным — файла не будет вовсе (money.md И3).
+
+    Отказ здесь не перехватывается на месте: с Sprint 7 его объясняет один
+    обработчик на всё приложение, одинаково для /list, /rate и документов.
+    Поэтому тест проверяет две вещи по отдельности — что файл не ушёл и что
+    человеку сказали, что произошло.
+    """
     os.environ["ESTIMATE_DB_URL"] = f"sqlite:///{tmp_path / 'broken.db'}"
     _engine, Session = open_storage(tmp_path / "broken.db")
 
-    from bot.handlers import files
+    from bot.handlers import errors, files
 
     monkeypatch.setattr(files, "SessionLocal", Session)
     with Session() as db:
@@ -272,6 +284,10 @@ async def test_a_document_is_not_issued_when_the_snapshot_disagrees(tmp_path, mo
         db.commit()
 
     message = FakeDocumentMessage()
-    await files.cmd_pdf(FakeUpdate(message), None)
-    assert not message.documents
-    assert "Документ не выдан" in message.sent[0]
+    with pytest.raises(IntegrityError) as caught:
+        await files.cmd_pdf(FakeUpdate(message), None)
+    assert not message.documents, "файл не должен уйти заказчику"
+
+    await errors.on_error(ErrorUpdate(message), ErrorContext(caught.value))
+    assert "разошлись" in message.sent[0]
+    assert "/revise" in message.sent[0]

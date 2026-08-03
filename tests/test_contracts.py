@@ -89,7 +89,7 @@ def test_installed_distribution_is_importable():
     установка: чистый процесс, нейтральный каталог, без pythonpath.
     """
     result = subprocess.run(
-        [sys.executable, "-c", "import smeta_core, smeta_storage, smeta_export, bot, api"],
+        [sys.executable, "-c", "import smeta_core, smeta_storage, smeta_export, bot, api, share"],
         cwd=ROOT.parent,
         capture_output=True,
         text=True,

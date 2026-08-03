@@ -11,6 +11,7 @@ from smeta_storage import (
     Estimate,
     migrate_share_links,
     positions,
+    verified_totals,
 )
 
 OLD_SCHEMA = """
@@ -131,7 +132,7 @@ def test_migrated_estimate_totals_match_the_domain(legacy_db):
     _, Session = open_storage(legacy_db)
     with Session() as db:
         estimate = db.get(Estimate, 1)
-        totals = positions.totals(db, 42, estimate)
+        totals = verified_totals(db, estimate)
 
     # 150.15 + 250.25 + 0.02 = 400.42 без наценки; с наценкой 159.16 + 265.27 + 0.02
     assert totals.subtotal == D("400.42")
@@ -189,7 +190,7 @@ def test_migration_is_idempotent(legacy_db):
     open_storage(legacy_db)
     _, Session = open_storage(legacy_db)
     with Session() as db:
-        totals = positions.totals(db, 42, db.get(Estimate, 1))
+        totals = verified_totals(db, db.get(Estimate, 1))
     assert totals.total == D("424.45")
 
 
