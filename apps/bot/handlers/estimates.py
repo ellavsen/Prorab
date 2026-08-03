@@ -4,15 +4,18 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
-from smeta_core import Category, IntegrityError, parse_rate, to_bp
+from smeta_core import Category, IntegrityError, RateBase, parse_rate, to_bp
 from smeta_storage import (
+    contract_terms,
     create_estimate,
     current_estimate,
     enforce_retention,
     find_by_number,
     list_estimates,
+    newest_estimate,
     set_category,
     set_current_estimate,
+    set_rate_base,
     set_rates,
     touch_estimate,
     user_state,
@@ -20,13 +23,27 @@ from smeta_storage import (
 )
 
 from ..database import SessionLocal
-from ..keyboards import categories_keyboard, mode_keyboard, renew_keyboard, start_keyboard
+from ..keyboards import (
+    basis_change_keyboard,
+    basis_choice_keyboard,
+    categories_keyboard,
+    mode_keyboard,
+    renew_keyboard,
+    start_keyboard,
+)
 from ..texts import (
+    BASIS_SHOWN,
+    BASIS_UNCLEAR,
     CATEGORY_LABEL,
+    INHERITED,
     INTEGRITY_BROKEN,
     START_TEXT,
+    basis_effect,
+    basis_example,
+    basis_question,
     describe_version,
     esc,
+    markup_caption,
     render_rates,
     render_summary,
 )
@@ -118,21 +135,78 @@ async def cmd_rate(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         )
 
 
+BASIS_ARGS = {
+    "к цене": RateBase.COST,
+    "от суммы": RateBase.PRICE,
+}
+
+
+async def cmd_basis(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
+    """/basis — показать; /basis к цене | от суммы — поменять.
+
+    Отдельной командой, а не аргументом /rate: ставку жмут часто и не глядя, а
+    основание меняют раз в договор. Аргументы — те же два слова, что человек
+    видел на кнопке, ничего нового запоминать не нужно.
+    """
+    argument = " ".join((update.message.text or "").split()[1:]).strip().lower()
+    uid = update.effective_user.id
+
+    with SessionLocal() as db:
+        estimate = current_estimate(db, uid)
+        if argument:
+            chosen = BASIS_ARGS.get(argument)
+            if chosen is None:
+                await update.message.reply_text(BASIS_UNCLEAR)
+                return
+            set_rate_base(db, estimate, chosen)
+
+        other = next(word for word, base in BASIS_ARGS.items()
+                     if base != RateBase(estimate.rate_base))
+        await update.message.reply_text(
+            BASIS_SHOWN.format(
+                number=estimate.number, name=esc(estimate.name),
+                caption=markup_caption(estimate),
+                effect=basis_effect(estimate.rate_base), other=other,
+            ),
+            parse_mode=ParseMode.HTML,
+        )
+
+
 async def cmd_new(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
     uid = update.effective_user.id
     parts = (update.message.text or "").strip().split(" ", 1)
     custom_name = parts[1].strip() if len(parts) > 1 else None
 
     with SessionLocal() as db:
-        estimate = create_estimate(db, uid, name=custom_name)
+        # Прошлая смета читается ДО создания новой, иначе «прошлой» окажется
+        # она сама. Наследуются ставки и основание разом: это условия одного
+        # договора, и разъехаться они не должны (contract_terms).
+        previous = newest_estimate(db, uid)
+        estimate = create_estimate(db, uid, name=custom_name, **contract_terms(previous))
         set_current_estimate(db, uid, estimate.id)
         enforce_retention(db, uid)
+        inherited = None if previous is None else INHERITED.format(
+            caption=markup_caption(estimate), number=previous.number
+        )
 
     await update.message.reply_text(
         f"Создана и активирована <b>Смета №{estimate.number}</b> — {esc(estimate.name)}",
         parse_mode=ParseMode.HTML,
         reply_markup=categories_keyboard(),
     )
+    # Вторым сообщением, потому что клавиатура категорий и инлайн-кнопка не
+    # живут на одном сообщении, а категории на /new нужны как раньше.
+    if inherited is None:
+        await update.message.reply_text(
+            basis_question(first=True), parse_mode=ParseMode.HTML,
+            reply_markup=basis_choice_keyboard(
+                basis_example(RateBase.COST), basis_example(RateBase.PRICE)
+            ),
+        )
+    else:
+        await update.message.reply_text(
+            inherited, reply_markup=basis_change_keyboard()
+        )
 
 
 async def cmd_estimates(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:

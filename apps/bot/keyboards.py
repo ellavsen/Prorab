@@ -37,6 +37,30 @@ def confirm_keyboard(prefix: str, estimate_id: int) -> InlineKeyboardMarkup:
     ]])
 
 
+def basis_choice_keyboard(cost: str, price: str) -> InlineKeyboardMarkup:
+    """Выбор основания при самой первой смете. На кнопках — деньги, не термины.
+
+    Число прямо на кнопке потому, что решение принимается в момент нажатия, а
+    не при чтении абзаца выше.
+    """
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(f"к цене: {cost} ₽", callback_data="basis:cost")],
+        [InlineKeyboardButton(f"от суммы: {price} ₽", callback_data="basis:price")],
+    ])
+
+
+def basis_change_keyboard() -> InlineKeyboardMarkup:
+    """Кнопка в ответе на /new. Команду /basis человек увидит один раз и
+
+    забудет к моменту, когда она понадобится; кнопка приходит вместе со
+    строкой про унаследованный процент, то есть ровно тогда, когда о нём
+    вспоминают.
+    """
+    return InlineKeyboardMarkup([[
+        InlineKeyboardButton("Поменять процент", callback_data="basis:ask")
+    ]])
+
+
 def mode_keyboard() -> InlineKeyboardMarkup:
     """Пошаговый ввод — путь по умолчанию, списком — быстрый (ADR-010)."""
     return InlineKeyboardMarkup([

@@ -25,6 +25,7 @@ def build_app():
     app.add_handler(CommandHandler("estimates", estimates.cmd_estimates))
     app.add_handler(CommandHandler("switch", estimates.cmd_switch))
     app.add_handler(CommandHandler("rate", estimates.cmd_rate))
+    app.add_handler(CommandHandler("basis", estimates.cmd_basis))
 
     app.add_handler(CommandHandler("add", stepwise.cmd_add))
     app.add_handler(CommandHandler("list", positions.cmd_list))

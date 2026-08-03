@@ -2,17 +2,26 @@
 
 from decimal import Decimal as D
 
+import pytest
+
 from conftest import open_storage
-from smeta_core import Category, parse_position_line
+from smeta_core import Category, PositionData, RateBase, parse_position_line
 from smeta_storage import (
     RETENTION_LIMIT,
+    FrozenEstimateError,
+    contract_terms,
     create_estimate,
+    create_new_estimate_like,
     current_estimate,
     enforce_retention,
     get_category,
+    newest_estimate,
     positions,
+    send,
     set_category,
     set_current_estimate,
+    set_rate_base,
+    set_rates,
     touch_estimate,
     user_state,
     verified_totals,
@@ -346,3 +355,59 @@ def test_switch_lands_on_the_current_revision(tmp_path):
         assert found.id == revision.id
         assert found.version == 2
         assert found.is_draft, "переключаться нужно на ту редакцию, которую можно править"
+
+
+# --- Наследование условий договора при создании сметы ---
+
+
+def test_a_new_estimate_continues_the_previous_contract(tmp_path):
+    """Подстановка молча, но названа: у прораба почти всегда тот же договор.
+
+    Наследуются ставки и основание разом — это условия одного договора.
+    Разъехавшись, они дали бы смету, которую человек не заказывал: ставка своя,
+    а считается она иначе.
+    """
+    _engine, Session = open_storage(tmp_path / "inherit.db")
+    with Session() as db:
+        first = create_estimate(db, UID, name="Первая")
+        set_rates(db, first, work_bp=1000, material_bp=0)
+        set_rate_base(db, first, RateBase.PRICE)
+
+        second = create_estimate(db, UID, name="Вторая", **contract_terms(first))
+        assert (second.markup_work_bp, second.markup_material_bp) == (1000, 0)
+        assert second.rate_base == RateBase.PRICE
+
+
+def test_the_very_first_estimate_has_nothing_to_continue(tmp_path):
+    _engine, Session = open_storage(tmp_path / "firstever.db")
+    with Session() as db:
+        assert contract_terms(newest_estimate(db, UID)) == {}
+        estimate = create_estimate(db, UID, name="Самая первая")
+        assert estimate.rate_base == RateBase.COST
+
+
+def test_renewing_an_estimate_carries_the_base_too(tmp_path):
+    """Тот же список полей, что у /new: два пути создания не должны разойтись.
+
+    Проверено впрыском — до появления contract_terms кнопка «Обновить смету»
+    переносила ставки и теряла основание, и все тесты проекта это пропускали.
+    """
+    _engine, Session = open_storage(tmp_path / "renew.db")
+    with Session() as db:
+        source = create_estimate(db, UID, name="Ремонт")
+        set_rate_base(db, source, RateBase.PRICE)
+        renewed = create_new_estimate_like(db, UID, source)
+        assert renewed.rate_base == RateBase.PRICE
+
+
+def test_changing_the_base_is_refused_on_a_sent_estimate(tmp_path):
+    """Оно меняет не подпись, а суммы всех строк, — значит охрана та же."""
+    _engine, Session = open_storage(tmp_path / "sentbase.db")
+    with Session() as db:
+        estimate = create_estimate(db, UID, name="Отправленная")
+        positions.add(db, UID, estimate.id, PositionData(
+            Category.WORK, "Побелка", D("1"), D("1000"), "м²"))
+        db.commit()
+        send(db, estimate)
+        with pytest.raises(FrozenEstimateError):
+            set_rate_base(db, estimate, RateBase.PRICE)

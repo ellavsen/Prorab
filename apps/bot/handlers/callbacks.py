@@ -4,12 +4,30 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
-from smeta_storage import Estimate, create_new_estimate_like, positions, share, touch_estimate
+from smeta_core import RateBase
+from smeta_storage import (
+    Estimate,
+    create_new_estimate_like,
+    current_estimate,
+    positions,
+    set_rate_base,
+    share,
+    touch_estimate,
+)
 
 from ..config import share_base_url
 from ..database import SessionLocal
-from ..keyboards import confirm_keyboard
-from ..texts import BULK_HINT, STALE_BUTTON, esc
+from ..keyboards import basis_choice_keyboard, confirm_keyboard
+from ..texts import (
+    BASIS_SET,
+    BULK_HINT,
+    STALE_BUTTON,
+    basis_effect,
+    basis_example,
+    basis_question,
+    esc,
+    markup_caption,
+)
 from . import preview, stepwise
 from .share import RELINKED, REVOKED, link_block
 
@@ -32,6 +50,36 @@ def _owned_estimate(db, uid: int, data: str) -> Estimate | None:
     return estimate if estimate is not None and estimate.user_id == uid else None
 
 
+async def _basis(query, db, uid: int, value: str) -> None:
+    """Кнопки про основание процента: спросить и выбрать.
+
+    Работает с активной сметой, а не с id из кнопки: основание — свойство того,
+    что человек редактирует сейчас, и кнопка из прошлого разговора не должна
+    менять деньги в смете, которую он с тех пор переключил.
+    """
+    estimate = current_estimate(db, uid)
+    if value == "ask":
+        await query.edit_message_text(
+            basis_question(first=False), parse_mode=ParseMode.HTML,
+            reply_markup=basis_choice_keyboard(
+                basis_example(RateBase.COST), basis_example(RateBase.PRICE)
+            ),
+        )
+        return
+
+    if value not in tuple(RateBase):
+        await query.edit_message_text(STALE_BUTTON)
+        return
+
+    set_rate_base(db, estimate, value)
+    await query.edit_message_text(
+        BASIS_SET.format(
+            caption=markup_caption(estimate), effect=basis_effect(value)
+        ),
+        parse_mode=ParseMode.HTML,
+    )
+
+
 async def on_callback(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
@@ -40,6 +88,12 @@ async def on_callback(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> No
 
     if data.startswith(("renew_no:", "clear_no:", "revoke_no:", "relink_no:")):
         await query.edit_message_text(CANCELLED)
+        return
+
+    if data.startswith("basis:"):
+        _, _, value = data.partition(":")
+        with SessionLocal() as db:
+            await _basis(query, db, uid, value)
         return
 
     # Пошаговый ввод, разбор неоднозначных строк и предпросмотр распознанной

@@ -7,8 +7,11 @@ from smeta_core import (
     MARKUP_WORD,
     RATE_OF,
     STATUS_LABEL,
+    Category,
     EstimateTotals,
+    PositionData,
     RateBase,
+    calculate_estimate,
     format_money,
     format_qty,
 )
@@ -26,7 +29,8 @@ START_TEXT = (
     "/new [название] — новая смета и переключение на неё\n"
     "/estimates — список последних 5 смет\n"
     "/switch N — переключиться на смету №N\n"
-    "/rate 6 — наценка текущей сметы (можно /rate работы 10)\n\n"
+    "/rate 6 — ставка текущей сметы (можно /rate работы 10)\n"
+    "/basis — от чего считается процент: к цене или от суммы\n\n"
     "Позиции (в рамках текущей сметы):\n"
     "/add — добавить по шагам\n"
     "/list — список позиций\n"
@@ -87,6 +91,80 @@ def markup_caption(estimate: Estimate) -> str:
 def markup_title(estimate: Estimate) -> str:
     """«Наценка» или «По договору» — с большой буквы, началом строки."""
     return MARKUP_WORD[RateBase(estimate.rate_base)].capitalize()
+
+
+# Круглая цена, на которой показывается разница между основаниями. Число для
+# человека считается тем же калькулятором, что и деньги в смете: литерал в
+# тексте однажды разошёлся бы с расчётом, и именно на том экране, где прораб
+# решает про чужие деньги.
+EXAMPLE_PRICE = Decimal("1000.00")
+EXAMPLE_RATE = Decimal("6.00")
+
+
+def basis_example(base: str) -> str:
+    """«1 060,00» или «1 063,83» — во что превращается тысяча исполнителя."""
+    totals = calculate_estimate(
+        [PositionData(Category.WORK, "пример", Decimal("1"), EXAMPLE_PRICE)],
+        EXAMPLE_RATE, EXAMPLE_RATE, base,
+    )
+    return format_money(totals.total)
+
+
+def basis_effect(base: str) -> str:
+    """Одна строка про эффект: не термин, а числа."""
+    return (
+        f"Исполнителю {format_money(EXAMPLE_PRICE)} ₽ → "
+        f"заказчику {basis_example(base)} ₽ при {format_money(EXAMPLE_RATE)}%."
+    )
+
+
+# Единственный экран, где прораб решает про деньги заказчика. Ни «наценки», ни
+# «удержания», ни «маржи»: он читает их как синонимы, и различить основания они
+# не помогают. Ни «рекомендуем», ни «правильно»: какой у него договор, знает он.
+# Проверки умножением («6% от 1 060») тоже нет — на смете она не сходится
+# (money.md §3.5).
+BASIS_FIRST_LEAD = "Один раз спрошу про процент — дальше он подставляется сам.\n\n"
+
+BASIS_FIRST = (
+    "«{rate}%» считают двумя разными способами, и разница видна на деньгах.\n"
+    "Исполнителю {price} ₽ при ставке {rate}%:\n\n"
+    "<code>    к цене     →  заказчику {cost} ₽\n"
+    "    от суммы   →  заказчику {price_based} ₽</code>\n\n"
+    "«От суммы» — это когда процент удерживают из выставленной суммы: так "
+    "обычно записано в договоре с заказчиком. Посчитаешь первым способом — "
+    "исполнитель получит меньше, чем назвал.\n\n"
+    "Поменять можно до отправки сметы, командой /basis."
+)
+
+BASIS_SET = (
+    "Процент: {caption}.\n{effect}\n"
+    "Новые сметы будут создаваться так же. Поменять: /basis"
+)
+
+BASIS_SHOWN = "Смета №{number} «{name}»: {caption}.\n{effect}\n\nПоменять: /basis {other}"
+
+BASIS_UNCLEAR = "Не понял. Два варианта: /basis к цене или /basis от суммы"
+
+# Подстановка из прошлой сметы: молча, но названа. Номер прошлой сметы здесь
+# не для красоты — если подставилось не то, это видно сразу, а не на отправке.
+# Связка точкой, а не тире: при разных ставках по категориям caption сам
+# содержит тире, и «— к цене — как в №1» читается как обрывок.
+INHERITED = "Процент: {caption}. Как в №{number}."
+
+
+def basis_question(first: bool) -> str:
+    """Тот же разбор с числами, но «один раз спрошу» — только в первый раз.
+
+    По кнопке «Поменять процент» человек приходит сюда сам и в третий раз;
+    обещание спросить однократно там читается как поломка.
+    """
+    lead = BASIS_FIRST_LEAD if first else ""
+    return lead + BASIS_FIRST.format(
+        rate=format_money(EXAMPLE_RATE),
+        price=format_money(EXAMPLE_PRICE),
+        cost=basis_example(RateBase.COST),
+        price_based=basis_example(RateBase.PRICE),
+    )
 
 
 # Категории в коде английские; на экран их переводит адаптер.

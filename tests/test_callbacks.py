@@ -515,3 +515,84 @@ async def test_the_clear_button_empties_the_draft_estimate(bot):
     assert "Очищены позиции" in query.said
     with Session() as db:
         assert not positions.load(db, ME, estimate_id)
+
+
+# --- Основание процента: кнопки (ADR-022 — новая кнопка = новый тест) ---
+
+
+@async_test
+async def test_the_change_percent_button_asks_with_numbers_not_terms(bot):
+    """Кнопка из ответа на /new открывает тот же экран, что и первая смета."""
+    press, Session = bot
+    an_estimate(Session)
+
+    query = await press("basis:ask")
+    assert "1060,00" in query.said and "1063,83" in query.said
+    # Сюда человек приходит сам и не в первый раз: обещание «спрошу однажды»
+    # читается здесь как поломка. Найдено прогоном цикла руками, не тестом.
+    assert "Один раз спрошу" not in query.said
+    for term in ("наценк", "удержан", "маржа", "рекоменд"):
+        assert term not in query.said.lower(), f"термин «{term}» вместо чисел"
+
+
+@async_test
+async def test_choosing_the_base_changes_the_money_of_the_active_estimate(bot):
+    """Кнопка меняет не подпись, а суммы всех строк."""
+    press, Session = bot
+    estimate_id = an_estimate(Session)
+
+    from smeta_storage import verified_totals
+
+    with Session() as db:
+        before = verified_totals(db, db.get(Estimate, estimate_id)).total
+
+    query = await press("basis:price")
+    assert "от суммы" in query.said
+
+    with Session() as db:
+        estimate = db.get(Estimate, estimate_id)
+        assert estimate.rate_base == "price"
+        assert verified_totals(db, estimate).total > before
+
+
+@async_test
+async def test_pressing_the_same_base_twice_is_not_an_error(bot):
+    press, Session = bot
+    an_estimate(Session)
+    first = await press("basis:cost")
+    second = await press("basis:cost")
+    assert first.said == second.said
+
+
+@async_test
+async def test_a_base_button_on_a_sent_estimate_refuses(bot):
+    """Основание — часть отправленного документа, и охрана та же, что у ставки."""
+    press, Session = bot
+    estimate_id = an_estimate(Session)
+    with Session() as db:
+        send(db, db.get(Estimate, estimate_id))
+
+    with pytest.raises(FrozenEstimateError):
+        await press("basis:price")
+
+
+@async_test
+async def test_a_base_button_from_an_old_version_of_the_bot_says_so(bot):
+    press, Session = bot
+    an_estimate(Session)
+    query = await press("basis:наугад")
+    assert "устарел" in query.said.lower()
+
+
+@async_test
+async def test_a_base_button_never_touches_someone_elses_estimate(bot):
+    """Основание берётся у активной сметы нажавшего, а не из данных кнопки."""
+    press, Session = bot
+    mine = an_estimate(Session, uid=ME, name="Моя")
+    theirs = an_estimate(Session, uid=STRANGER, name="Чужая")
+
+    await press("basis:price", uid=ME)
+
+    with Session() as db:
+        assert db.get(Estimate, mine).rate_base == "price"
+        assert db.get(Estimate, theirs).rate_base == "cost"

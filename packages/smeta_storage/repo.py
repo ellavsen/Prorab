@@ -3,7 +3,7 @@
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from smeta_core import EstimateStatus
+from smeta_core import EstimateStatus, RateBase
 
 from . import history
 from .guards import require_draft
@@ -64,6 +64,18 @@ def set_rates(db: Session, estimate: Estimate, work_bp: int, material_bp: int) -
     require_draft(estimate)
     estimate.markup_work_bp = work_bp
     estimate.markup_material_bp = material_bp
+    estimate.updated_at = utcnow()
+    db.commit()
+
+
+def set_rate_base(db: Session, estimate: Estimate, base: str) -> None:
+    """От чего считается процент — условие договора, поэтому свойство сметы.
+
+    Охрана та же, что у ставки, и по той же причине: у отправленной сметы это
+    уже в документе, а меняет оно не подпись, а суммы всех строк (ADR-024).
+    """
+    require_draft(estimate)
+    estimate.rate_base = RateBase(base)
     estimate.updated_at = utcnow()
     db.commit()
 
@@ -198,17 +210,27 @@ def _drop_estimates(db: Session, uid: int, drop_ids: list[int]) -> None:
     ))
 
 
-def create_new_estimate_like(db: Session, uid: int, source: Estimate) -> Estimate:
-    """Новая пустая смета с тем же названием и ставками, сразу активная.
+# Условия договора, которые новая смета наследует от прошлой. Один список на
+# все пути создания — /new, «Обновить смету», ревизия. Разойдись они, один из
+# путей однажды потерял бы основание процента и посчитал бы деньги иначе: так
+# уже случилось с revise(), и заметил это только впрыск нарушения (ADR-023).
+CONTRACT_FIELDS = ("markup_work_bp", "markup_material_bp", "rate_base")
 
-    Ставки переносятся из исходной, а не берутся из настроек: «обновить смету»
+
+def contract_terms(estimate: Estimate | None) -> dict:
+    """Чем новая смета продолжает прошлую. У самой первой продолжать нечего."""
+    if estimate is None:
+        return {}
+    return {field: getattr(estimate, field) for field in CONTRACT_FIELDS}
+
+
+def create_new_estimate_like(db: Session, uid: int, source: Estimate) -> Estimate:
+    """Новая пустая смета с тем же названием и условиями, сразу активная.
+
+    Условия переносятся из исходной, а не берутся из настроек: «обновить смету»
     значит «то же самое, но заново».
     """
-    estimate = create_estimate(
-        db, uid, name=source.name,
-        markup_work_bp=source.markup_work_bp,
-        markup_material_bp=source.markup_material_bp,
-    )
+    estimate = create_estimate(db, uid, name=source.name, **contract_terms(source))
     set_current_estimate(db, uid, estimate.id)
     enforce_retention(db, uid)
     return estimate
