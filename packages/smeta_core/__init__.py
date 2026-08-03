@@ -6,6 +6,14 @@ tests/test_architecture.py.
 """
 
 from .calculate import calculate_estimate
+from .diff import Change, VersionDiff, diff_positions
+from .freeze import (
+    EstimateStatus,
+    IntegrityError,
+    canonical_form,
+    check_integrity,
+    frozen_hash,
+)
 from .merge import merge_duplicates
 from .models import (
     NAME_MAX_LEN,
@@ -49,21 +57,29 @@ __all__ = [
     "ZERO",
     "AmbiguousLine",
     "Category",
+    "Change",
+    "EstimateStatus",
     "EstimateTotals",
+    "IntegrityError",
     "LineTotal",
     "PositionData",
+    "VersionDiff",
     "calculate_estimate",
     "can_substitute_price",
+    "canonical_form",
+    "check_integrity",
     "check_name",
     "check_price",
     "check_quantity",
     "check_rate",
     "default_unit",
+    "diff_positions",
     "format_money",
     "format_qty",
     "from_bp",
     "from_kop",
     "from_milli",
+    "frozen_hash",
     "merge_duplicates",
     "normalize_unit",
     "parse_position_line",

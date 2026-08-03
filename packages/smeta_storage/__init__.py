@@ -1,11 +1,13 @@
 """smeta-storage — хранение смет. Знает про SQLAlchemy и ничего про Telegram."""
 
-from . import history, pending, positions
+from . import guards, history, pending, positions, versions
 from .db import build_engine, build_sessionmaker
+from .guards import FROZEN_HINT, FrozenEstimateError, require_draft, require_draft_by_id
 from .history import WINDOW_DAYS
 from .migrations import (
     bootstrap,
     migrate_categories,
+    migrate_estimate_versions,
     migrate_money_to_integers,
     migrate_price_history,
 )
@@ -39,21 +41,26 @@ from .repo import (
     update_draft,
     user_state,
 )
+from .versions import StateError, cancel, history_of, revise, send, verified_totals
 
 __all__ = [
     "DEFAULT_MARKUP_BP",
+    "FROZEN_HINT",
     "RETENTION_LIMIT",
     "WINDOW_DAYS",
     "Base",
     "Estimate",
+    "FrozenEstimateError",
     "PendingPosition",
     "PendingRow",
     "Position",
     "PriceHistory",
+    "StateError",
     "UserState",
     "bootstrap",
     "build_engine",
     "build_sessionmaker",
+    "cancel",
     "clear_draft",
     "create_estimate",
     "create_new_estimate_like",
@@ -61,15 +68,22 @@ __all__ = [
     "enforce_retention",
     "find_by_number",
     "get_category",
+    "guards",
     "history",
+    "history_of",
     "list_estimates",
     "migrate_categories",
+    "migrate_estimate_versions",
     "migrate_money_to_integers",
     "migrate_price_history",
     "newest_estimate",
     "next_estimate_number",
     "pending",
     "positions",
+    "require_draft",
+    "require_draft_by_id",
+    "revise",
+    "send",
     "set_category",
     "set_current_estimate",
     "set_rates",
@@ -77,4 +91,6 @@ __all__ = [
     "update_draft",
     "user_state",
     "utcnow",
+    "verified_totals",
+    "versions",
 ]

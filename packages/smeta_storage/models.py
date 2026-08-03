@@ -6,7 +6,14 @@ from decimal import Decimal
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from smeta_core import Category, PositionData, from_bp, from_kop, from_milli
+from smeta_core import (
+    Category,
+    EstimateStatus,
+    PositionData,
+    from_bp,
+    from_kop,
+    from_milli,
+)
 
 # Наценка по умолчанию для НОВЫХ смет, в базисных пунктах: 600 = 6.00%.
 # Копируется в смету при создании и дальше живёт в документе (ADR-003).
@@ -28,16 +35,39 @@ class Base(DeclarativeBase):
 
 
 class Estimate(Base):
+    """Смета. С Sprint 7 — версия документа, а не изменяемая запись.
+
+    Номер человекочитаем и переживает правки; версия растёт при каждой правке
+    после отправки. Пара (номер, версия) уникальна у владельца — заказчику
+    документ подписывается «Смета № 3, ред. 2», и спор «какую вы присылали»
+    решается ссылкой на неё (money.md §1.4).
+    """
+
     __tablename__ = "estimates"
+    __table_args__ = (
+        UniqueConstraint("user_id", "number", "version", name="uq_estimate_version"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(Integer, index=True)
     number: Mapped[int] = mapped_column(Integer)  # нумерация внутри пользователя
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    supersedes_id: Mapped[int | None] = mapped_column(
+        ForeignKey("estimates.id"), nullable=True
+    )
     name: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(16), default=EstimateStatus.DRAFT)
     markup_work_bp: Mapped[int] = mapped_column(Integer, default=DEFAULT_MARKUP_BP)
     markup_material_bp: Mapped[int] = mapped_column(Integer, default=DEFAULT_MARKUP_BP)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    # Снимок на момент отправки. У черновика пусто: производные значения не
+    # хранятся, пока документ можно менять (money.md §1.2).
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    frozen_subtotal_kop: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    frozen_markup_kop: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    frozen_total_kop: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    frozen_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     @property
     def markup_work_rate(self) -> Decimal:
@@ -46,6 +76,14 @@ class Estimate(Base):
     @property
     def markup_material_rate(self) -> Decimal:
         return from_bp(self.markup_material_bp)
+
+    @property
+    def is_draft(self) -> bool:
+        return self.status == EstimateStatus.DRAFT
+
+    @property
+    def frozen_total(self) -> Decimal | None:
+        return None if self.frozen_total_kop is None else from_kop(self.frozen_total_kop)
 
 
 class Position(Base):

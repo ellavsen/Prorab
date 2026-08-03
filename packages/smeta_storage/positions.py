@@ -13,6 +13,7 @@ from smeta_core import (
     to_milli,
 )
 
+from .guards import require_draft_by_id
 from .models import Estimate, Position
 
 
@@ -77,6 +78,7 @@ def add(db: Session, uid: int, estimate_id: int, position: PositionData) -> Posi
     Склейка происходит здесь, до всякого округления — это единственное место,
     где она допустима.
     """
+    require_draft_by_id(db, uid, estimate_id)
     twin = find_twin(db, uid, estimate_id, position)
     if twin is not None:
         merged = merge_duplicates([twin.to_domain(), position])[0]
@@ -112,6 +114,7 @@ def get(db: Session, uid: int, estimate_id: int, position_id: int) -> Position |
 
 
 def clear(db: Session, uid: int, estimate_id: int) -> None:
+    require_draft_by_id(db, uid, estimate_id)
     db.execute(delete(Position).where(
         Position.user_id == uid, Position.estimate_id == estimate_id
     ))

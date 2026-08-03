@@ -4,6 +4,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from . import history
+from .guards import require_draft
 from .models import Estimate, Position, UserState, utcnow
 
 RETENTION_LIMIT = 5  # хранить последние N смет на пользователя
@@ -55,8 +56,10 @@ def set_rates(db: Session, estimate: Estimate, work_bp: int, material_bp: int) -
     """Ставка — часть документа, поэтому меняется только у этой сметы (ADR-003).
 
     Пересчитывать ничего не нужно: итоги считаются из позиций и ставок при
-    каждом чтении, поэтому смена ставки видна сразу и только здесь.
+    каждом чтении, поэтому смена ставки видна сразу и только здесь. У
+    отправленной сметы ставка не меняется вовсе: она уже в документе (И2).
     """
+    require_draft(estimate)
     estimate.markup_work_bp = work_bp
     estimate.markup_material_bp = material_bp
     estimate.updated_at = utcnow()

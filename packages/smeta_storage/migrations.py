@@ -116,6 +116,62 @@ def migrate_categories(conn: Connection, reverse: bool = False) -> int:
     return changed
 
 
+# Версии и статусы сметы, Sprint 7 (money.md §1.3–1.4).
+ESTIMATE_COLUMNS = {
+    "version": "INTEGER NOT NULL DEFAULT 1",
+    "supersedes_id": "INTEGER REFERENCES estimates(id)",
+    "status": "VARCHAR(16) NOT NULL DEFAULT 'draft'",
+    "sent_at": "DATETIME",
+    "frozen_subtotal_kop": "INTEGER",
+    "frozen_markup_kop": "INTEGER",
+    "frozen_total_kop": "INTEGER",
+    "frozen_hash": "VARCHAR(64)",
+}
+
+VERSION_INDEX = "uq_estimate_version"
+
+
+def migrate_estimate_versions(conn: Connection, reverse: bool = False) -> bool:
+    """Заводит версии и статусы у смет. Идемпотентна и обратима.
+
+    Существующие сметы становятся черновиками первой версии: до Sprint 7
+    других состояний не было, и объявить их отправленными задним числом
+    значило бы заморозить то, чего никто не отправлял.
+    """
+    if "estimates" not in set(sa_inspect(conn).get_table_names()):
+        return False
+    existing = {c["name"] for c in sa_inspect(conn).get_columns("estimates")}
+
+    if reverse:
+        if "version" not in existing:
+            return False
+        conn.execute(text(f"DROP INDEX IF EXISTS {VERSION_INDEX}"))
+        for name in ESTIMATE_COLUMNS:
+            if name in existing:
+                try:
+                    conn.execute(text(f"ALTER TABLE estimates DROP COLUMN {name}"))
+                except OperationalError:  # pragma: no cover — очень старый SQLite
+                    logger.warning("Колонка estimates.%s не удалена", name)
+        return True
+
+    if "version" in existing:
+        return False
+    _add_missing_columns(conn, "estimates", ESTIMATE_COLUMNS)
+    conn.execute(text(
+        "UPDATE estimates SET version = 1 WHERE version IS NULL"
+    ))
+    conn.execute(text(
+        "UPDATE estimates SET status = 'draft' WHERE status IS NULL OR status = ''"
+    ))
+    # Уникальность (владелец, номер, версия) — не украшение: без неё две
+    # ревизии могут получить один номер и заказчик не различит документы.
+    conn.execute(text(
+        f"CREATE UNIQUE INDEX IF NOT EXISTS {VERSION_INDEX}"
+        " ON estimates (user_id, number, version)"
+    ))
+    return True
+
+
 def migrate_price_history(conn: Connection, reverse: bool = False) -> bool:
     """Заводит таблицу истории своих цен, Sprint 6a (ADR-017).
 
@@ -175,6 +231,7 @@ def bootstrap(engine: Engine) -> None:
             return
 
         migrate_price_history(conn)
+        migrate_estimate_versions(conn)
 
         if "estimates" not in tables:
             Base.metadata.create_all(bind=conn, tables=[Estimate.__table__])
