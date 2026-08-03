@@ -103,6 +103,7 @@ def calculate(payload: str) -> str:
             positions,
             Decimal(str(request["markup_work_rate"])),
             Decimal(str(request["markup_material_rate"])),
+            request.get("rate_base", "cost"),
         )
     except (ValueError, InvalidOperation) as error:
         return json.dumps({"error": str(error)})
@@ -129,8 +130,9 @@ def xlsx_base64(payload: str) -> str:
         positions = [_position_from_json(raw) for raw in request["positions"]]
         work_rate = Decimal(str(request["markup_work_rate"]))
         material_rate = Decimal(str(request["markup_material_rate"]))
+        base = request.get("rate_base", "cost")
         # Расчёт отвергнет смету, где строка выше потолка, до выдачи файла.
-        calculate_estimate(positions, work_rate, material_rate)
+        calculate_estimate(positions, work_rate, material_rate, base)
     except (ValueError, InvalidOperation) as error:
         return json.dumps({"error": str(error)})
 
@@ -139,5 +141,6 @@ def xlsx_base64(payload: str) -> str:
         [p for p in positions if p.category == Category.WORK],
         work_rate,
         material_rate,
+        base,
     )
     return json.dumps({"base64": base64.b64encode(buffer.getvalue()).decode("ascii")})

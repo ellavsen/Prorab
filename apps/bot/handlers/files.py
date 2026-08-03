@@ -33,6 +33,7 @@ def _meta(estimate, on) -> DocumentMeta:
         work_rate=estimate.markup_work_rate,
         material_rate=estimate.markup_material_rate,
         status=STATUS_LABEL.get(estimate.status, ""),
+        rate_base=estimate.rate_base,
     )
 
 
@@ -47,7 +48,8 @@ async def cmd_generate(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> N
 
         totals = verified_totals(db, estimate)
         buffer = build_workbook(
-            materials, works, estimate.markup_work_rate, estimate.markup_material_rate
+            materials, works, estimate.markup_work_rate,
+            estimate.markup_material_rate, estimate.rate_base,
         )
         number, name, version = estimate.number, estimate.name, estimate.version
 
@@ -86,6 +88,6 @@ async def cmd_pdf(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
         )),
         caption=(
             f"{name} (№{number}, ред. {version}). "
-            f"Итог {format_money(totals.total)}, наценка {markup_caption(estimate)}."
+            f"Итог {format_money(totals.total)}, надбавка {markup_caption(estimate)}."
         ),
     )

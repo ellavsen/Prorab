@@ -12,7 +12,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-from smeta_core import PositionData
+from smeta_core import PositionData, RateBase
 from smeta_prices import display_unit
 
 THIN = Side(border_style="thin", color="000000")
@@ -24,10 +24,33 @@ HEADER_ROW = 3
 FIRST_DATA_ROW = 4
 COLUMN_WIDTHS = (6, 52, 10, 14, 14, 20, 20)
 
+# Подпись ячейки со ставкой и формула строки — пара: одно без другого лжёт.
+# Формула для процента от суммы заказчику ДЕЛИТ, буквально повторяя расчёт
+# домена; умножение на обратное — другая операция (money.md §3.5, правило D).
+RATE_HEADING = {
+    RateBase.COST: "Наценка, % к цене",
+    RateBase.PRICE: "По договору, % от суммы",
+}
+LINE_FORMULA = {
+    RateBase.COST: "=ROUND(F{row}*(1+{cell}/100),2)",
+    RateBase.PRICE: "=ROUND(F{row}/(1-{cell}/100),2)",
+}
+MARKUP_ROW_LABEL = {
+    RateBase.COST: "в том числе наценка",
+    RateBase.PRICE: "в том числе по договору",
+}
 
-def build_sheet(ws, title: str, rows: list[PositionData], rate: Decimal, is_work: bool) -> None:
+
+def build_sheet(
+    ws,
+    title: str,
+    rows: list[PositionData],
+    rate: Decimal,
+    is_work: bool,
+    base: str = RateBase.COST,
+) -> None:
     ws.title = title
-    ws.cell(row=1, column=1, value="Наценка, %").font = Font(bold=True)
+    ws.cell(row=1, column=1, value=RATE_HEADING[RateBase(base)]).font = Font(bold=True)
     ws.cell(row=1, column=2, value=rate)
 
     headers = [
@@ -59,7 +82,8 @@ def build_sheet(ws, title: str, rows: list[PositionData], rate: Decimal, is_work
         ws.cell(row=row, column=4, value=position.qty)
         ws.cell(row=row, column=5, value=position.price)
         ws.cell(row=row, column=6, value=f"=ROUND(D{row}*E{row},2)")
-        ws.cell(row=row, column=7, value=f"=ROUND(F{row}*(1+{RATE_CELL}/100),2)")
+        ws.cell(row=row, column=7,
+                value=LINE_FORMULA[RateBase(base)].format(row=row, cell=RATE_CELL))
 
         for column in range(1, 8):
             cell = ws.cell(row=row, column=column)
@@ -76,8 +100,9 @@ def build_sheet(ws, title: str, rows: list[PositionData], rate: Decimal, is_work
     ws.cell(row=total_row, column=7, value=f"=SUM(G{FIRST_DATA_ROW}:G{last_data_row})")
 
     markup_row = total_row + 1
-    ws.cell(row=markup_row, column=2, value="в том числе наценка")
-    # Наценка — только разностью. Умножением она разошлась бы с суммой строк.
+    ws.cell(row=markup_row, column=2, value=MARKUP_ROW_LABEL[RateBase(base)])
+    # Надбавка — только разностью. Умножением она разошлась бы с суммой строк, и
+    # на смете это расхождение реально: money.md §3.5, «чего деление не сохраняет».
     ws.cell(row=markup_row, column=7, value=f"=G{total_row}-F{total_row}")
 
     count_row = markup_row + 1
@@ -102,12 +127,13 @@ def build_workbook(
     works: list[PositionData],
     work_rate: Decimal,
     material_rate: Decimal,
+    base: str = RateBase.COST,
 ) -> io.BytesIO:
     workbook = Workbook()
-    build_sheet(workbook.active, "Работы", works, work_rate, is_work=True)
+    build_sheet(workbook.active, "Работы", works, work_rate, is_work=True, base=base)
     build_sheet(
         workbook.create_sheet(), "Материалы и расходники", materials,
-        material_rate, is_work=False,
+        material_rate, is_work=False, base=base,
     )
     buffer = io.BytesIO()
     workbook.save(buffer)

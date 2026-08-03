@@ -3,7 +3,15 @@
 import html
 from decimal import Decimal
 
-from smeta_core import STATUS_LABEL, EstimateTotals, format_money, format_qty
+from smeta_core import (
+    MARKUP_WORD,
+    RATE_OF,
+    STATUS_LABEL,
+    EstimateTotals,
+    RateBase,
+    format_money,
+    format_qty,
+)
 from smeta_storage import Estimate, Position
 
 START_TEXT = (
@@ -66,12 +74,19 @@ def esc(value: object) -> str:
 
 
 def markup_caption(estimate: Estimate) -> str:
+    """Ставки вместе с основанием. Одно без другого двусмысленно (ADR-024)."""
+    of = RATE_OF[RateBase(estimate.rate_base)]
     if estimate.markup_work_bp == estimate.markup_material_bp:
-        return f"{format_money(estimate.markup_work_rate)}%"
+        return f"{format_money(estimate.markup_work_rate)}% {of}"
     return (
         f"работы {format_money(estimate.markup_work_rate)}%, "
-        f"материалы {format_money(estimate.markup_material_rate)}%"
+        f"материалы {format_money(estimate.markup_material_rate)}% — {of}"
     )
+
+
+def markup_title(estimate: Estimate) -> str:
+    """«Наценка» или «По договору» — с большой буквы, началом строки."""
+    return MARKUP_WORD[RateBase(estimate.rate_base)].capitalize()
 
 
 # Категории в коде английские; на экран их переводит адаптер.
@@ -116,8 +131,11 @@ def render_estimate(
             f"    Кол-во: {quantity}  Цена: {format_money(row.price)}  "
             f"Сумма: {format_money(line.total)}"
         )
-    out.append(f"\nБез наценки: {format_money(totals.subtotal)}")
-    out.append(f"Наценка ({markup_caption(estimate)}): {format_money(totals.markup)}")
+    out.append(f"\nБез надбавки: {format_money(totals.subtotal)}")
+    out.append(
+        f"{markup_title(estimate)} ({markup_caption(estimate)}): "
+        f"{format_money(totals.markup)}"
+    )
     out.append(f"Итого: <b>{format_money(totals.total)}</b>")
     out.append(f"Наименований: <b>{len(rows)}</b>")
     return "\n".join(out)
@@ -144,7 +162,7 @@ def render_draft(state, line_total: Decimal) -> str:
     return (
         f"<b>{esc(state.draft_name)}</b>\n"
         f"{quantity} × {format_money(state.draft_price)} = "
-        f"<b>{format_money(line_total)}</b> с наценкой\n\n"
+        f"<b>{format_money(line_total)}</b> с надбавкой\n\n"
         f"Добавляем?"
     )
 
@@ -174,8 +192,8 @@ DRAFT_GONE = f"{STALE_BUTTON} Начать ввод заново: /add"
 
 def render_rates(estimate, totals) -> str:
     return (
-        f"Наценка сметы «{esc(estimate.name)}» (№{estimate.number}): "
+        f"Надбавка сметы «{esc(estimate.name)}» (№{estimate.number}): "
         f"{markup_caption(estimate)}\n"
         f"Итого: <b>{format_money(totals.total)}</b> "
-        f"(без наценки {format_money(totals.subtotal)})"
+        f"(без надбавки {format_money(totals.subtotal)})"
     )

@@ -69,7 +69,10 @@ def calculate(request: EstimateIn) -> TotalsOut:
     и поле total совпадают до копейки по построению.
     """
     totals = calculate_estimate(
-        positions_of(request), request.markup_work_rate, request.markup_material_rate
+        positions_of(request),
+        request.markup_work_rate,
+        request.markup_material_rate,
+        request.rate_base,
     )
     return to_schema(totals)
 
@@ -84,13 +87,16 @@ def xlsx(request: EstimateIn) -> Response:
     domain = positions_of(request)
     # Расчёт всё равно выполняем: он отвергает сметы, где строка выходит
     # за потолок, до того как файл уедет клиенту.
-    calculate_estimate(domain, request.markup_work_rate, request.markup_material_rate)
+    calculate_estimate(
+        domain, request.markup_work_rate, request.markup_material_rate, request.rate_base
+    )
 
     buffer = build_workbook(
         [p for p in domain if p.category == Category.MATERIAL],
         [p for p in domain if p.category == Category.WORK],
         request.markup_work_rate,
         request.markup_material_rate,
+        request.rate_base,
     )
     return Response(
         content=buffer.getvalue(),

@@ -25,7 +25,15 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from smeta_core import Category, EstimateTotals, format_money, format_qty, sum_lines
+from smeta_core import (
+    Category,
+    EstimateTotals,
+    format_money,
+    format_qty,
+    rate_caption,
+    rate_note,
+    sum_lines,
+)
 from smeta_prices import display_unit
 
 from .document import DocumentMeta, document_subtitle, document_title
@@ -105,13 +113,13 @@ def _rows(lines) -> list[list[str]]:
     return body
 
 
-def _section(title: str, lines, rate: Decimal, styles: dict) -> list:
+def _section(title: str, lines, rate: Decimal, base: str, styles: dict) -> list:
     """Одна таблица: работы или материалы. Пустая секция не печатается."""
     if not lines:
         return []
     body = [list(HEADERS), *_rows(lines)]
     body.append(["", "", "", "", "", format_money(sum_lines(lines))])
-    body[-1][0] = f"Итого, {title.lower()} (наценка {format_money(rate)}%)"
+    body[-1][0] = f"Итого, {title.lower()} ({rate_caption(rate, base)})"
 
     table = Table(body, colWidths=COLUMN_WIDTHS, repeatRows=1, hAlign="LEFT")
     table.setStyle(_table_style(len(lines)))
@@ -139,15 +147,14 @@ def build_pdf(totals: EstimateTotals, meta: DocumentMeta) -> io.BytesIO:
         Paragraph(document_subtitle(meta), styles["meta"]),
         Spacer(1, 7 * mm),
     ]
-    story += _section("Работы", works, meta.work_rate, styles)
-    story += _section("Материалы", materials, meta.material_rate, styles)
+    story += _section("Работы", works, meta.work_rate, meta.rate_base, styles)
+    story += _section("Материалы", materials, meta.material_rate, meta.rate_base, styles)
     story += [
         KeepTogether([
             Paragraph(f"Итого: {format_money(totals.total)} ₽", styles["total"]),
             Spacer(1, 1 * mm),
             Paragraph(
-                f"в том числе наценка {format_money(totals.markup)} ₽ "
-                f"(без наценки {format_money(totals.subtotal)} ₽)",
+                rate_note(totals.markup, totals.subtotal, meta.rate_base),
                 styles["note"],
             ),
         ])

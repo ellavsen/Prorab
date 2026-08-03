@@ -37,6 +37,7 @@ def _meta(shared: share.SharedEstimate) -> DocumentMeta:
         work_rate=shared.work_rate,
         material_rate=shared.material_rate,
         status=shared.status,
+        rate_base=shared.rate_base,
     )
 
 

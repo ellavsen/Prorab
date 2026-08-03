@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from test_document_naming import UID, FakeDocumentMessage, FakeUpdate
 
-from conftest import ErrorContext, ErrorUpdate, async_test, open_storage
+from conftest import CLOSED_TABLES, ErrorContext, ErrorUpdate, async_test, open_storage
 from smeta_core import Category, EstimateStatus, PositionData, format_money
 from smeta_storage import (
     Estimate,
@@ -236,10 +236,7 @@ def test_nothing_about_the_viewer_is_stored():
 
     Согласования здесь тоже нет: ссылка хранит только доступ.
     """
-    assert set(ShareLink.__table__.columns.keys()) == {
-        "id", "token_sha256", "estimate_id", "created_at", "expires_at",
-        "revoked_at", "first_viewed_at", "last_viewed_at",
-    }
+    assert set(ShareLink.__table__.columns.keys()) == CLOSED_TABLES["share_links"]
 
 
 def test_the_shared_view_names_everything_a_stranger_can_see():
@@ -248,7 +245,7 @@ def test_the_shared_view_names_everything_a_stranger_can_see():
 
     assert {field.name for field in fields(share.SharedEstimate)} == {
         "number", "version", "title", "on", "status",
-        "work_rate", "material_rate", "totals", "approved_on",
+        "work_rate", "material_rate", "rate_base", "totals", "approved_on",
     }
 
 

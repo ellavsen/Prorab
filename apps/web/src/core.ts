@@ -34,6 +34,9 @@ export type Estimate = {
   positions: Position[];
   markup_work_rate: string;
   markup_material_rate: string;
+  /** От чего берётся процент: "cost" — от цены исполнителя, "price" — от суммы
+   *  заказчику. Без значения — "cost", как считалось всегда. */
+  rate_base?: "cost" | "price";
 };
 
 type Bridge = {

@@ -18,10 +18,12 @@ from .models import (
     check_name,
 )
 from .money import (
+    MARKUP_WORD,
     PRICE_MAX,
     PRICE_RATE_MAX,
     QTY_MAX,
     RATE_MAX,
+    RATE_OF,
     ZERO,
     RateBase,
     check_price,
@@ -35,7 +37,9 @@ from .money import (
     parse_price,
     parse_quantity,
     parse_rate,
+    rate_caption,
     rate_ceiling,
+    rate_note,
     round2,
     to_bp,
     to_kop,
@@ -47,11 +51,13 @@ from .snapshot import SNAPSHOT_FORMAT, canonical_form, frozen_hash
 from .units import UNITS, can_substitute_price, default_unit, normalize_unit, unit_decision
 
 __all__ = [
+    "MARKUP_WORD",
     "NAME_MAX_LEN",
     "PRICE_MAX",
     "PRICE_RATE_MAX",
     "QTY_MAX",
     "RATE_MAX",
+    "RATE_OF",
     "SNAPSHOT_FORMAT",
     "STATUS_LABEL",
     "UNITS",
@@ -88,7 +94,9 @@ __all__ = [
     "parse_price",
     "parse_quantity",
     "parse_rate",
+    "rate_caption",
     "rate_ceiling",
+    "rate_note",
     "round2",
     "split_qty_unit",
     "sum_lines",

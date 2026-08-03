@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
+from smeta_core import RateBase
+
 MONTHS = ("января", "февраля", "марта", "апреля", "мая", "июня",
           "июля", "августа", "сентября", "октября", "ноября", "декабря")
 
@@ -30,6 +32,9 @@ class DocumentMeta:
     work_rate: Decimal
     material_rate: Decimal
     status: str = ""
+    # От чего берётся процент. Едет в шапке, потому что подпись к итогу без него
+    # двусмысленна: «6%» читается и как наценка сверху, и как удержание из суммы.
+    rate_base: str = RateBase.COST
 
 
 def spell_date(on: date) -> str:

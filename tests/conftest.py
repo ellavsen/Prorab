@@ -12,6 +12,19 @@ from hypothesis import strategies as st
 from smeta_core import Category, PositionData
 from smeta_storage import bootstrap, build_engine, build_sessionmaker
 
+# Таблицы, состав полей которых закрыт по замыслу, а не по случайности. Обе
+# существуют ради того, чтобы хранить меньше: история цен — это цена, пережившая
+# свою смету (ADR-017), публичная ссылка — только доступ и ни слова о том, кто
+# её открыл (ADR-020 §8). Список живёт здесь один раз: два экземпляра разошлись
+# бы так же, как расходились четыре вычислителя до Sprint 1.
+CLOSED_TABLES = {
+    "price_history": {"id", "user_id", "name_norm", "unit", "unit_spoken",
+                      "price_kop", "observed_on"},
+    "share_links": {"id", "token_sha256", "estimate_id", "created_at",
+                    "expires_at", "revoked_at", "first_viewed_at",
+                    "last_viewed_at"},
+}
+
 
 def async_test(function):
     """Запускает корутину-тест без pytest-asyncio: лишняя зависимость не нужна."""

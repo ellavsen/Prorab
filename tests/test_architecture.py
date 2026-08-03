@@ -7,7 +7,8 @@ import pathlib
 
 import pytest
 
-from smeta_storage import Base, PriceHistory
+from conftest import CLOSED_TABLES
+from smeta_storage import Base
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CORE = ROOT / "packages" / "smeta_core"
@@ -248,33 +249,52 @@ def test_handlers_do_not_compute_totals_themselves():
         assert "TAX_RATE" not in source
 
 
+@pytest.mark.parametrize("table_name", sorted(CLOSED_TABLES))
+def test_a_closed_table_holds_exactly_the_fields_it_was_designed_for(table_name):
+    """Белый список там, где состав полей закрыт по замыслу.
+
+    Две таблицы существуют ради того, чтобы хранить меньше: история цен — это
+    цена, пережившая свою смету, а не документ (ADR-017); публичная ссылка
+    хранит только доступ и ни слова о том, кто её открыл (ADR-020 §8). Для них
+    вопрос не «не пролезло ли запрещённое», а «ровно ли то, о чём договорились»,
+    и отвечает на него сравнение множеств.
+
+    Новое поле здесь — решение, а не побочный эффект правки соседнего кода.
+    """
+    table = Base.metadata.tables[table_name]
+    assert {column.name for column in table.columns} == CLOSED_TABLES[table_name]
+
+
 def test_the_schema_holds_no_personal_field_but_the_one_it_must():
     """Доказательство схемой, а не обещанием (DoD Sprint 6a).
 
-    user_id разрешён явным списком: он уже есть в positions, и история цен
-    без него не отличила бы своё от чужого. Всё остальное — имя, телефон,
-    почта, telegram-id, псевдоним автора — в базе не появляется. Спецификация
+    user_id разрешён явно: он уже есть в positions, и история цен без него не
+    отличила бы своё от чужого. Всё остальное — имя, телефон, почта,
+    telegram-id, псевдоним автора — в базе не появляется. Спецификация
     price-radar предлагала HMAC от tg_user_id; это псевдонимизация, а не
     анонимность, и крауд всё равно живёт в 6b (ADR-017).
+
+    Здесь именно чёрный список, и это не недоделанный белый. Состав остальных
+    таблиц открыт по замыслу: `estimates` только за этот спринт получила две
+    новые колонки, `positions` и состояние диалога растут с каждой возможностью.
+    Белый список там пришлось бы дописывать на каждой фиче, его красный цвет
+    означал бы «ты добавил колонку» — то есть ничего, — и правился бы он не
+    глядя. Чёрный отвечает на другой вопрос, который с ростом таблицы не
+    протухает: не пролезло ли персональное.
+
+    Цена честная и названа прямо: `customer_name` этот список пропустит.
+    Поэтому у двух таблиц, где состав закрыт, проверка белая — тестом выше.
     """
-    allowed = {"user_id"}
     forbidden = {"username", "user_name", "phone", "email", "tg_id", "telegram_id",
-                 "first_name", "last_name", "full_name", "contributor_key"}
+                 "first_name", "last_name", "full_name", "contributor_key",
+                 "customer_name", "client_name", "client_phone", "contact"}
     found = {
         f"{table.name}.{column.name}"
         for table in Base.metadata.sorted_tables
         for column in table.columns
-        if column.name in forbidden or (column.name.endswith("_id")
-                                        and column.name in forbidden - allowed)
+        if column.name in forbidden
     }
     assert not found, f"персональные поля в схеме: {sorted(found)}"
-
-
-def test_price_history_stores_five_fields_and_no_sixth():
-    """Цена — пять полей, а не документ. Разрастётся — заметим здесь."""
-    columns = {column.name for column in PriceHistory.__table__.columns}
-    assert columns == {"id", "user_id", "name_norm", "unit", "unit_spoken",
-                       "price_kop", "observed_on"}
 
 
 def test_the_monolith_is_gone():

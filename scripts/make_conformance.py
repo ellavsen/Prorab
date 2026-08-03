@@ -24,12 +24,13 @@ def material(name, qty, price, unit="шт"):
     return {"category": "material", "name": name, "qty": qty, "price": price, "unit": unit}
 
 
-def case(name, positions, work_rate="6.00", material_rate="6.00"):
+def case(name, positions, work_rate="6.00", material_rate="6.00", base="cost"):
     return {
         "name": name,
         "positions": positions,
         "markup_work_rate": work_rate,
         "markup_material_rate": material_rate,
+        "rate_base": base,
     }
 
 
@@ -67,6 +68,24 @@ CASES: list[dict] = [
         [work("Максимум", "99999.999", "5000.00", "м.п.")],
         work_rate="99.99",
         material_rate="0.00",
+    ),
+    # Второе основание: браузер обязан делить так же, а не умножать на
+    # обратное. Числа — из настоящей сметы прораба (money.md §4.4).
+    case(
+        "процент от суммы заказчику: 250 -> 265,96",
+        [
+            work("Стяжка", "1", "250.00"),
+            work("Штукатурка", "1", "800.00"),
+            material("Плитка", "1", "1200.00"),
+        ],
+        base="price",
+    ),
+    case(
+        "процент от суммы у потолка ставки",
+        [work("Половина", "1", "0.01", "шт"), work("Крупная", "1", "999999.99", "шт")],
+        work_rate="50.00",
+        material_rate="50.00",
+        base="price",
     ),
     case(
         "дробные количества до трёх знаков",

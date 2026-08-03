@@ -58,6 +58,9 @@ class SharedEstimate:
     status: str
     work_rate: Decimal
     material_rate: Decimal
+    # Без основания «6%» на странице двусмысленны: заказчик не различит
+    # наценку сверху и удержание из выставленной суммы (ADR-024).
+    rate_base: str
     totals: EstimateTotals
     approved_on: date | None
 
@@ -186,6 +189,7 @@ def document(db: Session, link: ShareLink) -> SharedEstimate:
         status=STATUS_LABEL.get(estimate.status, ""),
         work_rate=estimate.markup_work_rate,
         material_rate=estimate.markup_material_rate,
+        rate_base=estimate.rate_base,
         totals=totals,
         approved_on=_day(estimate.approved_at),
     )

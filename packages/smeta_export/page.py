@@ -20,7 +20,15 @@ from datetime import date
 from decimal import Decimal
 from html import escape
 
-from smeta_core import Category, EstimateTotals, format_money, format_qty, sum_lines
+from smeta_core import (
+    Category,
+    EstimateTotals,
+    format_money,
+    format_qty,
+    rate_caption,
+    rate_note,
+    sum_lines,
+)
 from smeta_prices import display_unit
 
 from .document import DocumentMeta, document_subtitle, document_title, spell_date
@@ -122,12 +130,12 @@ def _row(index: int, line) -> str:
     )
 
 
-def _section(title: str, lines, rate: Decimal) -> str:
+def _section(title: str, lines, rate: Decimal, base: str) -> str:
     """Одна таблица: работы или материалы. Пустая секция не печатается."""
     if not lines:
         return ""
     body = "".join(_row(index, line) for index, line in enumerate(lines, start=1))
-    caption = f"Итого, {title.lower()} (наценка {format_money(rate)}%)"
+    caption = f"Итого, {title.lower()} ({rate_caption(rate, base)})"
     return (
         f"<h2>{escape(title)}</h2>\n"
         '<div class="scroll"><table>\n'
@@ -171,11 +179,12 @@ def build_page(
         f"<h1>{escape(document_title(meta))}</h1>\n"
         f'<p class="subtitle">{escape(meta.title)}</p>\n'
         f'<p class="caption">{escape(document_subtitle(meta))}</p>\n'
-        + _section("Работы", works, meta.work_rate)
-        + _section("Материалы", materials, meta.material_rate)
+        + _section("Работы", works, meta.work_rate, meta.rate_base)
+        + _section("Материалы", materials, meta.material_rate, meta.rate_base)
         + f'<p class="total">Итого: {format_money(totals.total)} ₽</p>\n'
-        + f'<p class="note">в том числе наценка {format_money(totals.markup)} ₽ '
-        + f"(без наценки {format_money(totals.subtotal)} ₽)</p>\n"
+        + '<p class="note">'
+        + escape(rate_note(totals.markup, totals.subtotal, meta.rate_base))
+        + "</p>\n"
         + _approval(approve_url, approved_on)
         + "\n</main>"
     )

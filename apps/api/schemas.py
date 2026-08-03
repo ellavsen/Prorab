@@ -13,7 +13,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from smeta_core import Category
+from smeta_core import Category, RateBase
 
 EXAMPLE_POSITION = {
     "category": "work",
@@ -45,6 +45,11 @@ class EstimateIn(BaseModel):
     markup_material_rate: Decimal = Field(
         default=Decimal("6.00"), description="Наценка на материалы в процентах"
     )
+    rate_base: RateBase = Field(
+        default=RateBase.COST,
+        description="От чего процент: cost — от цены исполнителя (×(1+r)), "
+                    "price — от суммы заказчику (/(1−r)), потолок ставки 50%",
+    )
     fill_missing_units: bool = Field(
         default=True, description="Подставлять единицу по категории, если она не указана"
     )
@@ -57,8 +62,8 @@ class LineOut(BaseModel):
     unit_spoken: str
     qty: Decimal
     price: Decimal
-    base: Decimal = Field(description="Сумма строки без наценки")
-    total: Decimal = Field(description="Сумма строки с наценкой")
+    base: Decimal = Field(description="Сумма строки без надбавки")
+    total: Decimal = Field(description="Сумма строки с надбавкой")
 
 
 class TotalsOut(BaseModel):
