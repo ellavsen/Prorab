@@ -5,7 +5,7 @@ openpyxl или HTTP-клиентов здесь запрещён и прове�
 tests/test_architecture.py.
 """
 
-from .calculate import calculate_estimate
+from .calculate import calculate_estimate, sum_lines
 from .diff import Change, VersionDiff, diff_positions
 from .freeze import (
     EstimateStatus,
@@ -88,6 +88,7 @@ __all__ = [
     "parse_rate",
     "round2",
     "split_qty_unit",
+    "sum_lines",
     "to_bp",
     "to_kop",
     "to_milli",

@@ -27,7 +27,7 @@ def test_the_name_carries_the_estimate_number_and_the_date():
 
 
 def test_a_version_appears_only_when_there_is_one():
-    """Версий пока нет; писать v1 до их появления значило бы соврать в имени."""
+    """До Sprint 7 версий не существовало, и писать v1 было бы неправдой."""
     assert document_filename(3, "pdf", on=date(2026, 8, 3), version=2) == (
         "smeta_no3_v2_20260803.pdf"
     )
@@ -86,6 +86,8 @@ async def test_the_exported_file_does_not_carry_the_owner_id(tmp_path, monkeypat
     await files.cmd_generate(FakeUpdate(message), None)
 
     [document] = message.documents
-    assert document.filename == f"smeta_no{estimate.number}_{datetime.now().astimezone():%Y%m%d}.xlsx"
+    assert document.filename == (
+        f"smeta_no{estimate.number}_v1_{datetime.now().astimezone():%Y%m%d}.xlsx"
+    )
     assert str(UID) not in document.filename
     assert str(UID) not in " ".join(message.sent), "id не должен утечь и в подпись"

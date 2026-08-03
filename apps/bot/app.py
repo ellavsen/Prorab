@@ -32,6 +32,7 @@ def build_app():
     app.add_handler(CommandHandler("edit", positions.cmd_edit))
     app.add_handler(CommandHandler("clear", positions.cmd_clear))
     app.add_handler(CommandHandler("generate", files.cmd_generate))
+    app.add_handler(CommandHandler("pdf", files.cmd_pdf))
 
     # Кнопки и категории, регистронезависимо.
     app.add_handler(MessageHandler(filters.Regex(r"(?i)^начнём$"), estimates.handle_begin))

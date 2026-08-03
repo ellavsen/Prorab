@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from decimal import Decimal
 
 from .models import Category, EstimateTotals, LineTotal, PositionData
@@ -53,8 +53,8 @@ def calculate_estimate(
             )
         lines.append(LineTotal(position=position, base=base, total=line_total))
 
-    subtotal = sum((line.base for line in lines), ZERO)
-    total = sum((line.total for line in lines), ZERO)
+    subtotal = sum_lines(lines, base=True)
+    total = sum_lines(lines)
 
     return EstimateTotals(
         lines=tuple(lines),
@@ -62,3 +62,14 @@ def calculate_estimate(
         markup=total - subtotal,
         total=total,
     )
+
+
+def sum_lines(lines: Iterable[LineTotal], base: bool = False) -> Decimal:
+    """Сумма уже округлённых строк. Единственный способ сложить деньги.
+
+    Нужна не только внутри: документ печатает ещё и промежуточные итоги по
+    разделам («итого работы»), и складывать их своим циклом в каждом
+    генераторе значило бы завести второе правило суммирования. Оно бы
+    разошлось — ровно так же, как расходились четыре вычислителя до Sprint 1.
+    """
+    return sum((line.base if base else line.total for line in lines), ZERO)

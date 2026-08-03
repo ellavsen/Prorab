@@ -60,11 +60,23 @@ def _imported_roots(tree: ast.AST) -> set[str]:
     return roots
 
 
+# Единицы вёрстки: «18 * mm» — это поле страницы, а не деньги. Список
+# закрытый и проверяется по имени операнда, поэтому запрет на умножение денег
+# остаётся в силе везде, включая генератор PDF.
+LAYOUT_UNITS = {"mm", "cm", "inch"}
+
+
+def _is_layout(node: ast.AST) -> bool:
+    return isinstance(node, ast.Name) and node.id in LAYOUT_UNITS
+
+
 def _multiplication_lines(tree: ast.AST) -> list[int]:
     return [
         node.lineno
         for node in ast.walk(tree)
-        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult)
+        if isinstance(node, ast.BinOp)
+        and isinstance(node.op, ast.Mult)
+        and not (_is_layout(node.left) or _is_layout(node.right))
     ]
 
 
