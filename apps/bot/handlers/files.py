@@ -6,7 +6,7 @@ from telegram import InputFile, Update
 from telegram.ext import ContextTypes
 
 from smeta_core import format_money
-from smeta_export import build_workbook
+from smeta_export import build_workbook, document_filename
 from smeta_storage import current_estimate, positions
 
 from ..database import SessionLocal
@@ -29,9 +29,13 @@ async def cmd_generate(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> N
             materials, works, estimate.markup_work_rate, estimate.markup_material_rate
         )
 
-    stamp = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S")
+    # Имя уходит заказчику вместе с файлом, поэтому строит его функция, в
+    # которую нечего передать лишнего: раньше здесь стоял user_id (ADR-001).
+    filename = document_filename(
+        estimate.number, "xlsx", on=datetime.now().astimezone().date()
+    )
     await update.message.reply_document(
-        document=InputFile(buffer, filename=f"estimate_{uid}_no{estimate.number}_{stamp}.xlsx"),
+        document=InputFile(buffer, filename=filename),
         caption=(
             f"Готово: {estimate.name} (№{estimate.number}). "
             f"Две вкладки: «Работы» и «Материалы».\n"

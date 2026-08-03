@@ -30,3 +30,20 @@ carrying a `user_id` in its filename.
   not fixtures.
 - The project's history therefore begins at Sprint 0. That is deliberate, not a
   squashed past.
+
+## Amendment, Sprint 7: the symptom was closed, the cause was not
+
+Decision 3 deleted the exported XLSX **file**. It did not touch the code that
+produced its name, and `f"estimate_{uid}_no{number}_{stamp}.xlsx"` kept
+stamping the owner's Telegram id into every generated document for six
+sprints. While documents only went back to their author this was nearly
+harmless; Sprint 7 sends documents to the customer, and the id would have
+travelled with them.
+
+Fixed by making the name a function (`smeta_export.document_filename`) with no
+parameter to pass an id into, and by testing the handler's output rather than
+the helper alone.
+
+Worth recording as a pattern, not just a fix: an ADR that removes an artefact
+has not removed the code that generates it. "The file is gone" and "it cannot
+come back" are different claims, and only the second one is a decision.
