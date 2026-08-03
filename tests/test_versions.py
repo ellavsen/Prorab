@@ -23,10 +23,13 @@ from smeta_core import (
     frozen_hash,
 )
 from smeta_storage import (
+    RETENTION_LIMIT,
     FrozenEstimateError,
     StateError,
     create_estimate,
+    enforce_retention,
     history_of,
+    list_estimates,
     positions,
     revise,
     send,
@@ -189,6 +192,59 @@ def test_editing_a_revision_does_not_touch_what_the_customer_has(db):
     assert first.frozen_total == frozen
     assert verified_totals(db, first).total == frozen
     assert verified_totals(db, revision).total > frozen
+
+
+# --- Ретеншен: пятёрка была про черновики (ADR-019) ---
+
+
+def test_a_sent_estimate_survives_the_sixth_draft(db):
+    """Документ не может исчезнуть потому, что автор начал новую смету."""
+    sent = send(db, drafted(db))
+    for _ in range(RETENTION_LIMIT + 1):
+        create_estimate(db, UID, name="Черновик")
+    enforce_retention(db, UID)
+
+    db.refresh(sent)
+    assert sent.status == EstimateStatus.SENT
+    assert positions.load(db, UID, sent.id), "позиции отправленной сметы на месте"
+
+
+def test_drafts_are_still_capped(db):
+    for _ in range(RETENTION_LIMIT + 3):
+        create_estimate(db, UID, name="Черновик")
+    enforce_retention(db, UID)
+
+    alive = [e for e in list_estimates(db, UID, limit=99)]
+    assert len(alive) == RETENTION_LIMIT
+
+
+def test_sent_estimates_do_not_use_up_the_draft_quota(db):
+    """Иначе пять отправленных документов лишили бы человека черновиков."""
+    for _ in range(3):
+        send(db, drafted(db))
+    for _ in range(RETENTION_LIMIT):
+        create_estimate(db, UID, name="Черновик")
+    enforce_retention(db, UID)
+
+    alive = list_estimates(db, UID, limit=99)
+    assert len([e for e in alive if e.status == EstimateStatus.DRAFT]) == RETENTION_LIMIT
+    assert len([e for e in alive if e.status == EstimateStatus.SENT]) == 3
+
+
+def test_a_superseded_version_is_kept_too(db):
+    """У заказчика на руках может быть именно она."""
+    first = send(db, drafted(db))
+    revision = revise(db, first)
+    positions.add(db, UID, revision.id, position(name="Стяжка", price="700"))
+    send(db, revision)
+
+    for _ in range(RETENTION_LIMIT + 1):
+        create_estimate(db, UID, name="Черновик")
+    enforce_retention(db, UID)
+
+    db.refresh(first)
+    assert first.status == EstimateStatus.SUPERSEDED
+    assert verified_totals(db, first).total == first.frozen_total
 
 
 # --- C10: канонический слепок ---

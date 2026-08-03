@@ -3,6 +3,8 @@
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
+from smeta_core import EstimateStatus
+
 from . import history
 from .guards import require_draft
 from .models import Estimate, Position, UserState, utcnow
@@ -139,20 +141,25 @@ def touch_estimate(db: Session, estimate: Estimate) -> None:
 
 
 def enforce_retention(db: Session, uid: int) -> Estimate | None:
-    """Оставляет последние RETENTION_LIMIT смет.
+    """Оставляет последние RETENTION_LIMIT ЧЕРНОВИКОВ.
+
+    Отправленное не удаляется никогда: по нему выставлен счёт, на него у
+    заказчика ссылка, и исчезнуть оно не может из-за того, что автор начал
+    шестую смету (ADR-019, money.md §1.4.4). Пятёрка всегда была про
+    черновики — просто до Sprint 7 других состояний не существовало.
 
     Возвращает новую активную смету, если старая попала под удаление — вызывающий
     обязан сказать об этом пользователю, а не переключить его молча.
     """
-    estimates = list(db.execute(
+    drafts = list(db.execute(
         select(Estimate)
-        .where(Estimate.user_id == uid)
+        .where(Estimate.user_id == uid, Estimate.status == EstimateStatus.DRAFT)
         .order_by(Estimate.updated_at.desc(), Estimate.id.desc())
     ).scalars().all())
-    if len(estimates) <= RETENTION_LIMIT:
+    if len(drafts) <= RETENTION_LIMIT:
         return None
 
-    keep, drop = estimates[:RETENTION_LIMIT], estimates[RETENTION_LIMIT:]
+    keep, drop = drafts[:RETENTION_LIMIT], drafts[RETENTION_LIMIT:]
     drop_ids = [e.id for e in drop]
 
     # Архив и удаление — одна транзакция. Это единственное место в проекте,
