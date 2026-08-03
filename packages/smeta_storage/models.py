@@ -10,6 +10,7 @@ from smeta_core import (
     Category,
     EstimateStatus,
     PositionData,
+    RateBase,
     from_bp,
     from_kop,
     from_milli,
@@ -59,6 +60,10 @@ class Estimate(Base):
     status: Mapped[str] = mapped_column(String(16), default=EstimateStatus.DRAFT)
     markup_work_bp: Mapped[int] = mapped_column(Integer, default=DEFAULT_MARKUP_BP)
     markup_material_bp: Mapped[int] = mapped_column(Integer, default=DEFAULT_MARKUP_BP)
+    # От чего берётся процент — условие договора с заказчиком, поэтому свойство
+    # сметы целиком, а не строки. Ставок при этом по-прежнему две: договор
+    # вполне может удерживать с работ и возмещать материалы по счёту (ADR-024).
+    rate_base: Mapped[str] = mapped_column(String(8), default=RateBase.COST)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
     # Снимок на момент отправки. У черновика пусто: производные значения не
@@ -68,6 +73,9 @@ class Estimate(Base):
     frozen_markup_kop: Mapped[int | None] = mapped_column(Integer, nullable=True)
     frozen_total_kop: Mapped[int | None] = mapped_column(Integer, nullable=True)
     frozen_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Каким форматом посчитан слепок. Проверяется тем же, а не текущим: правка
+    # алгоритма не должна обнулять документы, которые уже у людей на руках.
+    frozen_format: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Согласована смета, а не ссылка, по которой её открыли: адрес можно
     # отозвать и выдать новый, а согласие заказчика от этого не исчезает
     # (ADR-020). Ссылке остаётся доступ — срок, отзыв, отметки просмотра.

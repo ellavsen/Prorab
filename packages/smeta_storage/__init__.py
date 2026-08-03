@@ -1,14 +1,17 @@
 """smeta-storage — хранение смет. Знает про SQLAlchemy и ничего про Telegram."""
 
 from . import guards, history, pending, positions, share, versions
+from .backfill import (
+    migrate_categories,
+    migrate_money_to_integers,
+    migrate_snapshot_format,
+)
 from .db import build_engine, build_sessionmaker
 from .guards import FROZEN_HINT, FrozenEstimateError, require_draft, require_draft_by_id
 from .history import WINDOW_DAYS
 from .migrations import (
     bootstrap,
-    migrate_categories,
     migrate_estimate_versions,
-    migrate_money_to_integers,
     migrate_price_history,
     migrate_share_links,
 )
@@ -80,6 +83,7 @@ __all__ = [
     "migrate_money_to_integers",
     "migrate_price_history",
     "migrate_share_links",
+    "migrate_snapshot_format",
     "newest_estimate",
     "next_estimate_number",
     "pending",

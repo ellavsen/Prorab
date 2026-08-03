@@ -50,6 +50,104 @@ def legacy_db(tmp_path):
     return path
 
 
+# База времён Sprint 7: версии и заморозка уже есть, основания ставки и версии
+# формата слепка ещё нет. Ровно то состояние, в котором находится любая живая
+# установка на момент этой миграции.
+SPRINT7_SCHEMA = """
+CREATE TABLE estimates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, number INTEGER,
+    version INTEGER DEFAULT 1, supersedes_id INTEGER, name VARCHAR(255),
+    status VARCHAR(16) DEFAULT 'draft',
+    markup_work_bp INTEGER DEFAULT 600, markup_material_bp INTEGER DEFAULT 600,
+    created_at DATETIME, updated_at DATETIME, sent_at DATETIME,
+    frozen_subtotal_kop INTEGER, frozen_markup_kop INTEGER,
+    frozen_total_kop INTEGER, frozen_hash VARCHAR(64), approved_at DATETIME
+);
+CREATE TABLE positions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, estimate_id INTEGER,
+    category VARCHAR(16), name VARCHAR(255), unit VARCHAR(32),
+    unit_spoken VARCHAR(64), qty_milli INTEGER, price_kop INTEGER,
+    created_at DATETIME
+);
+"""
+
+# Слепок, посчитанный форматом 1 по этим двум позициям и ставкам 6/6. Литерал,
+# а не вызов: он изображает то, что уже лежит в чужой базе, и следовать за
+# правкой кода не должен. Порядок позиций в слепок входит и берётся такой же,
+# как отдаёт positions.load — ORDER BY category, id, то есть материалы раньше
+# работ.
+SPRINT7_HASH = "7979a7e586d71538d7be0e3bfd41c8344d7918a6f219148579411a51ffa50e37"
+
+
+@pytest.fixture
+def sprint7_db(tmp_path):
+    path = tmp_path / "sprint7.db"
+    con = sqlite3.connect(path)
+    con.executescript(SPRINT7_SCHEMA)
+    con.execute(
+        "INSERT INTO estimates (id, user_id, number, name, status, sent_at,"
+        " frozen_subtotal_kop, frozen_markup_kop, frozen_total_kop, frozen_hash)"
+        " VALUES (1, 42, 1, 'Смета №1', 'sent', '2026-01-15 10:00:00',"
+        " 52015, 3121, 55136, ?)",
+        (SPRINT7_HASH,),
+    )
+    con.executemany(
+        "INSERT INTO positions (user_id, estimate_id, category, name, unit,"
+        " unit_spoken, qty_milli, price_kop) VALUES (42, 1, ?, ?, '', '', ?, ?)",
+        [("work", "Побелка", 1500, 10010), ("material", "Гвозди", 1000000, 37)],
+    )
+    con.commit()
+    con.close()
+    return path
+
+
+def test_a_document_sent_before_the_migration_is_still_issued_after_it(sprint7_db):
+    """Главная проверка шага: правка формулы не отняла у людей их документы.
+
+    Смета отправлена кодом Sprint 7 и подтверждена слепком формата 1. После
+    миграции текущим форматом стал второй — и если бы проверка шла текущим, а
+    не записанным, эта смета перестала бы выдаваться, а заказчик увидел бы
+    нейтральный 404 без объяснения причины.
+    """
+    _engine, Session = open_storage(sprint7_db)
+    with Session() as db:
+        estimate = db.get(Estimate, 1)
+        assert (estimate.rate_base, estimate.frozen_format) == ("cost", 1)
+        assert verified_totals(db, estimate).total == D("551.36") == estimate.frozen_total
+
+
+def test_the_migration_stamps_the_format_only_on_what_was_frozen(sprint7_db):
+    """Черновику формат не нужен: его нечем и незачем подтверждать."""
+    con = sqlite3.connect(sprint7_db)
+    con.execute(
+        "INSERT INTO estimates (id, user_id, number, name, status)"
+        " VALUES (2, 42, 2, 'Черновик', 'draft')"
+    )
+    con.commit()
+    con.close()
+
+    open_storage(sprint7_db)
+
+    con = sqlite3.connect(sprint7_db)
+    stamped = dict(con.execute("SELECT id, frozen_format FROM estimates").fetchall())
+    con.close()
+    assert stamped == {1: 1, 2: None}
+
+
+def test_a_frozen_estimate_without_a_format_refuses_instead_of_guessing(sprint7_db):
+    """Если строку миграция не застала — документ не выдаётся.
+
+    Догадаться «наверное, формат 1» было бы тем же молчаливым дефолтом, ради
+    отказа от которого формат и версионируется.
+    """
+    _engine, Session = open_storage(sprint7_db)
+    with Session() as db:
+        estimate = db.get(Estimate, 1)
+        estimate.frozen_format = None
+        with pytest.raises(ValueError, match="формат"):
+            verified_totals(db, estimate)
+
+
 def test_g1_migration_adds_rates_and_integer_money(legacy_db):
     open_storage(legacy_db)
 

@@ -371,6 +371,11 @@ vulture packages apps scripts --min-confidence 80
 cd apps/web && npm run conformance
 ```
 
+Отдельный слой — тесты архитектуры: слои, импорты, длина файлов, имена колонок,
+запрет умножать деньги вне калькулятора. Каждый из них **показан падающим на
+настоящем нарушении**: зелёный запрещающий тест неотличим от отсутствующего,
+пока не увидишь его красным ([ADR-023](docs/decisions/ADR-023-a-prohibition-is-proved-by-breaking-it.md)).
+
 Тест `test_e1_libreoffice_recalculation_matches` пропускается, если LibreOffice
 не установлен: без него пересчитать формулы нечем. Ровно так же
 `test_recorded_answers_meet_the_threshold` пропускается без записанных ответов

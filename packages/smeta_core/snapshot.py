@@ -30,7 +30,7 @@ from .money import RateBase, to_bp, to_kop, to_milli
 
 # Каким форматом замораживаются сметы сегодня. Читать старые он не мешает:
 # проверка идёт версией, записанной в самой смете.
-SNAPSHOT_FORMAT = 1
+SNAPSHOT_FORMAT = 2
 
 
 def _canonical_v1(

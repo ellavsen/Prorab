@@ -1,12 +1,22 @@
-"""Создание схемы и мягкие миграции существующих баз."""
+"""Схема: создание таблиц и добор недостающих колонок в старых базах.
+
+Перенос значений внутри уже существующих строк живёт в backfill.py — граница
+проходит по цене ошибки, а не по объёму: недобранная колонка роняет первый же
+запрос, неверно перенесённое значение молчит.
+"""
 
 import logging
-from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import Connection, Engine, text
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.exc import OperationalError
 
+from .backfill import (
+    migrate_categories,
+    migrate_money_to_integers,
+    migrate_orphan_positions,
+    migrate_snapshot_format,
+)
 from .models import (
     DEFAULT_MARKUP_BP,
     Base,
@@ -16,7 +26,6 @@ from .models import (
     PriceHistory,
     ShareLink,
     UserState,
-    utcnow,
 )
 
 logger = logging.getLogger(__name__)
@@ -54,74 +63,18 @@ def _add_missing_columns(conn: Connection, table: str, columns: dict[str, str]) 
             conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}"))
 
 
-def migrate_money_to_integers(conn: Connection) -> list[str]:
-    """Переводит qty/price из REAL в целые минорные единицы (ADR-004).
-
-    Возвращает журнал строк, чьё хранимое значение не совпало с копейками после
-    округления — это накопленная погрешность REAL-хранения.
-    """
-    conn.execute(text("ALTER TABLE positions ADD COLUMN qty_milli INTEGER DEFAULT 0"))
-    conn.execute(text("ALTER TABLE positions ADD COLUMN price_kop INTEGER DEFAULT 0"))
-
-    journal: list[str] = []
-    for rid, qty_raw, price_raw in conn.execute(
-        text("SELECT id, qty, price FROM positions")
-    ).fetchall():
-        qty = Decimal(str(qty_raw if qty_raw is not None else 0))
-        price = Decimal(str(price_raw if price_raw is not None else 0))
-        qty_milli = int(qty.quantize(Decimal("0.001"), rounding=ROUND_HALF_UP).scaleb(3))
-        price_kop = int(price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP).scaleb(2))
-        if Decimal(qty_milli).scaleb(-3) != qty or Decimal(price_kop).scaleb(-2) != price:
-            journal.append(
-                f"#{rid}: qty {qty} -> {qty_milli}/1000, price {price} -> {price_kop}/100"
-            )
-        conn.execute(
-            text("UPDATE positions SET qty_milli = :q, price_kop = :p WHERE id = :i"),
-            {"q": qty_milli, "p": price_kop, "i": rid},
-        )
-
-    for column in ("qty", "price"):
-        try:
-            conn.execute(text(f"ALTER TABLE positions DROP COLUMN {column}"))
-        except OperationalError:
-            logger.warning("Старая колонка positions.%s не удалена — SQLite слишком старый", column)
-    return journal
-
-
-# Категории уехали в english в Sprint 5. Пары старое -> новое.
-CATEGORY_RENAMES = (("Работа", "work"), ("Материал", "material"))
-
-
-def migrate_categories(conn: Connection, reverse: bool = False) -> int:
-    """Переводит категории в english. Идемпотентна и обратима.
-
-    Обе таблицы: в user_state лежит выбранная человеком категория, и оставить
-    её русской значило бы уронить первый же хендлер на Category("Работа").
-
-    WHERE берёт оба значения, поэтому повторный прогон ничего не портит, а
-    reverse=True возвращает базу к русским значениям, если откатить придётся.
-    """
-    present = set(sa_inspect(conn).get_table_names())
-    changed = 0
-    for table in ("positions", "user_state"):
-        if table not in present:
-            continue
-        for old, new in CATEGORY_RENAMES:
-            source, target = (new, old) if reverse else (old, new)
-            result = conn.execute(
-                text(f"UPDATE {table} SET category = :target"
-                     " WHERE category IN (:source, :target) AND category != :target"),
-                {"source": source, "target": target},
-            )
-            changed += result.rowcount or 0
-    return changed
-
-
 # Всё, что смета нажила после первой схемы: ставки наценки (Sprint 2),
-# версии и статусы (Sprint 7, money.md §1.3–1.4), отметка согласования.
+# версии и статусы (Sprint 7, money.md §1.3–1.4), отметка согласования,
+# основание ставки и версия формата слепка (Sprint 8, ADR-024).
 ESTIMATE_COLUMNS = {
     "markup_work_bp": f"INTEGER NOT NULL DEFAULT {DEFAULT_MARKUP_BP}",
     "markup_material_bp": f"INTEGER NOT NULL DEFAULT {DEFAULT_MARKUP_BP}",
+    # 'cost' существующим сметам — не выбор по умолчанию, а факт: до Sprint 8
+    # процент можно было взять только от цены исполнителя.
+    "rate_base": "VARCHAR(8) NOT NULL DEFAULT 'cost'",
+    # Без значения по умолчанию намеренно: у черновика формата нет, а
+    # отправленным его проставляет migrate_snapshot_format.
+    "frozen_format": "INTEGER",
     "version": "INTEGER NOT NULL DEFAULT 1",
     "supersedes_id": "INTEGER REFERENCES estimates(id)",
     "status": "VARCHAR(16) NOT NULL DEFAULT 'draft'",
@@ -134,8 +87,13 @@ ESTIMATE_COLUMNS = {
     "approved_at": "DATETIME",
 }
 
-# Что снимается откатом версий: ставки к версиям отношения не имеют.
-VERSION_COLUMNS = tuple(ESTIMATE_COLUMNS)[2:]
+# Что переживает откат версий. Ставки и основание — это деньги сметы, а не
+# машина состояний: уронив их, обратный накат вернул бы колонку со значением
+# по умолчанию, и смета с процентом от суммы заказчику молча стала бы сметой
+# с обычной наценкой. Список именной, а не срез: срез уже один раз захватил
+# лишнее при вставке колонки в середину.
+KEPT_ON_ROLLBACK = ("markup_work_bp", "markup_material_bp", "rate_base")
+VERSION_COLUMNS = tuple(c for c in ESTIMATE_COLUMNS if c not in KEPT_ON_ROLLBACK)
 
 VERSION_INDEX = "uq_estimate_version"
 
@@ -222,37 +180,6 @@ def migrate_share_links(conn: Connection, reverse: bool = False) -> bool:
     return _ensure_table(conn, ShareLink.__table__, reverse)
 
 
-def _migrate_orphan_positions(conn: Connection) -> None:
-    """Позициям без estimate_id создаём смету, иначе они не видны ни в одной."""
-    users = conn.execute(
-        text("SELECT DISTINCT user_id FROM positions WHERE estimate_id IS NULL")
-    ).fetchall()
-    for (uid,) in users:
-        row = conn.execute(
-            text("SELECT MAX(number) FROM estimates WHERE user_id = :uid"), {"uid": uid}
-        ).fetchone()
-        next_num = (row[0] or 0) + 1
-        now = utcnow().isoformat(sep=" ")
-        conn.execute(
-            text(
-                "INSERT INTO estimates (user_id, number, name, markup_work_bp,"
-                " markup_material_bp, created_at, updated_at)"
-                " VALUES (:uid, :num, :name, :bp, :bp, :c, :c)"
-            ),
-            {"uid": uid, "num": next_num, "name": f"Смета №{next_num}",
-             "bp": DEFAULT_MARKUP_BP, "c": now},
-        )
-        est_id = conn.execute(
-            text("SELECT id FROM estimates WHERE user_id = :uid AND number = :num"),
-            {"uid": uid, "num": next_num},
-        ).fetchone()[0]
-        conn.execute(
-            text("UPDATE positions SET estimate_id = :eid WHERE user_id = :uid"
-                 " AND estimate_id IS NULL"),
-            {"eid": est_id, "uid": uid},
-        )
-
-
 def bootstrap(engine: Engine) -> None:
     """Создаёт схему и догоняет старые базы до текущей."""
     with engine.begin() as conn:
@@ -268,6 +195,12 @@ def bootstrap(engine: Engine) -> None:
 
         # Ставки догоняются вместе с версиями: одна таблица — одно место.
         _ensure_table(conn, Estimate.__table__, reverse=False)
+
+        # Колонка появилась позже самих слепков, и без неё отправленная смета
+        # не смогла бы сказать, чем её замораживали.
+        stamped = migrate_snapshot_format(conn)
+        if stamped:
+            logger.info("Формат слепка проставлен отправленным сметам: %d", stamped)
 
         if not _ensure_table(conn, UserState.__table__, reverse=False):
             _add_missing_columns(conn, "user_state", DRAFT_COLUMNS)
@@ -297,4 +230,4 @@ def bootstrap(engine: Engine) -> None:
         if renamed:
             logger.info("Категории переведены в english: строк — %d", renamed)
 
-        _migrate_orphan_positions(conn)
+        migrate_orphan_positions(conn)

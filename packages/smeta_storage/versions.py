@@ -18,7 +18,6 @@ from sqlalchemy.orm import Session
 from smeta_core import (
     SNAPSHOT_FORMAT,
     EstimateStatus,
-    RateBase,
     calculate_estimate,
     check_integrity,
     frozen_hash,
@@ -50,11 +49,11 @@ def send(db: Session, estimate: Estimate) -> Estimate:
     if not positions:
         raise StateError("В смете нет позиций — отправлять нечего.")
 
-    # Основание ставки и версия формата станут колонками сметы следующим
-    # шагом. Пока их нет, другого значения у сметы быть и не может: хранить
-    # основание негде, а форматов в проекте один — тот, которым замораживают.
     totals = calculate_estimate(
-        positions, estimate.markup_work_rate, estimate.markup_material_rate, RateBase.COST
+        positions,
+        estimate.markup_work_rate,
+        estimate.markup_material_rate,
+        estimate.rate_base,
     )
     try:
         estimate.status = EstimateStatus.SENT
@@ -62,11 +61,14 @@ def send(db: Session, estimate: Estimate) -> Estimate:
         estimate.frozen_subtotal_kop = to_kop(totals.subtotal)
         estimate.frozen_markup_kop = to_kop(totals.markup)
         estimate.frozen_total_kop = to_kop(totals.total)
+        # Формат записывается вместе со слепком и только текущий: заморозить
+        # старым нечем, параметр в frozen_hash не передаётся вовсе.
+        estimate.frozen_format = SNAPSHOT_FORMAT
         estimate.frozen_hash = frozen_hash(
             positions,
             estimate.markup_work_rate,
             estimate.markup_material_rate,
-            RateBase.COST,
+            estimate.rate_base,
         )
         _supersede_previous(db, estimate)
         db.commit()
@@ -107,6 +109,7 @@ def revise(db: Session, estimate: Estimate) -> Estimate:
         status=EstimateStatus.DRAFT,
         markup_work_bp=estimate.markup_work_bp,
         markup_material_bp=estimate.markup_material_bp,
+        rate_base=estimate.rate_base,
     )
     db.add(revision)
     db.flush()
@@ -149,16 +152,16 @@ def verified_totals(db: Session, estimate: Estimate):
             positions,
             estimate.markup_work_rate,
             estimate.markup_material_rate,
-            RateBase.COST,
+            estimate.rate_base,
         )
     return check_integrity(
         positions,
         estimate.markup_work_rate,
         estimate.markup_material_rate,
-        RateBase.COST,
+        estimate.rate_base,
         expected_hash=estimate.frozen_hash,
         expected_total=estimate.frozen_total,
-        expected_format=SNAPSHOT_FORMAT,
+        expected_format=estimate.frozen_format,
     )
 
 

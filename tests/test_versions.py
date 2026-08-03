@@ -16,6 +16,7 @@ from smeta_core import (
     EstimateStatus,
     IntegrityError,
     PositionData,
+    RateBase,
     calculate_estimate,
     canonical_form,
     diff_positions,
@@ -152,6 +153,25 @@ def test_f5_revising_copies_everything_into_a_new_draft(db):
     before = [row.to_domain() for row in positions.load(db, UID, estimate.id)]
     after = [row.to_domain() for row in positions.load(db, UID, revision.id)]
     assert after == before
+
+
+def test_f5_revising_carries_the_contract_over_field_by_field(db):
+    """Ревизия — тот же договор, следующая редакция.
+
+    Поимённо, а не «поля скопированы»: сравнение объектов целиком пришлось бы
+    ослаблять при каждом новом столбце, и однажды оно перестало бы ловить то,
+    ради чего написано. Проверено впрыском — без строки `rate_base=` в revise()
+    все 1561 теста проекта оставались зелёными, а редакция сметы с процентом от
+    суммы заказчику молча превращалась в смету с обычной наценкой.
+    """
+    estimate = drafted(db)
+    estimate.rate_base = RateBase.PRICE
+    set_rates(db, estimate, work_bp=600, material_bp=0)
+    revision = revise(db, send(db, estimate))
+
+    for field in ("rate_base", "markup_work_bp", "markup_material_bp", "name"):
+        assert getattr(revision, field) == getattr(estimate, field), field
+    assert verified_totals(db, revision).total == estimate.frozen_total
 
 
 def test_f6_the_old_version_stays_current_until_the_new_one_is_sent(db):
