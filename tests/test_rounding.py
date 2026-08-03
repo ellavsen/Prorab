@@ -4,14 +4,20 @@ from decimal import Decimal as D
 
 import pytest
 
-from smeta_core import Category, PositionData, calculate_estimate, round2
+from smeta_core import (
+    Category,
+    PositionData,
+    RateBase,
+    calculate_estimate,
+    round2,
+)
 
 W = D("6.00")
 
 
-def line(qty: str, price: str, rate: D = W) -> tuple[D, D]:
+def line(qty: str, price: str, rate: D = W, base=RateBase.COST) -> tuple[D, D]:
     result = calculate_estimate(
-        [PositionData(Category.WORK, "x", D(qty), D(price))], rate, rate
+        [PositionData(Category.WORK, "x", D(qty), D(price))], rate, rate, base
     )
     return result.lines[0].base, result.lines[0].total
 
@@ -58,6 +64,52 @@ def test_a9_markup_disappears_on_one_kopek():
 def test_a10_second_cascade_boundary():
     _, total = line("1", "0.50", D("1.00"))   # 0.50 * 1.01 = 0.505
     assert total == D("0.51")
+
+
+# --- Процент от суммы заказчику: gross-up вместо наценки сверху ---
+
+
+@pytest.mark.parametrize(
+    "executor_price, invoiced",
+    [("250", "265.96"), ("800", "851.06"), ("1200", "1276.60")],
+)
+def test_a14_the_percent_can_be_withheld_from_the_invoiced_sum(executor_price, invoiced):
+    """Три строки из настоящей сметы прораба. 6% — условие договора заказчика.
+
+    Процент удерживается ИЗ выставленной суммы, поэтому её тянут вверх, чтобы
+    исполнитель получил ровно свою цену: 250 / 0,94, а не 250 × 1,06.
+    """
+    _, total = line("1", executor_price, base=RateBase.PRICE)
+    assert total == D(invoiced)
+
+
+def test_a15_on_one_line_the_withheld_part_is_the_percent_of_the_gross():
+    """Проверка, по которой это опознаётся: надбавка считается от выставленного."""
+    _, total = line("1", "250", base=RateBase.PRICE)
+    assert total - D("250") == round2(total * D("0.06")) == D("15.96")
+
+
+def test_a16_the_two_bases_disagree_and_that_is_the_whole_point():
+    """При умножении на 1,06 исполнитель недополучает с каждой строки."""
+    assert line("1", "800", base=RateBase.COST)[1] == D("848.00")
+    assert line("1", "800", base=RateBase.PRICE)[1] == D("851.06")
+
+
+def test_a17_the_markup_still_disappears_on_one_kopeck():
+    """A9 остаётся верным при обоих основаниях: 0,01 / 0,94 = 0,0106 -> 0,01."""
+    assert line("1", "0.01", base=RateBase.PRICE)[1] == D("0.01")
+
+
+def test_a18_the_ceiling_is_lower_when_the_percent_comes_off_the_sum():
+    """Ставка там делит: 50% дают ×2, 90% — ×10, 99,99% — ×10 000.
+
+    Половина удерживает множитель в тех же ×2, под которые посчитан бюджет
+    15 значащих цифр в money.md §3.4. Наценке сверху этот потолок не нужен —
+    её множитель не превышает ×1,9999 при любой допустимой ставке.
+    """
+    assert line("1", "100", D("60.00"))[1] == D("160.00")
+    with pytest.raises(ValueError, match="0…50,00%"):
+        line("1", "100", D("60.00"), base=RateBase.PRICE)
 
 
 # --- Деление «за всё»: только по явной просьбе (ADR-012) ---

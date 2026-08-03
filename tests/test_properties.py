@@ -12,6 +12,7 @@ from conftest import excel_round, position_st, price_st, qty_price_st, qty_st, r
 from smeta_core import (
     Category,
     PositionData,
+    RateBase,
     calculate_estimate,
     format_money,
     from_bp,
@@ -113,6 +114,34 @@ def test_c8_excel_parity_on_both_cascades(qty_price, rate):
 
     excel_base = excel_round(float(qty) * float(price))
     excel_total = excel_round(float(excel_base) * (1.0 + float(rate) / 100.0))
+
+    assert excel_base == line.base
+    assert excel_total == line.total
+
+
+# Ставка при основании «от суммы»: до 49,99%, чтобы множитель остался ниже ×2
+# и строка не упёрлась в LINE_MAX на верхней границе qty_price_st.
+price_rate_st = st.integers(min_value=0, max_value=4_999).map(lambda bp: D(bp).scaleb(-2))
+
+
+@SETTINGS
+@given(qty_price_st(), price_rate_st)
+def test_c8_excel_parity_when_the_percent_comes_off_the_sum(qty_price, rate):
+    """Вторая формула ячейки: =ROUND(F{r}/(1-$B$1/100);2).
+
+    Деление money.md §3.4 не разбирает вовсе — весь бюджет 15 значащих цифр
+    там посчитан для умножения. Частное же в общем случае конечной десятичной
+    записи не имеет, поэтому совпадение Decimal (28 знаков) с double (15) —
+    не следствие правила B, а отдельное свойство, и проверять его надо
+    отдельно.
+    """
+    qty, price = qty_price
+    line = calculate_estimate(
+        [PositionData(Category.WORK, "x", qty, price)], rate, rate, RateBase.PRICE
+    ).lines[0]
+
+    excel_base = excel_round(float(qty) * float(price))
+    excel_total = excel_round(float(excel_base) / (1.0 - float(rate) / 100.0))
 
     assert excel_base == line.base
     assert excel_total == line.total

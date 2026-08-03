@@ -7,14 +7,7 @@ tests/test_architecture.py.
 
 from .calculate import calculate_estimate, sum_lines
 from .diff import Change, VersionDiff, diff_positions
-from .freeze import (
-    STATUS_LABEL,
-    EstimateStatus,
-    IntegrityError,
-    canonical_form,
-    check_integrity,
-    frozen_hash,
-)
+from .freeze import STATUS_LABEL, EstimateStatus, IntegrityError, check_integrity
 from .merge import merge_duplicates
 from .models import (
     NAME_MAX_LEN,
@@ -26,9 +19,11 @@ from .models import (
 )
 from .money import (
     PRICE_MAX,
+    PRICE_RATE_MAX,
     QTY_MAX,
     RATE_MAX,
     ZERO,
+    RateBase,
     check_price,
     check_quantity,
     check_rate,
@@ -40,6 +35,7 @@ from .money import (
     parse_price,
     parse_quantity,
     parse_rate,
+    rate_ceiling,
     round2,
     to_bp,
     to_kop,
@@ -47,13 +43,16 @@ from .money import (
     unit_price,
 )
 from .parsing import AmbiguousLine, parse_position_line, split_qty_unit
+from .snapshot import SNAPSHOT_FORMAT, canonical_form, frozen_hash
 from .units import UNITS, can_substitute_price, default_unit, normalize_unit, unit_decision
 
 __all__ = [
     "NAME_MAX_LEN",
     "PRICE_MAX",
+    "PRICE_RATE_MAX",
     "QTY_MAX",
     "RATE_MAX",
+    "SNAPSHOT_FORMAT",
     "STATUS_LABEL",
     "UNITS",
     "ZERO",
@@ -65,6 +64,7 @@ __all__ = [
     "IntegrityError",
     "LineTotal",
     "PositionData",
+    "RateBase",
     "VersionDiff",
     "calculate_estimate",
     "can_substitute_price",
@@ -88,6 +88,7 @@ __all__ = [
     "parse_price",
     "parse_quantity",
     "parse_rate",
+    "rate_ceiling",
     "round2",
     "split_qty_unit",
     "sum_lines",

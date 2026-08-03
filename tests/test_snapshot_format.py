@@ -23,13 +23,16 @@ import pytest
 
 from conftest import open_storage
 from smeta_core import (
+    SNAPSHOT_FORMAT,
     Category,
     IntegrityError,
     PositionData,
+    RateBase,
     calculate_estimate,
     canonical_form,
     frozen_hash,
 )
+from smeta_core.snapshot import _canonical_v1, _canonical_v2
 from smeta_storage import create_estimate, positions, send, set_rates, verified_totals
 
 UID = 42
@@ -48,41 +51,76 @@ RICH = (
 RICH_WORK_RATE = D("6.00")
 RICH_MATERIAL_RATE = D("12.50")
 
-RICH_CANONICAL = '{"positions":[{"category":"work","name":"Стяжка пола по маякам","price_kop":70000,"qty_milli":104500,"unit":"м²","unit_spoken":"квадрат"},{"category":"material","name":"Цемент М500","price_kop":34990,"qty_milli":20000,"unit":"шт","unit_spoken":"мешок"},{"category":"work","name":"Штробление под розетку","price_kop":120055,"qty_milli":7125,"unit":"","unit_spoken":""}],"rates":{"material":1250,"work":600}}'
-RICH_HASH = "b96f077077678d61f07522a532d767cdfdd74ecfb950848594f2d3f082f976eb"
-RICH_TOTALS = (D("88701.92"), D("5776.99"), D("94478.91"))  # subtotal, markup, total
+V1_CANONICAL = '{"positions":[{"category":"work","name":"Стяжка пола по маякам","price_kop":70000,"qty_milli":104500,"unit":"м²","unit_spoken":"квадрат"},{"category":"material","name":"Цемент М500","price_kop":34990,"qty_milli":20000,"unit":"шт","unit_spoken":"мешок"},{"category":"work","name":"Штробление под розетку","price_kop":120055,"qty_milli":7125,"unit":"","unit_spoken":""}],"rates":{"material":1250,"work":600}}'
+V1_HASH = "b96f077077678d61f07522a532d767cdfdd74ecfb950848594f2d3f082f976eb"
+
+# Формат 2 добавляет основание ставки и пишет его всегда, оба значения.
+V2_COST_HASH = "0f3addec6b3f556db7943ae7bb5237d4c3438df6b2f786a0bb3f0089bcfcf93f"
+V2_PRICE_HASH = "0af08773ecbda67a9b647b06bd36b977b006b9c3fa0db7e0b74e6fa09020c3ed"
+
+# Суммы — вторая половина контракта: check_integrity сверяет и frozen_total.
+COST_TOTALS = (D("88701.92"), D("5776.99"), D("94478.91"))   # subtotal, markup, total
+PRICE_TOTALS = (D("88701.92"), D("6214.85"), D("94916.77"))
 
 # Смета без позиций тоже замораживается (money.md B3), и форма блока ставок
 # видна в ней в чистом виде.
-EMPTY_CANONICAL = '{"positions":[],"rates":{"material":9999,"work":0}}'
-EMPTY_HASH = "31d4ddb646f0f8adfc49df3eefc91187bdc1fc5810f586cff85de09ced9ccd9c"
+EMPTY_V1_CANONICAL = '{"positions":[],"rates":{"material":9999,"work":0}}'
+EMPTY_V1_HASH = "31d4ddb646f0f8adfc49df3eefc91187bdc1fc5810f586cff85de09ced9ccd9c"
 
 
-def test_the_canonical_form_is_exactly_this_string():
-    """Строка — диагностика: по её диффу сразу видно, что именно уехало."""
-    assert canonical_form(RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE) == RICH_CANONICAL
-    assert canonical_form([], D("0.00"), D("99.99")) == EMPTY_CANONICAL
+def test_format_one_serializes_exactly_this_string_forever():
+    """Строка — диагностика: по её диффу сразу видно, что именно уехало.
+
+    Пришпилена к самому формату 1, а не к «текущему»: когда текущим станет
+    следующий номер, этот тест обязан остаться зелёным без правок. В этом и
+    смысл версий.
+    """
+    assert _canonical_v1(RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE, RateBase.COST) == V1_CANONICAL
+    assert _canonical_v1([], D("0.00"), D("99.99"), RateBase.COST) == EMPTY_V1_CANONICAL
 
 
-def test_the_frozen_hash_is_exactly_this_value():
+def test_format_one_hashes_to_exactly_this_value_forever():
     """Хеш — то, что лежит в чужих базах. Он и есть контракт.
 
     Пришпилен отдельно от строки: кодировка и алгоритм хеширования — тоже
     часть формата, и их подмену сравнение строк не поймает.
     """
-    assert frozen_hash(RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE) == RICH_HASH
-    assert frozen_hash([], D("0.00"), D("99.99")) == EMPTY_HASH
+    assert frozen_hash(RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE, snapshot_format=1) == V1_HASH
+    assert frozen_hash([], D("0.00"), D("99.99"), snapshot_format=1) == EMPTY_V1_HASH
+
+
+def test_format_one_cannot_represent_a_percent_taken_from_the_sum():
+    """Молчаливо посчитать её как обычную наценку было бы хуже отказа."""
+    with pytest.raises(ValueError, match="Формат 1"):
+        _canonical_v1(RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE, RateBase.PRICE)
+
+
+def test_format_two_pins_both_bases():
+    """Пришпилен до того, как станет текущим: дрейфовать ему уже нельзя."""
+    args = (RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE)
+    assert frozen_hash(*args, RateBase.COST, snapshot_format=2) == V2_COST_HASH
+    assert frozen_hash(*args, RateBase.PRICE, snapshot_format=2) == V2_PRICE_HASH
+    assert '"rate_base":"price"' in _canonical_v2(*args, RateBase.PRICE)
+
+
+def test_an_unknown_format_refuses_instead_of_guessing():
+    """Смета из будущего — не повод выдать документ по сегодняшнему алгоритму."""
+    with pytest.raises(ValueError, match="формат"):
+        frozen_hash(RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE, snapshot_format=99)
 
 
 def test_the_frozen_totals_are_exactly_these_numbers():
-    """Вторая половина контракта заморозки — не хеш, а сами суммы.
+    """Правка округления или множителя ломает отправленные сметы, не тронув хеш."""
+    cost = calculate_estimate(RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE)
+    price = calculate_estimate(RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE, RateBase.PRICE)
+    assert (cost.subtotal, cost.markup, cost.total) == COST_TOTALS
+    assert (price.subtotal, price.markup, price.total) == PRICE_TOTALS
 
-    `check_integrity` сверяет и `frozen_total`, поэтому правка округления или
-    множителя ломает отправленные сметы, не тронув хеш вовсе. Версия формата
-    обязана покрывать арифметику, а не только сериализацию.
-    """
-    totals = calculate_estimate(RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE)
-    assert (totals.subtotal, totals.markup, totals.total) == RICH_TOTALS
+
+def test_the_current_format_is_what_freezing_uses_without_being_asked():
+    """Заморозить старым форматом случайно нельзя: параметр по умолчанию — текущий."""
+    args = (RICH, RICH_WORK_RATE, RICH_MATERIAL_RATE)
+    assert canonical_form(*args) == canonical_form(*args, snapshot_format=SNAPSHOT_FORMAT)
 
 
 @pytest.fixture
@@ -111,8 +149,8 @@ def test_changing_the_serialization_takes_documents_away_from_the_customer(db, m
     assert verified_totals(db, estimate).total == estimate.frozen_total
 
     monkeypatch.setattr(
-        "smeta_core.freeze.canonical_form",
-        lambda rows, work, material: canonical_form(rows, work, material) + '"новое поле"',
+        "smeta_core.snapshot.canonical_form",
+        lambda *args, **kwargs: canonical_form(*args, **kwargs) + '"новое поле"',
     )
     with pytest.raises(IntegrityError):
         verified_totals(db, estimate)
@@ -124,7 +162,7 @@ def test_changing_the_arithmetic_takes_them_away_too_without_touching_the_hash(d
 
     monkeypatch.setattr(
         "smeta_core.freeze.calculate_estimate",
-        lambda rows, work, material: calculate_estimate(rows, work + D("1.00"), material),
+        lambda rows, work, material, base: calculate_estimate(rows, work + D("1.00"), material),
     )
     with pytest.raises(IntegrityError):
         verified_totals(db, estimate)

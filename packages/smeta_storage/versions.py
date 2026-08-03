@@ -16,7 +16,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from smeta_core import (
+    SNAPSHOT_FORMAT,
     EstimateStatus,
+    RateBase,
     calculate_estimate,
     check_integrity,
     frozen_hash,
@@ -48,8 +50,11 @@ def send(db: Session, estimate: Estimate) -> Estimate:
     if not positions:
         raise StateError("В смете нет позиций — отправлять нечего.")
 
+    # Основание ставки и версия формата станут колонками сметы следующим
+    # шагом. Пока их нет, другого значения у сметы быть и не может: хранить
+    # основание негде, а форматов в проекте один — тот, которым замораживают.
     totals = calculate_estimate(
-        positions, estimate.markup_work_rate, estimate.markup_material_rate
+        positions, estimate.markup_work_rate, estimate.markup_material_rate, RateBase.COST
     )
     try:
         estimate.status = EstimateStatus.SENT
@@ -58,7 +63,10 @@ def send(db: Session, estimate: Estimate) -> Estimate:
         estimate.frozen_markup_kop = to_kop(totals.markup)
         estimate.frozen_total_kop = to_kop(totals.total)
         estimate.frozen_hash = frozen_hash(
-            positions, estimate.markup_work_rate, estimate.markup_material_rate
+            positions,
+            estimate.markup_work_rate,
+            estimate.markup_material_rate,
+            RateBase.COST,
         )
         _supersede_previous(db, estimate)
         db.commit()
@@ -138,14 +146,19 @@ def verified_totals(db: Session, estimate: Estimate):
     positions = _domain(db, estimate)
     if estimate.status == EstimateStatus.DRAFT or estimate.frozen_hash is None:
         return calculate_estimate(
-            positions, estimate.markup_work_rate, estimate.markup_material_rate
+            positions,
+            estimate.markup_work_rate,
+            estimate.markup_material_rate,
+            RateBase.COST,
         )
     return check_integrity(
         positions,
         estimate.markup_work_rate,
         estimate.markup_material_rate,
+        RateBase.COST,
         expected_hash=estimate.frozen_hash,
         expected_total=estimate.frozen_total,
+        expected_format=SNAPSHOT_FORMAT,
     )
 
 

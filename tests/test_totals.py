@@ -7,9 +7,11 @@ import pytest
 from smeta_core import (
     Category,
     PositionData,
+    RateBase,
     calculate_estimate,
     check_rate,
     format_money,
+    round2,
 )
 
 W = D("6.00")
@@ -113,3 +115,25 @@ def test_b8_order_does_not_change_the_total():
 def test_d10_rate_bounds(bad):
     with pytest.raises(ValueError):
         check_rate(D(bad))
+
+
+def test_the_withheld_total_is_not_the_percent_of_the_total():
+    """Тождество, которое верно на строке и неверно на смете.
+
+    На одной строке удержанное — ровно процент от выставленного. После
+    построчного округления сумма удержаний перестаёт быть процентом от итога:
+    на 20 000 случайных смет по 20–120 строк равенство нарушалось в 81,4%
+    случаев, максимум на 13 копеек. Смета, с которой всё началось, попала в
+    оставшиеся 19% — и это совпадение, а не свойство.
+
+    Поэтому в документе печатается `markup = total − subtotal` (B2), и нигде
+    не предлагается проверить его умножением: однажды не сойдётся, и прораб
+    решит, что бот врёт.
+    """
+    rows = [PositionData(Category.WORK, "x", D("1"), D(price))
+            for price in ("100.10", "0.07", "777.77")]
+    totals = calculate_estimate(rows, W, W, RateBase.PRICE)
+
+    assert totals.total == D("933.97")
+    assert totals.markup == totals.total - totals.subtotal == D("56.03")
+    assert round2(totals.total * D("0.06")) == D("56.04")   # копейка расхождения

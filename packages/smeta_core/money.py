@@ -7,6 +7,28 @@ from __future__ import annotations
 
 import re
 from decimal import ROUND_HALF_UP, Decimal
+from enum import StrEnum
+
+
+class RateBase(StrEnum):
+    """От чего берётся процент. Одна ставка, два разных основания.
+
+    Слово «6%» само по себе неоднозначно, и неоднозначно в нём именно это:
+
+        от цены исполнителя  250 × 1,06        = 265,00
+        от суммы заказчику   250 / (1 − 0,06)  = 265,96
+
+    Второе — не наценка прораба, а условие договора с заказчиком: процент
+    удерживается ИЗ выставленной суммы, поэтому её приходится тянуть вверх,
+    чтобы исполнитель получил свою цену. При умножении на 1,06 исполнитель
+    недополучает с каждой строки.
+
+    Значения английские: это код, а не экран (как Category и EstimateStatus).
+    """
+
+    COST = "cost"    # процент от цены исполнителя
+    PRICE = "price"  # процент от суммы заказчику
+
 
 MONEY_EXP = Decimal("0.01")
 QTY_EXP = Decimal("0.001")
@@ -20,6 +42,13 @@ ZERO = Decimal("0.00")
 QTY_MAX = Decimal("99999.999")
 PRICE_MAX = Decimal("9999999.99")
 RATE_MAX = Decimal("99.99")
+
+# Отдельный, куда более низкий потолок для процента от суммы заказчику. Там
+# ставка делит, а не умножает, и множитель растёт неограниченно: 50% дают ×2,
+# 90% — ×10, 99,99% — ×10 000, а 100% — деление на ноль. Половина удерживает
+# множитель в тех же ×2, под которые посчитан бюджет 15 значащих цифр
+# (money.md §3.4); выше него паритет с живой формулой Excel не проверялся.
+PRICE_RATE_MAX = Decimal("50.00")
 
 # Потолок суммы одной строки. Выше 10^9 точное значение перестаёт помещаться
 # в 15 значащих цифр, и живая формула Excel начинает расходиться с Decimal
@@ -101,11 +130,18 @@ def check_quantity(value: Decimal, field: str = "Количество") -> Decim
     return value
 
 
-def check_rate(value: Decimal, field: str = "Наценка") -> Decimal:
+def rate_ceiling(base: RateBase = RateBase.COST) -> Decimal:
+    return PRICE_RATE_MAX if RateBase(base) is RateBase.PRICE else RATE_MAX
+
+
+def check_rate(
+    value: Decimal, field: str = "Наценка", base: RateBase = RateBase.COST
+) -> Decimal:
+    ceiling = rate_ceiling(base)
     if _decimals(value) > 2:
         raise ValueError(f"{field}: не более 2 знаков после запятой")
-    if value < 0 or value > RATE_MAX:
-        raise ValueError(f"{field}: должна быть в пределах 0…{format_money(RATE_MAX)}%")
+    if value < 0 or value > ceiling:
+        raise ValueError(f"{field}: должна быть в пределах 0…{format_money(ceiling)}%")
     return value
 
 
@@ -117,8 +153,10 @@ def parse_quantity(raw: str, field: str = "Количество") -> Decimal:
     return check_quantity(_parse_number(raw, field), field).quantize(QTY_EXP)
 
 
-def parse_rate(raw: str, field: str = "Наценка") -> Decimal:
-    return check_rate(_parse_number(raw, field), field).quantize(RATE_EXP)
+def parse_rate(
+    raw: str, field: str = "Наценка", base: RateBase = RateBase.COST
+) -> Decimal:
+    return check_rate(_parse_number(raw, field), field, base).quantize(RATE_EXP)
 
 
 # --- Граница хранилища: Decimal <-> целые минорные единицы (ADR-004) ---

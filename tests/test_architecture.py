@@ -215,6 +215,31 @@ def test_only_the_calculator_multiplies(path):
     assert not lines, f"{path.name}: умножение в строках {lines}"
 
 
+# Сериализовать слепок НЕ текущим форматом позволено ровно одному месту:
+# check_integrity, которому надо сверить смету с тем, чем её замораживали.
+# Старая версия формата — сверщик, а не калькулятор: выписать по ней новый
+# документ должно быть невозможно, а не «не принято».
+SNAPSHOT_FORMAT_INSIDERS = {"snapshot.py", "freeze.py"}
+
+
+@pytest.mark.parametrize("path", ALL_FILES, ids=lambda p: f"{p.parent.name}/{p.name}")
+def test_only_the_integrity_check_may_reach_an_older_snapshot_format(path):
+    if path.name in SNAPSHOT_FORMAT_INSIDERS:
+        return
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    offenders = [
+        node.lineno
+        for node in ast.walk(tree)
+        if (isinstance(node, ast.keyword) and node.arg == "snapshot_format")
+        or (isinstance(node, ast.Name) and node.id.startswith("_canonical_v"))
+        # Импорт ловится отдельно от вызова: взять старый сериализатор себе —
+        # уже нарушение, даже если строкой ниже его ещё не позвали.
+        or (isinstance(node, ast.ImportFrom)
+            and any(alias.name.startswith("_canonical_v") for alias in node.names))
+    ]
+    assert not offenders, f"{path.name}: старый формат слепка в строках {offenders}"
+
+
 def test_handlers_do_not_compute_totals_themselves():
     """Хендлеры обязаны брать суммы из домена, а не суммировать строки сами."""
     for path in python_files(BOT):
