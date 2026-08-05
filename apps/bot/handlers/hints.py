@@ -32,8 +32,12 @@ def _hinted(db, uid: int, row: PendingRow) -> PendingRow:
 
     return replace(
         row,
-        hint_price=str(hint.last),
+        # Пусто, когда последняя цена не определена. Кнопка «Последняя»
+        # берётся отсюда же, поэтому вместе с числом гаснет и она (ADR-026).
+        hint_price=None if hint.last is None else str(hint.last),
         hint_median=None if hint.median is None else str(hint.median),
+        hint_low=str(hint.low),
+        hint_high=str(hint.high),
         hint_on=hint.on,
         hint_times=hint.times,
     )

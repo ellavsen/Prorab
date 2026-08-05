@@ -125,3 +125,43 @@ def test_the_median_appears_only_from_three_entries():
 def test_one_entry_is_still_a_hint():
     hint = from_history([point("380", 12)])
     assert (hint.last, hint.times, hint.median) == (D("380"), 1, None)
+    # У одной точки разброса нет, и это видно по совпадению границ, а не по
+    # None: «от 380 до 380» — правда, просто показывать её незачем.
+    assert (hint.low, hint.high) == (D("380"), D("380"))
+
+
+def test_the_spread_is_observed_prices_not_computed_ones():
+    """Ровно тот случай, из-за которого написан ADR-026.
+
+    История 450 / 700 / 1100 отвечала «1100» — правду про последнюю покупку и
+    неправду про то, сколько это стоит.
+    """
+    hint = from_history([point("450", 1), point("700", 5), point("1100", 12)])
+    assert (hint.low, hint.high) == (D("450"), D("1100"))
+    assert hint.last == D("1100")
+    # Обе границы обязаны быть среди названных цен: интерполяции здесь нет
+    # и быть не может, иначе подсказка назовёт цену, которой не было.
+    assert {hint.low, hint.high} <= {D("450"), D("700"), D("1100")}
+
+
+def test_prices_named_on_one_day_have_no_last_one():
+    """В истории нет времени точнее дня, и придумывать порядок мы не будем."""
+    hint = from_history([point("450", 5), point("1100", 5)])
+    assert hint.last is None
+    assert (hint.low, hint.high, hint.times) == (D("450"), D("1100"), 2)
+    # Равные цены того же дня двусмысленности не создают.
+    assert from_history([point("450", 5), point("450", 5)]).last == D("450")
+    # Двусмысленность только в самом свежем дне: старые цены порядка не портят.
+    assert from_history([point("450", 1), point("700", 2), point("1100", 5)]).last == D("1100")
+
+
+def test_the_spread_needs_no_threshold_unlike_the_quartiles():
+    """Две точки — уже разброс, но ещё не медиана и не квартили (ADR-018).
+
+    Порог нужен вычисленному числу. Минимум и максимум не вычислены: их
+    называл человек, и с двух точек они честны ровно так же, как с двадцати.
+    """
+    hint = from_history([point("450", 1), point("1100", 2)])
+    assert (hint.low, hint.high, hint.median) == (D("450"), D("1100"), None)
+    assert MIN_FOR_MEDIAN == 3
+    assert MIN_FOR_SPREAD == 8, "порог квартилей на разброс не распространяется"

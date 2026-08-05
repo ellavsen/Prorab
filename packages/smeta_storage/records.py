@@ -57,6 +57,11 @@ class PendingPosition(Base):
     # нечего (ADR-017).
     hint_price: Mapped[str | None] = mapped_column(String(32), nullable=True)
     hint_median: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Наблюдённый разброс: минимум и максимум того, что человек платил сам.
+    # Показываются вместо одного числа, чтобы последняя цена не выдавалась
+    # за единственную известную (ADR-026).
+    hint_low: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    hint_high: Mapped[str | None] = mapped_column(String(32), nullable=True)
     hint_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     hint_times: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

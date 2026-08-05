@@ -43,6 +43,9 @@ PENDING_COLUMNS = {
     "hint_median": "VARCHAR(32)",
     "hint_on": "DATE",
     "hint_times": "INTEGER",
+    # Наблюдённый разброс той же подсказки, Sprint 9 (ADR-026).
+    "hint_low": "VARCHAR(32)",
+    "hint_high": "VARCHAR(32)",
 }
 
 # Черновик пошагового ввода, добавлен в Sprint 4 (ADR-010).

@@ -39,6 +39,8 @@ class PendingRow:
     # цена появится в строке только по нажатию (ADR-017).
     hint_price: str | None = None
     hint_median: str | None = None
+    hint_low: str | None = None
+    hint_high: str | None = None
     hint_on: date | None = None
     hint_times: int | None = None
 
@@ -64,6 +66,8 @@ def replace(db: Session, uid: int, estimate_id: int, rows: list[PendingRow]) -> 
             problem=None if row.problem is None else row.problem[:200],
             hint_price=row.hint_price,
             hint_median=row.hint_median,
+            hint_low=row.hint_low,
+            hint_high=row.hint_high,
             hint_on=row.hint_on,
             hint_times=row.hint_times,
         ))

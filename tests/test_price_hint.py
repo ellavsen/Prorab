@@ -6,6 +6,7 @@
 """
 
 from dataclasses import replace
+from datetime import timedelta
 from decimal import Decimal as D
 
 import pytest
@@ -22,7 +23,7 @@ from smeta_ai import (
     Quantity,
 )
 from smeta_core import Category, PositionData
-from smeta_storage import RETENTION_LIMIT, create_estimate, pending, positions
+from smeta_storage import RETENTION_LIMIT, create_estimate, pending, positions, utcnow
 
 
 def priceless(name="Цемент М500", unit="", unit_spoken="мешков"):
@@ -38,13 +39,23 @@ def priceless(name="Цемент М500", unit="", unit_spoken="мешков"):
     ))
 
 
-def bought(db, uid, price, name="Цемент М500", unit="", unit_spoken="мешков"):
-    """Человек когда-то сам ввёл эту цену — в своей же смете."""
+def bought(db, uid, price, name="Цемент М500", unit="", unit_spoken="мешков",
+           days_ago=0):
+    """Человек когда-то сам ввёл эту цену — в своей же смете.
+
+    days_ago двигает дату покупки: у цен, названных в разные дни, «последняя»
+    определена однозначно, а у названных в один день — нет (см. известные
+    пробелы). Тесты про разброс не должны зависеть от этой неопределённости.
+    """
     estimate = create_estimate(db, uid, name="Прошлая")
-    positions.add(db, uid, estimate.id, PositionData(
+    row = positions.add(db, uid, estimate.id, PositionData(
         category=Category.MATERIAL, name=name, qty=D("20"), price=D(price),
         unit=unit, unit_spoken=unit_spoken,
     ))
+    if days_ago:
+        # Значение по умолчанию проставляется только при flush, поэтому дата
+        # задаётся целиком, а не сдвигается.
+        row.created_at = utcnow() - timedelta(days=days_ago)
     db.commit()
 
 
@@ -100,6 +111,89 @@ async def test_the_median_button_appears_only_from_three_purchases(bot):  # noqa
         await preview.offer(message, db, UID, priceless())
         assert pending.load(db, UID)[0].hint_median == "370.00"
     assert "чаще всего 370,00" in message.last
+
+
+@async_test
+async def test_prices_that_disagree_are_shown_as_a_range(bot):  # noqa: F811
+    """Последняя цена — не «сколько это стоит», когда цены разошлись (ADR-026)."""
+    _ai, preview, _positions, Session, _estimate_id = bot
+    message = FakeMessage()
+    with Session() as db:
+        for price, days_ago in (("450", 40), ("700", 20), ("1100", 0)):
+            bought(db, UID, price, days_ago=days_ago)
+        await preview.offer(message, db, UID, priceless())
+
+        row = pending.load(db, UID)[0]
+        assert (row.hint_low, row.hint_high) == ("450.00", "1100.00")
+
+    assert "вы платили от 450,00 до 1100,00 ₽/мешок" in message.last
+    # Последняя не пропадает: кнопка предлагает именно её, и она подписана.
+    assert "последняя 1100,00" in message.last
+    assert "чаще всего 700,00" in message.last
+
+
+@async_test
+async def test_prices_from_one_day_offer_no_last_at_all(bot):  # noqa: F811
+    """Времени точнее дня в истории нет — значит, «последняя» неизвестна.
+
+    Молчание вместо неверного факта, и молчание полное: вместе со словом
+    гаснет кнопка, иначе утверждение ушло бы с экрана, оставшись в поведении
+    (ADR-026).
+    """
+    _ai, preview, _positions, Session, _estimate_id = bot
+    from bot.handlers import hints
+
+    message = FakeMessage()
+    with Session() as db:
+        for price in ("450", "1100"):
+            bought(db, UID, price)          # обе — сегодня
+        await preview.offer(message, db, UID, priceless())
+
+        row = pending.load(db, UID)[0]
+        assert row.hint_price is None, "последняя не определена"
+        assert (row.hint_low, row.hint_high) == ("450.00", "1100.00")
+        # Кнопка берётся из того же поля, поэтому её нет...
+        assert hints.hinted_ordinals(pending.load(db, UID)) == []
+        # ...и нажать её в обход тоже нельзя.
+        assert hints.apply(db, UID, ordinal=1) is False
+        assert pending.load(db, UID)[0].price == ""
+
+    assert "вы платили от 450,00 до 1100,00 ₽/мешок" in message.last
+    assert "последняя не определена: цены названы в один день" in message.last
+
+
+@async_test
+async def test_one_day_is_unambiguous_when_the_prices_agree(bot):  # noqa: F811
+    """Несколько одинаковых цен одного дня — «последняя» определена.
+
+    Какую из них ни возьми, число то же самое, и молчать не о чем.
+    """
+    _ai, preview, _positions, Session, _estimate_id = bot
+    with Session() as db:
+        bought(db, UID, "450", days_ago=30)
+        for _ in range(2):
+            bought(db, UID, "1100")         # обе — сегодня, но равны
+        await preview.offer(FakeMessage(), db, UID, priceless())
+
+        row = pending.load(db, UID)[0]
+        assert row.hint_price == "1100.00"
+
+
+@async_test
+async def test_one_price_repeated_is_not_a_range(bot):  # noqa: F811
+    """Разброс показывается, когда он есть. «От 380 до 380» — шум."""
+    _ai, preview, _positions, Session, _estimate_id = bot
+    message = FakeMessage()
+    with Session() as db:
+        for _ in range(3):
+            bought(db, UID, "380")
+        await preview.offer(message, db, UID, priceless())
+
+        row = pending.load(db, UID)[0]
+        assert row.hint_low == row.hint_high == "380.00"
+
+    assert "вы брали по 380,00 ₽/мешок —" in message.last
+    assert "вы платили от" not in message.last
 
 
 @async_test

@@ -77,19 +77,48 @@ def render_price_hint(row) -> str:
 
     «За полгода» — не оборот речи: выборка ограничена окном истории, и всё,
     что старше, в подсказку не попадает вовсе (ADR-018).
+
+    Цены разошлись — показывается разброс, а не одно число: «брали по 1100»
+    при истории 450 / 700 / 1100 правда про последнюю покупку и неправда про
+    то, сколько это стоит (ADR-026). Последняя цена при этом не пропадает —
+    она уходит во вторую строку и там подписана датой, потому что кнопка
+    предлагает именно её.
     """
-    if not row.hint_price:
+    if not row.hint_times:
         return ""
     unit = display_unit(row.unit, row.unit_spoken)
     per = f"/{esc(unit)}" if unit else ""
     when = f"{row.hint_on.day} {MONTHS[row.hint_on.month - 1]}" if row.hint_on else ""
-    parts = [f"    💡 вы брали по {format_money(Decimal(row.hint_price))} ₽{per}"]
-    tail = ", ".join(part for part in (when, _times(row.hint_times or 1)) if part)
-    if tail:
-        parts.append(f" — {tail} за полгода")
+    spread = row.hint_low and row.hint_high and row.hint_low != row.hint_high
+
+    if not spread:
+        parts = [f"    💡 вы брали по {format_money(Decimal(row.hint_price))} ₽{per}"]
+        tail = ", ".join(part for part in (when, _times(row.hint_times or 1)) if part)
+        if tail:
+            parts.append(f" — {tail} за полгода")
+        if row.hint_median:
+            parts.append(f"; чаще всего {format_money(Decimal(row.hint_median))}")
+        return "".join(parts)
+
+    lines = [
+        f"    💡 вы платили от {format_money(Decimal(row.hint_low))} "
+        f"до {format_money(Decimal(row.hint_high))} ₽{per} — "
+        f"{_times(row.hint_times or 1)} за полгода"
+    ]
+    if row.hint_price:
+        latest = f"последняя {format_money(Decimal(row.hint_price))}"
+        if when:
+            latest += f", {when}"
+    else:
+        # Кнопки «Последняя» здесь тоже не будет. Пустое место без причины
+        # выглядело бы поломкой, поэтому причина названа.
+        latest = "последняя не определена: цены названы в один день"
+        if when:
+            latest += f", {when}"
     if row.hint_median:
-        parts.append(f"; чаще всего {format_money(Decimal(row.hint_median))}")
-    return "".join(parts)
+        latest += f"; чаще всего {format_money(Decimal(row.hint_median))}"
+    lines.append(f"       {latest}")
+    return "\n".join(lines)
 
 
 def render_pending(estimate, rows, computed: dict, totals) -> str:

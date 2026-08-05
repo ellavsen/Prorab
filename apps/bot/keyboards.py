@@ -112,9 +112,11 @@ def pending_keyboard(
         rows.append([
             InlineKeyboardButton(f"÷ {o}", callback_data=f"ai:split:{o}") for o in chunk
         ])
+    # «Последняя», а не «Взять цену»: рядом с «Медианой» вторая подпись
+    # читалась бы как «правильная цена», а она всего лишь свежая (ADR-026).
     for chunk in _chunked(hinted or []):
         rows.append([
-            InlineKeyboardButton(f"💡 Взять цену {o}", callback_data=f"ai:hint:{o}")
+            InlineKeyboardButton(f"💡 Последняя {o}", callback_data=f"ai:hint:{o}")
             for o in chunk
         ])
     for chunk in _chunked(hinted_median or []):
