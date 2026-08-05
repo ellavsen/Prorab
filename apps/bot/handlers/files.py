@@ -47,9 +47,13 @@ async def cmd_generate(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> N
             return
 
         totals = verified_totals(db, estimate)
+        crew_materials, crew_works = positions.performers_by_category(
+            db, uid, estimate.id
+        )
         buffer = build_workbook(
             materials, works, estimate.markup_work_rate,
             estimate.markup_material_rate, estimate.rate_base,
+            work_performers=crew_works, material_performers=crew_materials,
         )
         number, name, version = estimate.number, estimate.name, estimate.version
 

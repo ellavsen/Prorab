@@ -36,6 +36,7 @@ from smeta_storage import (
     PendingRow,
     current_estimate,
     pending,
+    performers,
     positions,
     require_draft,
     touch_estimate,
@@ -196,6 +197,14 @@ async def offer(message: Message, db, uid: int, extraction, source: str | None =
         await message.reply_text(AI_NOTHING)
         return
 
+    # Липкий исполнитель. Проставляется до подсказки, потому что подсказка
+    # смотрит на него: ставка Сани — не то же, что средняя по всем (ADR-028).
+    # Тем, у кого имя уже пришло с границы ввода, не перебивает.
+    who = performers.sticky(db, uid)
+    if who:
+        rows = [row if row.performer else replace(row, performer=who) for row in rows]
+        performers.touch(db, uid)
+
     # Своя цена, если она была: предложением, а не подстановкой (ADR-017).
     rows = hints.attach(db, uid, rows)
 
@@ -271,7 +280,8 @@ async def _add_all(query, db, uid: int) -> None:
         if line is None:
             continue
         try:
-            positions.add(db, uid, estimate.id, line.position)
+            positions.add(db, uid, estimate.id, line.position,
+                          performer=row.performer or "")
         except ValueError as error:
             refused.append(f"{esc(row.name)} — {esc(error)}")
             continue

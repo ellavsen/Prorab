@@ -26,21 +26,21 @@ from smeta_core import Category, PositionData
 from smeta_storage import RETENTION_LIMIT, create_estimate, pending, positions, utcnow
 
 
-def priceless(name="Цемент М500", unit="", unit_spoken="мешков"):
+def priceless(name="Цемент М500", unit="", unit_spoken="мешков", category="material"):
     """Позиция, у которой названо всё, кроме цены."""
     return Extraction(status=ExtractionStatus.OK, positions=(
         PositionCandidate(
             name=name,
             qty=Quantity(status=FieldStatus.STATED, value="20"),
             price=Price(status=FieldStatus.MISSING, scope=PriceScope.UNKNOWN, value=""),
-            unit=unit, unit_spoken=unit_spoken, category="material",
+            unit=unit, unit_spoken=unit_spoken, category=category,
             source_quote=name,
         ),
     ))
 
 
 def bought(db, uid, price, name="Цемент М500", unit="", unit_spoken="мешков",
-           days_ago=0):
+           days_ago=0, category=Category.MATERIAL, performer=""):
     """Человек когда-то сам ввёл эту цену — в своей же смете.
 
     days_ago двигает дату покупки: у цен, названных в разные дни, «последняя»
@@ -49,9 +49,9 @@ def bought(db, uid, price, name="Цемент М500", unit="", unit_spoken="ме
     """
     estimate = create_estimate(db, uid, name="Прошлая")
     row = positions.add(db, uid, estimate.id, PositionData(
-        category=Category.MATERIAL, name=name, qty=D("20"), price=D(price),
+        category=category, name=name, qty=D("20"), price=D(price),
         unit=unit, unit_spoken=unit_spoken,
-    ))
+    ), performer=performer)
     if days_ago:
         # Значение по умолчанию проставляется только при flush, поэтому дата
         # задаётся целиком, а не сдвигается.
@@ -239,20 +239,38 @@ async def test_a_grade_never_borrows_the_price_of_another_grade(bot):  # noqa: F
 
 
 @async_test
-async def test_history_does_not_guess_by_a_missing_word(bot):  # noqa: F811
-    """Вложенность в истории выключена: работу от материала там не отличить.
+async def test_a_work_price_never_answers_for_a_material(bot):  # noqa: F811
+    """«ГКЛ» и «ГКЛ монтаж» вложены друг в друга, а цена разная в разы.
 
-    «ГКЛ» и «ГКЛ монтаж» вложены друг в друга, а цена у них разная в разы, и
-    категории в price_history нет (ADR-027).
+    Отличить их есть чем только с тех пор, как история помнит категорию
+    (ADR-027, ADR-028): второй проход не выходит за её пределы.
     """
     _ai, preview, _positions, Session, _estimate_id = bot
     message = FakeMessage()
     with Session() as db:
-        bought(db, UID, "500", name="ГКЛ монтаж")
+        bought(db, UID, "500", name="ГКЛ монтаж", category=Category.WORK)
         await preview.offer(message, db, UID, priceless(name="ГКЛ"))
 
         assert pending.load(db, UID)[0].hint_price is None
     assert "💡" not in message.last
+
+
+@async_test
+async def test_a_missing_word_is_forgiven_inside_one_category(bot):  # noqa: F811
+    """«Стяжка» находит «Стяжку пола» — обе работы, спорить не о чем."""
+    _ai, preview, _positions, Session, _estimate_id = bot
+    message = FakeMessage()
+    with Session() as db:
+        bought(db, UID, "800", name="Стяжка пола", unit_spoken="квадратов",
+               category=Category.WORK)
+        await preview.offer(
+            message, db, UID,
+            priceless(name="Стяжка", unit_spoken="квадратов", category="work"),
+        )
+
+        row = pending.load(db, UID)[0]
+        assert row.hint_price == "800.00"
+        assert row.hint_matched_name == "пола стяжка"
 
 
 @async_test

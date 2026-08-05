@@ -26,7 +26,9 @@ def _hinted(db, uid: int, row: PendingRow) -> PendingRow:
     if row.price or not row.qty:
         return row
 
-    hint = from_history(history.lookup(db, uid, row.name, row.unit, row.unit_spoken))
+    points = history.lookup(db, uid, row.name, row.unit, row.unit_spoken,
+                            category=row.category)
+    hint = from_history(points, performer=row.performer or "")
     if hint is None:
         return row
 

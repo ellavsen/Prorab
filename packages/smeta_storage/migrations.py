@@ -15,6 +15,7 @@ from .backfill import (
     migrate_categories,
     migrate_money_to_integers,
     migrate_orphan_positions,
+    migrate_price_history_key,
     migrate_snapshot_format,
 )
 from .models import (
@@ -31,7 +32,25 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 # Сказанная единица доезжает до документа заказчика, Sprint 5 (ADR-015).
-POSITION_COLUMNS = {"unit_spoken": "VARCHAR(64)"}
+# Исполнитель — Sprint 9 (ADR-028): пусто у всех, кто им не пользуется.
+POSITION_COLUMNS = {
+    "unit_spoken": "VARCHAR(64)",
+    "performer": "VARCHAR(64) NOT NULL DEFAULT ''",
+}
+
+# История цен, Sprint 9. Таблица объявлена закрытой по замыслу, и состав её
+# правится решением, а не кодом: ADR-017, поправка Sprint 9.
+PRICE_HISTORY_COLUMNS = {
+    "category": "VARCHAR(16) NOT NULL DEFAULT ''",
+    "performer": "VARCHAR(64) NOT NULL DEFAULT ''",
+}
+
+# Липкий исполнитель: кто проставляется следующим пачкам и когда это протухнет
+# (ADR-028).
+STICKY_COLUMNS = {
+    "current_performer": "VARCHAR(64)",
+    "performer_touched_at": "DATETIME",
+}
 PENDING_COLUMNS = {
     "unit_spoken": "VARCHAR(64)",
     "total_price": "VARCHAR(32)",
@@ -48,6 +67,7 @@ PENDING_COLUMNS = {
     "hint_high": "VARCHAR(32)",
     # Наименование, под которым цена нашлась, Sprint 9 (ADR-027).
     "hint_matched_name": "VARCHAR(255)",
+    "performer": "VARCHAR(64) NOT NULL DEFAULT ''",
 }
 
 # Черновик пошагового ввода, добавлен в Sprint 4 (ADR-010).
@@ -172,7 +192,11 @@ def migrate_price_history(conn: Connection, reverse: bool = False) -> bool:
     ровно настолько, насколько сметы ещё живы, а полумеры при откате хуже
     честной потери.
     """
-    return _ensure_table(conn, PriceHistory.__table__, reverse)
+    if _ensure_table(conn, PriceHistory.__table__, reverse) or reverse:
+        return True
+    # Таблица уже была: догоняем состав, объявленный в поправке к ADR-017.
+    _add_missing_columns(conn, "price_history", PRICE_HISTORY_COLUMNS)
+    return False
 
 
 def migrate_share_links(conn: Connection, reverse: bool = False) -> bool:
@@ -195,6 +219,7 @@ def bootstrap(engine: Engine) -> None:
             return
 
         migrate_price_history(conn)
+        migrate_price_history_key(conn)
         migrate_estimate_versions(conn)
         migrate_share_links(conn)
 
@@ -209,6 +234,7 @@ def bootstrap(engine: Engine) -> None:
 
         if not _ensure_table(conn, UserState.__table__, reverse=False):
             _add_missing_columns(conn, "user_state", DRAFT_COLUMNS)
+            _add_missing_columns(conn, "user_state", STICKY_COLUMNS)
 
         # Предпросмотр распознанной пачки, добавлен в Sprint 5 (ADR-012).
         if not _ensure_table(conn, PendingPosition.__table__, reverse=False):

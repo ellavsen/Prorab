@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 
 from .config import require_token
-from .handlers import ai, estimates, files, positions, share, stepwise
+from .handlers import ai, crew, estimates, files, positions, share, stepwise
 from .handlers.callbacks import on_callback
 from .handlers.errors import on_error
 
@@ -33,6 +33,7 @@ def build_app():
     app.add_handler(CommandHandler("delete", positions.cmd_delete))
     app.add_handler(CommandHandler("edit", positions.cmd_edit))
     app.add_handler(CommandHandler("clear", positions.cmd_clear))
+    app.add_handler(CommandHandler("who", crew.cmd_who))
     app.add_handler(CommandHandler("generate", files.cmd_generate))
     app.add_handler(CommandHandler("pdf", files.cmd_pdf))
 

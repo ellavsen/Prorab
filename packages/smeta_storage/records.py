@@ -65,6 +65,9 @@ class PendingPosition(Base):
     # Наименование, под которым цена нашлась, если оно не то, что написано
     # в строке. Подставлять цену от похожей позиции молча нельзя (ADR-027).
     hint_matched_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Кто делает эту строку. Пусто у всех, кто исполнителями не пользуется:
+    # поле включается употреблением, а не настройкой (ADR-028).
+    performer: Mapped[str] = mapped_column(String(64), default="")
     hint_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     hint_times: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
@@ -84,13 +87,22 @@ class PriceHistory(Base):
 
     unit_spoken лежит в приведённой форме («мешков» → «мешок»), иначе падежи
     одного слова плодили бы строки и мешали дедупликации.
+
+    Состав пополнялся один раз, в Sprint 9: исполнитель и категория. Оба поля
+    уже есть в positions, оба нужны, чтобы история не отвечала числом, которого
+    никто не называл (ADR-017, поправка Sprint 9).
     """
 
     __tablename__ = "price_history"
     __table_args__ = (
+        # Исполнитель и категория входят в ключ дня: Саня за 150 и Паша за 250
+        # в один день на одной работе — две цены, а не повтор одной, и «ГКЛ»
+        # как материал не то же, что «ГКЛ» как работа. Без них вторая цена
+        # исчезала бы молча — ровно в тех случаях, ради которых оба поля и
+        # заводились (ADR-028).
         UniqueConstraint(
-            "user_id", "name_norm", "unit", "unit_spoken", "observed_on",
-            name="uq_price_history_day",
+            "user_id", "name_norm", "unit", "unit_spoken", "category", "performer",
+            "observed_on", name="uq_price_history_day",
         ),
     )
 
@@ -101,6 +113,12 @@ class PriceHistory(Base):
     name_norm: Mapped[str] = mapped_column(String(255), index=True)
     unit: Mapped[str] = mapped_column(String(32), default="")
     unit_spoken: Mapped[str] = mapped_column(String(64), default="")
+    # Работа это была или материал. Без категории «ГКЛ» и «ГКЛ монтаж»
+    # неотличимы, а цена у них разная в разы (ADR-027).
+    category: Mapped[str] = mapped_column(String(16), default="")
+    # Чья это цена. Ставка Сани и ставка Паши — не разброс одной цены,
+    # а две разные (ADR-028).
+    performer: Mapped[str] = mapped_column(String(64), default="")
     price_kop: Mapped[int] = mapped_column(Integer)
     observed_on: Mapped[date] = mapped_column(Date)
 
@@ -172,6 +190,13 @@ class UserState(Base):
     draft_price_kop: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Строка свободного формата, которую не удалось прочитать однозначно.
     pending_line: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+    # Липкий исполнитель: кого проставлять следующим пачкам. Видим в каждом
+    # предпросмотре и потому не бывает забытым (ADR-028). Отметка времени
+    # скользящая — обновляется при каждом употреблении, а не при установке:
+    # отвалившийся посреди рабочего дня хуже прилипшего.
+    current_performer: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    performer_touched_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 

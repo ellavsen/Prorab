@@ -143,9 +143,13 @@ def render_pending(estimate, rows, computed: dict, totals) -> str:
         # Модель не поняла, за единицу цена или за всё. Считаем за единицу —
         # третьей ветки расчёта нет, — но говорим об этом вслух.
         unclear = " ⚠️ если это за всё — нажми «÷»" if row.price_scope == "unknown" else ""
+        # Исполнитель виден до подтверждения, а не после: липкое значение,
+        # которого не видно, однажды прилипнет не туда (ADR-028).
+        who = f" · {esc(row.performer)}" if row.performer else ""
         out.append(
             f"{row.ordinal}. {esc(position.name)} — "
-            f"{esc(CATEGORY_LABEL.get(position.category, position.category)).lower()}\n"
+            f"{esc(CATEGORY_LABEL.get(position.category, position.category)).lower()}"
+            f"{who}\n"
             f"    {quantity} × {format_money(position.price)} = "
             f"<b>{format_money(line.total)}</b>{unclear}"
         )

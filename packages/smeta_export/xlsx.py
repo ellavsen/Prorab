@@ -48,7 +48,19 @@ def build_sheet(
     rate: Decimal,
     is_work: bool,
     base: str = RateBase.COST,
+    performers: list[str] | None = None,
 ) -> None:
+    """Лист сметы. Колонка «Исполнитель» появляется, только если она заполнена.
+
+    Исполнители приходят отдельным списком, а не полем позиции, и это прямое
+    следствие того, что в доменную модель он не входит: в слепок исполнитель
+    не попадает, значит и в PositionData ему места нет (ADR-028).
+
+    Колонка стоит последней намеренно: формулы ссылаются на D, E, F и G, и
+    вставка в середину сдвинула бы их все.
+    """
+    performers = performers or []
+    shows_performer = any(performers)
     ws.title = title
     ws.cell(row=1, column=1, value=RATE_HEADING[RateBase(base)]).font = Font(bold=True)
     ws.cell(row=1, column=2, value=rate)
@@ -62,6 +74,8 @@ def build_sheet(
         "Сумма без наценки",
         "Сумма с наценкой",
     ]
+    if shows_performer:
+        headers.append("Исполнитель")
     for column, caption in enumerate(headers, start=1):
         cell = ws.cell(row=HEADER_ROW, column=column, value=caption)
         cell.font = Font(bold=True)
@@ -84,8 +98,11 @@ def build_sheet(
         ws.cell(row=row, column=6, value=f"=ROUND(D{row}*E{row},2)")
         ws.cell(row=row, column=7,
                 value=LINE_FORMULA[RateBase(base)].format(row=row, cell=RATE_CELL))
+        if shows_performer:
+            ws.cell(row=row, column=8,
+                    value=performers[index - 1] if index <= len(performers) else "")
 
-        for column in range(1, 8):
+        for column in range(1, 9 if shows_performer else 8):
             cell = ws.cell(row=row, column=column)
             cell.border = BORDER
             cell.alignment = Alignment(
@@ -128,12 +145,15 @@ def build_workbook(
     work_rate: Decimal,
     material_rate: Decimal,
     base: str = RateBase.COST,
+    work_performers: list[str] | None = None,
+    material_performers: list[str] | None = None,
 ) -> io.BytesIO:
     workbook = Workbook()
-    build_sheet(workbook.active, "Работы", works, work_rate, is_work=True, base=base)
+    build_sheet(workbook.active, "Работы", works, work_rate, is_work=True, base=base,
+                performers=work_performers)
     build_sheet(
         workbook.create_sheet(), "Материалы и расходники", materials,
-        material_rate, is_work=False, base=base,
+        material_rate, is_work=False, base=base, performers=material_performers,
     )
     buffer = io.BytesIO()
     workbook.save(buffer)

@@ -1,9 +1,10 @@
 """smeta-storage — хранение смет. Знает про SQLAlchemy и ничего про Telegram."""
 
-from . import guards, history, pending, positions, share, versions
+from . import guards, history, pending, performers, positions, share, versions
 from .backfill import (
     migrate_categories,
     migrate_money_to_integers,
+    migrate_price_history_key,
     migrate_snapshot_format,
 )
 from .db import build_engine, build_sessionmaker
@@ -27,6 +28,7 @@ from .models import (
     utcnow,
 )
 from .pending import PendingRow
+from .performers import STICKY_HOURS
 from .repo import (
     RETENTION_LIMIT,
     clear_draft,
@@ -54,6 +56,7 @@ __all__ = [
     "DEFAULT_MARKUP_BP",
     "FROZEN_HINT",
     "RETENTION_LIMIT",
+    "STICKY_HOURS",
     "WINDOW_DAYS",
     "Base",
     "Estimate",
@@ -85,11 +88,13 @@ __all__ = [
     "migrate_estimate_versions",
     "migrate_money_to_integers",
     "migrate_price_history",
+    "migrate_price_history_key",
     "migrate_share_links",
     "migrate_snapshot_format",
     "newest_estimate",
     "next_estimate_number",
     "pending",
+    "performers",
     "positions",
     "require_draft",
     "require_draft_by_id",

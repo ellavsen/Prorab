@@ -31,6 +31,7 @@ class PricePoint:
     on: date
     unit_spoken: str = ""
     key: str = ""
+    performer: str = ""
 
 
 @dataclass(frozen=True)
@@ -62,17 +63,31 @@ class Hint:
     # Под каким наименованием цена нашлась. Показывается, только когда оно не
     # то, что человек написал сейчас.
     matched: str = ""
+    # Чья это ставка, если выборка сузилась до одного исполнителя.
+    performer: str = ""
 
 
-def from_history(points: list[PricePoint]) -> Hint | None:
+def from_history(points: list[PricePoint], performer: str = "") -> Hint | None:
     """Свои цены -> подсказка. Пусто -> None, и бот молчит.
 
     Молчание здесь — не отсутствие функции, а решение: строка без цены и так
     видна в предпросмотре с причиной, а «нет данных» на пустом месте только
     шумит.
+
+    Назван исполнитель — выборка сужается до его цен. 100 / 150 / 250 / 250 на
+    двоих это не разброс одной ставки, а две разные, и «медиана 200» —
+    число, которого никто не называл (ADR-028). Своих цен у него ещё нет —
+    отвечаем по общей выборке, но тогда и не приписываем её ему.
     """
     if not points:
         return None
+
+    if performer:
+        his = [point for point in points if point.performer == performer]
+        if his:
+            points, performer = his, performer
+        else:
+            performer = ""
 
     fresh = max(points, key=lambda point: point.on)
     newest = {point.price for point in points if point.on == fresh.on}
@@ -88,4 +103,5 @@ def from_history(points: list[PricePoint]) -> Hint | None:
         unit_spoken=fresh.unit_spoken,
         median=median(prices) if len(prices) >= MIN_FOR_MEDIAN else None,
         matched=fresh.key,
+        performer=performer,
     )

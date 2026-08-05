@@ -42,6 +42,9 @@ class PendingRow:
     hint_low: str | None = None
     hint_high: str | None = None
     hint_matched_name: str | None = None
+    # Кто делает эту строку. Приходит с границы ввода или проставляется
+    # липким исполнителем, и в обоих случаях виден в предпросмотре (ADR-028).
+    performer: str = ""
     hint_on: date | None = None
     hint_times: int | None = None
 
@@ -70,6 +73,7 @@ def replace(db: Session, uid: int, estimate_id: int, rows: list[PendingRow]) -> 
             hint_low=row.hint_low,
             hint_high=row.hint_high,
             hint_matched_name=row.hint_matched_name,
+            performer=row.performer,
             hint_on=row.hint_on,
             hint_times=row.hint_times,
         ))

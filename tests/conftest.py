@@ -19,7 +19,7 @@ from smeta_storage import bootstrap, build_engine, build_sessionmaker
 # бы так же, как расходились четыре вычислителя до Sprint 1.
 CLOSED_TABLES = {
     "price_history": {"id", "user_id", "name_norm", "unit", "unit_spoken",
-                      "price_kop", "observed_on"},
+                      "category", "performer", "price_kop", "observed_on"},
     "share_links": {"id", "token_sha256", "estimate_id", "created_at",
                     "expires_at", "revoked_at", "first_viewed_at",
                     "last_viewed_at"},

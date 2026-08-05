@@ -15,7 +15,7 @@ from sqlalchemy import Connection, text
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.exc import OperationalError
 
-from .models import DEFAULT_MARKUP_BP, utcnow
+from .models import DEFAULT_MARKUP_BP, Base, PriceHistory, utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -127,3 +127,42 @@ def migrate_orphan_positions(conn: Connection) -> None:
                  " AND estimate_id IS NULL"),
             {"eid": est_id, "uid": uid},
         )
+
+
+# Состав ключа дня после Sprint 9. Проверяется по факту, а не по номеру
+# версии: база могла остановиться на середине.
+PRICE_HISTORY_KEY = (
+    "user_id", "name_norm", "unit", "unit_spoken", "category", "performer",
+    "observed_on",
+)
+
+
+def migrate_price_history_key(conn: Connection) -> bool:
+    """Перестраивает таблицу под ключ дня с категорией и исполнителем (ADR-028).
+
+    SQLite не умеет менять UNIQUE в существующей таблице — только пересобрать.
+    Порядок выбран так, чтобы данные не оставались без крыши: копия делается
+    до сноса, вставка — после создания новой таблицы, и всё это внутри одной
+    транзакции вызывающего.
+
+    Новый ключ шире старого, поэтому строки, уникальные по старому, уникальны
+    и по новому: вставка не может упереться в конфликт.
+    """
+    if "price_history" not in set(sa_inspect(conn).get_table_names()):
+        return False
+    keys = {
+        tuple(constraint["column_names"])
+        for constraint in sa_inspect(conn).get_unique_constraints("price_history")
+    }
+    if PRICE_HISTORY_KEY in keys:
+        return False
+
+    columns = ", ".join(column.name for column in PriceHistory.__table__.columns)
+    conn.execute(text("CREATE TABLE price_history_old AS SELECT * FROM price_history"))
+    conn.execute(text("DROP TABLE price_history"))
+    Base.metadata.create_all(bind=conn, tables=[PriceHistory.__table__])
+    conn.execute(text(
+        f"INSERT INTO price_history ({columns}) SELECT {columns} FROM price_history_old"
+    ))
+    conn.execute(text("DROP TABLE price_history_old"))
+    return True

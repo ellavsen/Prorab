@@ -116,6 +116,9 @@ class Position(Base):
     # в Numeric(18,2) лежали бы в binary float (ADR-004).
     qty_milli: Mapped[int] = mapped_column(Integer, default=0)
     price_kop: Mapped[int] = mapped_column(Integer, default=0)
+    # Кто делает работу. В слепок не входит и документа заказчику не меняет:
+    # согласовывали сумму, а не бригаду (ADR-028).
+    performer: Mapped[str] = mapped_column(String(64), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     @property
