@@ -10,6 +10,7 @@ import pathlib
 import subprocess
 import sys
 import tomllib
+import zipfile
 
 import pytest
 
@@ -138,6 +139,22 @@ def test_installed_distribution_is_importable():
     )
 
 
+def installed_packages() -> list[pathlib.Path]:
+    """Пакеты, которые едут в установку: оба корня из pyproject, не один.
+
+    `where = ["packages", "apps"]` — корня два, и проверка, обходящая только
+    первый, не увидела бы половину дистрибутива. `apps/web` отсеивается сам:
+    без `__init__.py` его не найдёт и setuptools.
+    """
+    roots = [ROOT / name for name in ("packages", "apps")]
+    return sorted(
+        directory
+        for root in roots
+        for directory in root.iterdir()
+        if (directory / "__init__.py").exists()
+    )
+
+
 def test_every_runtime_asset_is_declared_as_package_data():
     """Ловит установку, которая молча приехала без данных.
 
@@ -155,17 +172,84 @@ def test_every_runtime_asset_is_declared_as_package_data():
     patterns = declared["tool"]["setuptools"]["package-data"]
 
     undeclared = []
-    for path in sorted((ROOT / "packages").rglob("*")):
-        if not path.is_file() or path.suffix == ".py":
-            continue
-        relative = path.relative_to(ROOT / "packages")
-        package, tail = relative.parts[0], "/".join(relative.parts[1:])
-        if package.endswith(".egg-info") or "__pycache__" in relative.parts:
-            continue
-        if not any(fnmatch.fnmatch(tail, glob) for glob in patterns.get(package, [])):
-            undeclared.append(str(relative))
+    for package in installed_packages():
+        for path in sorted(package.rglob("*")):
+            if not path.is_file() or path.suffix == ".py":
+                continue
+            relative = path.relative_to(package.parent)
+            if "__pycache__" in relative.parts:
+                continue
+            tail = "/".join(relative.parts[1:])
+            if not any(fnmatch.fnmatch(tail, glob) for glob in patterns.get(package.name, [])):
+                undeclared.append(str(relative))
 
     assert not undeclared, (
         "файлы лежат в пакете, но не поедут в установку — допиши их в "
         "[tool.setuptools.package-data] в pyproject.toml:\n  " + "\n  ".join(undeclared)
+    )
+
+
+DEMO_WHEELS = ROOT / "apps" / "web" / "public" / "wheels"
+
+
+def test_the_demo_wheel_matches_the_source_it_was_built_from():
+    """Демо в браузере исполняет колесо, а не дерево — и они расходятся молча.
+
+    Остальные тесты импортируют `smeta_core` из исходников: путь им задаёт
+    pythonpath. Демо грузит `prorab-*.whl`, собранное когда-то раньше. Между
+    ними нет ничего, что заставило бы их совпасть, поэтому демо может считать
+    прошлогодним ядром, а вся сборка при этом зелёная. Так уже было в Sprint 7
+    (ADR-023, «Второй класс»).
+
+    Сверка по содержимому, а не по времени файлов: `git checkout` и свежий клон
+    переписывают mtime всем файлам разом, так что «колесо новее исходников»
+    там либо верно всегда, либо ложно всегда — то есть не значит ничего.
+    Байты не врут.
+
+    Тест ничего не пересобирает: сборка демо остаётся прежней, меняется только
+    то, что расхождение перестаёт быть тихим. В CI колесо собирается
+    непосредственно перед `npm run conformance`, поэтому разойтись там не с чем;
+    цена этой проверки — машина разработчика, где расхождение и живёт.
+    """
+    wheels = sorted(DEMO_WHEELS.glob("prorab-*.whl"))
+    if not wheels:
+        pytest.skip("демо не собрано — колеса нет: python scripts/prepare_web_assets.py")
+    assert len(wheels) == 1, (
+        "в apps/web/public/wheels лежит несколько колёс проекта — демо возьмёт "
+        f"неизвестно какое: {[w.name for w in wheels]}. "
+        "Пересобери демо: python scripts/prepare_web_assets.py"
+    )
+
+    stale: list[str] = []
+    packages = {package.name: package.parent for package in installed_packages()}
+
+    with zipfile.ZipFile(wheels[0]) as wheel:
+        packed = {name for name in wheel.namelist() if not name.endswith("/")}
+        for member in sorted(packed):
+            if ".dist-info/" in member:
+                continue
+            # Корень ищется, а не угадывается: setuptools кладёт в дистрибутив
+            # и то, у чего нет __init__.py (apps/web/*/py/bridge.py), поэтому
+            # по одному packages/ такой файл выглядел бы исчезнувшим.
+            candidates = [parent / member for parent in (ROOT / "packages", ROOT / "apps")]
+            source = next((path for path in candidates if path.exists()), None)
+            if source is None:
+                stale.append(f"{member} — в колесе есть, в дереве уже нет")
+            elif source.read_bytes() != wheel.read(member):
+                stale.append(f"{member} — содержимое разошлось с исходником")
+
+        for name, parent in packages.items():
+            for source in sorted((parent / name).rglob("*.py")):
+                if "__pycache__" in source.parts:
+                    continue
+                member = str(source.relative_to(parent))
+                if member not in packed:
+                    stale.append(f"{member} — есть в дереве, в колесо не попал")
+
+    assert not stale, (
+        "колесо демо отстало от исходников — браузер считает не тем кодом, "
+        "который лежит в packages/.\nПересобери демо: "
+        "python scripts/prepare_web_assets.py\n\nРазошлось:\n  "
+        + "\n  ".join(stale[:15])
+        + (f"\n  … и ещё {len(stale) - 15}" if len(stale) > 15 else "")
     )
