@@ -28,6 +28,14 @@ apps/web/dist/
 # Колёса собираются scripts/prepare_web_assets.py — в репозитории не хранятся.
 apps/web/public/wheels/
 
+# Граф знаний: пересобирается из исходников (`graphify .`), в репозитории не
+# хранится. graph.json и graph.html — под три мегабайта каждый, и меняются
+# целиком при любой правке кода.
+graphify-out/
+
+# Локальные разрешения Claude Code — про машину, а не про проект.
+.claude/settings.local.json
+
 # OS / editors
 .DS_Store
 .idea/
