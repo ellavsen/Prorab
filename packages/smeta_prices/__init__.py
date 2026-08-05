@@ -6,6 +6,7 @@ Telegram. Цену он не придумывает — он умеет узна
 """
 
 from .catalog import CATALOG, Catalog, CatalogError, Item
+from .match import FUZZY_CUTOFF, MAX_EXTRA_TOKENS, by_containment, by_typo, resolve
 from .normalize import display_unit, fold, normalize_name, packaging_form, same_unit
 from .packaging import BASES, FORM_GROUPS, FORMS, FormCollision, build_forms
 from .stats import (
@@ -23,6 +24,8 @@ __all__ = [
     "CATALOG",
     "FORMS",
     "FORM_GROUPS",
+    "FUZZY_CUTOFF",
+    "MAX_EXTRA_TOKENS",
     "MIN_FOR_MEDIAN",
     "MIN_FOR_SPREAD",
     "Catalog",
@@ -32,6 +35,8 @@ __all__ = [
     "Item",
     "PricePoint",
     "build_forms",
+    "by_containment",
+    "by_typo",
     "display_unit",
     "fold",
     "from_history",
@@ -41,6 +46,7 @@ __all__ = [
     "packaging_form",
     "percentile_25",
     "percentile_75",
+    "resolve",
     "same_unit",
     "without_outliers",
 ]

@@ -20,11 +20,17 @@ MIN_FOR_MEDIAN = 3
 
 @dataclass(frozen=True)
 class PricePoint:
-    """Своя цена за единицу, когда-то введённая руками."""
+    """Своя цена за единицу, когда-то введённая руками.
+
+    key — нормализованное наименование, под которым цена нашлась. Совпадать с
+    тем, что человек написал сейчас, оно не обязано: «Грутновка» находится по
+    «Грунтовке». Тогда об этом надо сказать вслух (ADR-027).
+    """
 
     price: Decimal
     on: date
     unit_spoken: str = ""
+    key: str = ""
 
 
 @dataclass(frozen=True)
@@ -53,6 +59,9 @@ class Hint:
     high: Decimal
     unit_spoken: str = ""
     median: Decimal | None = None
+    # Под каким наименованием цена нашлась. Показывается, только когда оно не
+    # то, что человек написал сейчас.
+    matched: str = ""
 
 
 def from_history(points: list[PricePoint]) -> Hint | None:
@@ -78,4 +87,5 @@ def from_history(points: list[PricePoint]) -> Hint | None:
         high=max(prices),
         unit_spoken=fresh.unit_spoken,
         median=median(prices) if len(prices) >= MIN_FOR_MEDIAN else None,
+        matched=fresh.key,
     )

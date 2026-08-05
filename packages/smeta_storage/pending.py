@@ -41,6 +41,7 @@ class PendingRow:
     hint_median: str | None = None
     hint_low: str | None = None
     hint_high: str | None = None
+    hint_matched_name: str | None = None
     hint_on: date | None = None
     hint_times: int | None = None
 
@@ -68,6 +69,7 @@ def replace(db: Session, uid: int, estimate_id: int, rows: list[PendingRow]) -> 
             hint_median=row.hint_median,
             hint_low=row.hint_low,
             hint_high=row.hint_high,
+            hint_matched_name=row.hint_matched_name,
             hint_on=row.hint_on,
             hint_times=row.hint_times,
         ))

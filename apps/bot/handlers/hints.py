@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from smeta_prices import from_history
+from smeta_prices import from_history, normalize_name
 from smeta_storage import PendingRow, history, pending
 
 
@@ -38,6 +38,11 @@ def _hinted(db, uid: int, row: PendingRow) -> PendingRow:
         hint_median=None if hint.median is None else str(hint.median),
         hint_low=str(hint.low),
         hint_high=str(hint.high),
+        # Молчим о совпадении и говорим о несовпадении: цена, найденная под
+        # другим наименованием, обязана назвать его (ADR-027).
+        hint_matched_name=(
+            hint.matched if hint.matched != normalize_name(row.name) else None
+        ),
         hint_on=hint.on,
         hint_times=hint.times,
     )

@@ -62,6 +62,9 @@ class PendingPosition(Base):
     # за единственную известную (ADR-026).
     hint_low: Mapped[str | None] = mapped_column(String(32), nullable=True)
     hint_high: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Наименование, под которым цена нашлась, если оно не то, что написано
+    # в строке. Подставлять цену от похожей позиции молча нельзя (ADR-027).
+    hint_matched_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     hint_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     hint_times: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

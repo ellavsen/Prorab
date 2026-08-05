@@ -17,7 +17,7 @@ from datetime import date, timedelta
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from smeta_prices import PricePoint, normalize_name, packaging_form, same_unit
+from smeta_prices import PricePoint, normalize_name, packaging_form, resolve, same_unit
 
 from .models import Position, PriceHistory, utcnow
 
@@ -110,36 +110,49 @@ def lookup(
 
     Единица сверяется, а не игнорируется: цена за м² и цена за м.п. — разные
     величины, и подставлять одну вместо другой нельзя (ADR-015).
+
+    Написание сверяется не побуквенно: «Грутновка» находит свою же историю по
+    «Грунтовке». Вложенность при этом выключена — среди прошлых наименований
+    пользователя работу от материала не отличить, `price_history` категории не
+    хранит (ADR-027).
     """
     key = normalize_name(name)
     if not key:
         return []
 
     cutoff = _cutoff(today)
-    points: list[PricePoint] = []
-
-    live = db.execute(
-        select(Position).where(Position.user_id == uid, Position.name != "")
-    ).scalars().all()
-    for position in live:
-        if position.created_at.date() < cutoff or normalize_name(position.name) != key:
-            continue
-        if not same_unit(unit, unit_spoken, position.unit or "", _spoken(position)):
-            continue
-        points.append(PricePoint(
-            price=position.price, on=position.created_at.date(), unit_spoken=_spoken(position)
-        ))
-
+    live = [
+        position for position in db.execute(
+            select(Position).where(Position.user_id == uid, Position.name != "")
+        ).scalars().all()
+        if position.created_at.date() >= cutoff
+    ]
     archived = db.execute(
         select(PriceHistory).where(
-            PriceHistory.user_id == uid,
-            PriceHistory.name_norm == key,
-            PriceHistory.observed_on >= cutoff,
+            PriceHistory.user_id == uid, PriceHistory.observed_on >= cutoff
         )
     ).scalars().all()
+
+    known = {normalize_name(position.name) for position in live}
+    known |= {row.name_norm for row in archived}
+    match = resolve(key, known - {""}, nested=False)
+    if match is None:
+        return []
+
+    points: list[PricePoint] = []
+    for position in live:
+        if normalize_name(position.name) != match:
+            continue
+        if same_unit(unit, unit_spoken, position.unit or "", _spoken(position)):
+            points.append(PricePoint(
+                price=position.price, on=position.created_at.date(),
+                unit_spoken=_spoken(position), key=match,
+            ))
     for row in archived:
+        if row.name_norm != match:
+            continue
         if same_unit(unit, unit_spoken, row.unit, row.unit_spoken):
             points.append(PricePoint(price=row.price, on=row.observed_on,
-                                     unit_spoken=row.unit_spoken))
+                                     unit_spoken=row.unit_spoken, key=match))
 
     return sorted(points, key=lambda point: point.on, reverse=True)

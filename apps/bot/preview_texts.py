@@ -88,11 +88,14 @@ def render_price_hint(row) -> str:
         return ""
     unit = display_unit(row.unit, row.unit_spoken)
     per = f"/{esc(unit)}" if unit else ""
+    # Найдено под другим наименованием — оно называется до числа, а не после:
+    # человек должен понять, о чём цена, прежде чем её прочтёт.
+    found = f"«{esc(row.hint_matched_name)}»: " if row.hint_matched_name else ""
     when = f"{row.hint_on.day} {MONTHS[row.hint_on.month - 1]}" if row.hint_on else ""
     spread = row.hint_low and row.hint_high and row.hint_low != row.hint_high
 
     if not spread:
-        parts = [f"    💡 вы брали по {format_money(Decimal(row.hint_price))} ₽{per}"]
+        parts = [f"    💡 {found}вы брали по {format_money(Decimal(row.hint_price))} ₽{per}"]
         tail = ", ".join(part for part in (when, _times(row.hint_times or 1)) if part)
         if tail:
             parts.append(f" — {tail} за полгода")
@@ -101,7 +104,7 @@ def render_price_hint(row) -> str:
         return "".join(parts)
 
     lines = [
-        f"    💡 вы платили от {format_money(Decimal(row.hint_low))} "
+        f"    💡 {found}вы платили от {format_money(Decimal(row.hint_low))} "
         f"до {format_money(Decimal(row.hint_high))} ₽{per} — "
         f"{_times(row.hint_times or 1)} за полгода"
     ]

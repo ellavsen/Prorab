@@ -46,6 +46,8 @@ PENDING_COLUMNS = {
     # Наблюдённый разброс той же подсказки, Sprint 9 (ADR-026).
     "hint_low": "VARCHAR(32)",
     "hint_high": "VARCHAR(32)",
+    # Наименование, под которым цена нашлась, Sprint 9 (ADR-027).
+    "hint_matched_name": "VARCHAR(255)",
 }
 
 # Черновик пошагового ввода, добавлен в Sprint 4 (ADR-010).

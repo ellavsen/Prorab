@@ -15,22 +15,21 @@
 
 from __future__ import annotations
 
-import difflib
 import json
 from dataclasses import dataclass
 from pathlib import Path
 
 from smeta_core import UNITS
 
+from .match import FUZZY_CUTOFF, candidates
 from .normalize import normalize_name
+
+__all__ = ["CATALOG", "DATA", "FUZZY_CUTOFF", "KINDS", "Catalog", "CatalogError",
+           "Item", "build", "load"]
 
 DATA = Path(__file__).parent / "catalog.json"
 
 KINDS = frozenset({"work", "material"})
-
-# Порог автопривязки высокий намеренно: цена ошибки — подсказка от чужой
-# позиции. Ниже порога справочник молчит, а не угадывает.
-FUZZY_CUTOFF = 0.87
 
 
 class CatalogError(ValueError):
@@ -66,16 +65,17 @@ class Catalog:
         return self._closest(key)
 
     def _closest(self, key: str) -> Item | None:
-        """Опечатки и хвосты. Два разных кандидата рядом — молчим.
+        """Опечатки и хвосты — двумя ступенями подряд (match.py, ADR-027).
+
+        Кандидаты сводятся к позициям, а не к написаниям: два синонима одной
+        позиции — это один ответ, а не повод промолчать. Две разные позиции —
+        молчим.
 
         difflib из стандартной библиотеки, а не RapidFuzz: на 173 позициях и
         строках в три слова разницы в скорости нет, а зависимость есть.
         Появится реальный поток — заменим по замеру, а не по ожиданию.
         """
-        matches = difflib.get_close_matches(key, self.index, n=2, cutoff=FUZZY_CUTOFF)
-        if not matches:
-            return None
-        found = {self.index[match] for match in matches}
+        found = {self.index[match] for match in candidates(key, self.index)}
         return next(iter(found)) if len(found) == 1 else None
 
 

@@ -197,6 +197,65 @@ async def test_one_price_repeated_is_not_a_range(bot):  # noqa: F811
 
 
 @async_test
+async def test_a_typo_finds_your_own_history_and_says_so(bot):  # noqa: F811
+    """«Грутновка» находит свою же историю — но не молча (ADR-027)."""
+    _ai, preview, _positions, Session, _estimate_id = bot
+    message = FakeMessage()
+    with Session() as db:
+        bought(db, UID, "380", name="Грунтовка")
+        await preview.offer(message, db, UID, priceless(name="Грутновка"))
+
+        row = pending.load(db, UID)[0]
+        assert row.hint_price == "380.00"
+        assert row.hint_matched_name == "грунтовка"
+
+    assert "«грунтовка»: вы брали по 380,00" in message.last
+
+
+@async_test
+async def test_the_matched_name_is_silent_when_it_is_the_same(bot):  # noqa: F811
+    """Совпало — говорить не о чем, и лишнего слова в подсказке не будет."""
+    _ai, preview, _positions, Session, _estimate_id = bot
+    message = FakeMessage()
+    with Session() as db:
+        bought(db, UID, "380")
+        await preview.offer(message, db, UID, priceless())
+
+        assert pending.load(db, UID)[0].hint_matched_name is None
+    assert "»: вы брали" not in message.last
+
+
+@async_test
+async def test_a_grade_never_borrows_the_price_of_another_grade(bot):  # noqa: F811
+    """М400 и М500 — опечатка друг друга по расстоянию и разные деньги по сути."""
+    _ai, preview, _positions, Session, _estimate_id = bot
+    message = FakeMessage()
+    with Session() as db:
+        bought(db, UID, "380", name="Цемент М500")
+        await preview.offer(message, db, UID, priceless(name="Цемент М400"))
+
+        assert pending.load(db, UID)[0].hint_price is None
+    assert "💡" not in message.last
+
+
+@async_test
+async def test_history_does_not_guess_by_a_missing_word(bot):  # noqa: F811
+    """Вложенность в истории выключена: работу от материала там не отличить.
+
+    «ГКЛ» и «ГКЛ монтаж» вложены друг в друга, а цена у них разная в разы, и
+    категории в price_history нет (ADR-027).
+    """
+    _ai, preview, _positions, Session, _estimate_id = bot
+    message = FakeMessage()
+    with Session() as db:
+        bought(db, UID, "500", name="ГКЛ монтаж")
+        await preview.offer(message, db, UID, priceless(name="ГКЛ"))
+
+        assert pending.load(db, UID)[0].hint_price is None
+    assert "💡" not in message.last
+
+
+@async_test
 async def test_a_price_per_another_unit_is_never_offered(bot):  # noqa: F811
     """«350 за мешок» и «350 за кг» — разные величины (ADR-015)."""
     _ai, preview, _positions, Session, _estimate_id = bot
