@@ -1,0 +1,43 @@
+# Публичная страница сметы. Слушает только localhost — наружу её выпускает
+# nginx, который терминирует TLS и режет токен в логе (deploy/nginx).
+#
+# Установка: см. docs/deploy.md, «Вариант без Docker».
+
+[Unit]
+Description=Прораб — публичная страница сметы по ссылке
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=prorab
+Group=prorab
+WorkingDirectory=/opt/prorab
+
+# Формат тот же, что читает python-dotenv: KEY=VALUE без export и без кавычек.
+EnvironmentFile=/opt/prorab/.env
+Environment=PYTHONUNBUFFERED=1
+
+ExecStart=/opt/prorab/.venv/bin/uvicorn share.main:app --host 127.0.0.1 --port 8000
+
+Restart=always
+RestartSec=5s
+
+# Журнал приложения уже режет токен до /e/*** (ADR-020 §6), поэтому писать
+# его в journald безопасно.
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+# Единственное, что сервису можно писать, — база. И то по делу: страница
+# меняет в ней ровно отметку просмотра и статус согласования (ADR-020).
+ReadWritePaths=/var/lib/prorab
+
+[Install]
+WantedBy=multi-user.target

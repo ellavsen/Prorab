@@ -364,6 +364,17 @@ python scripts/prepare_web_assets.py   # собирает колёса ядра 
 cd apps/web && npm install && npm run dev
 ```
 
+**Всё сразу, одной командой и без единого ключа:**
+
+```bash
+docker compose up                      # api и публичная страница
+docker compose --profile bot up        # и бот, если .env заполнен
+```
+
+Бот в отдельном профиле потому, что ему нужен токен, а посмотреть проект можно
+и без него. Домен, TLS, бэкап и журнал, из которого не утекают ссылки на чужие
+сметы, — в [docs/deploy.md](docs/deploy.md).
+
 ### Не держите проект в синхронизируемой папке
 
 **Правило: репозиторий живёт вне iCloud Drive, Dropbox, OneDrive и Google Drive.**

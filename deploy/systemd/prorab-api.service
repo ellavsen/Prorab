@@ -1,0 +1,36 @@
+# FastAPI поверх ядра расчёта. Ни базы, ни секретов, ни состояния — поэтому
+# и ReadWritePaths здесь нет: писать ему некуда и незачем (ADR-008).
+#
+# Установка: см. docs/deploy.md, «Вариант без Docker».
+
+[Unit]
+Description=Прораб — HTTP API расчёта
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=prorab
+Group=prorab
+WorkingDirectory=/opt/prorab
+
+Environment=PYTHONUNBUFFERED=1
+
+ExecStart=/opt/prorab/.venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8001
+
+Restart=always
+RestartSec=5s
+
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

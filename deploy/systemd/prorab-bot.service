@@ -1,0 +1,46 @@
+# Telegram-бот. Long polling: входящих соединений не принимает, порт ему не
+# нужен, за nginx не прячется. Единственный из трёх процессов, который создаёт
+# схему базы (apps/bot/database.py) — поэтому на чистой машине запускать его
+# нужно первым.
+#
+# Установка: см. docs/deploy.md, «Вариант без Docker».
+
+[Unit]
+Description=Прораб — Telegram-бот
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=prorab
+Group=prorab
+WorkingDirectory=/opt/prorab
+
+# Здесь лежат TELEGRAM_BOT_TOKEN и OPENAI_API_KEY. Права на файл — 600 и
+# владелец prorab: EnvironmentFile читается от root, но содержимое попадает
+# в окружение процесса, который виден в /proc.
+EnvironmentFile=/opt/prorab/.env
+Environment=PYTHONUNBUFFERED=1
+
+ExecStart=/opt/prorab/.venv/bin/python -m bot.app
+
+# Без токена процесс падает намеренно (bot/config.py: require_token).
+# Рестарт-петля в журнале — это правильный симптом: «не настроено» не должно
+# выглядеть как «работает».
+Restart=always
+RestartSec=10s
+
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+ReadWritePaths=/var/lib/prorab
+
+[Install]
+WantedBy=multi-user.target
