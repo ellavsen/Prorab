@@ -23,6 +23,7 @@ from smeta_storage import (
 )
 
 from ..database import SessionLocal
+from ..help_texts import HELP_TEXT, START_TEXT
 from ..keyboards import (
     basis_change_keyboard,
     basis_choice_keyboard,
@@ -37,7 +38,6 @@ from ..texts import (
     CATEGORY_LABEL,
     INHERITED,
     INTEGRITY_BROKEN,
-    START_TEXT,
     basis_effect,
     basis_example,
     basis_question,
@@ -57,7 +57,7 @@ async def start(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def help_command(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        START_TEXT, parse_mode=ParseMode.HTML, reply_markup=start_keyboard()
+        HELP_TEXT, parse_mode=ParseMode.HTML, reply_markup=start_keyboard()
     )
 
 

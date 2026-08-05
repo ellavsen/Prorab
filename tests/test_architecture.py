@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import pathlib
+import re
 
 import pytest
 
@@ -307,3 +308,46 @@ def test_no_global_state_dicts_remain():
         source = path.read_text(encoding="utf-8")
         assert "user_category" not in source
         assert "current_estimate_cache" not in source
+
+
+def registered_commands() -> set[str]:
+    """Имена из CommandHandler("name", ...) в сборке приложения."""
+    tree = ast.parse((BOT / "app.py").read_text(encoding="utf-8"))
+    return {
+        node.args[0].value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "CommandHandler"
+        and node.args
+        and isinstance(node.args[0], ast.Constant)
+    }
+
+
+def test_help_lists_every_command_the_bot_answers():
+    """Справка — такая же поверхность, как кнопки (ADR-022).
+
+    Команда, которой нет в /help, для прораба не существует: угадать её имя
+    неоткуда. Обратное тоже верно и хуже — обещание команды, на которую бот
+    промолчит. Раньше расхождение ловилось только чтением, а справка правится
+    реже, чем добавляются команды.
+    """
+    from bot.help_texts import HELP_TEXT
+
+    missing = sorted(cmd for cmd in registered_commands() if f"/{cmd}" not in HELP_TEXT)
+    assert not missing, (
+        "бот отвечает на команды, которых нет в /help: "
+        + ", ".join(f"/{cmd}" for cmd in missing)
+    )
+
+
+def test_help_promises_no_command_the_bot_does_not_answer():
+    from bot.help_texts import HELP_TEXT
+
+    # Разметка снимается до поиска: закрывающий тег </b> неотличим от команды.
+    promised = set(re.findall(r"/([a-z]+)", re.sub(r"<[^>]+>", "", HELP_TEXT)))
+    unanswered = sorted(promised - registered_commands())
+    assert not unanswered, (
+        "/help обещает то, на что бот не ответит: "
+        + ", ".join(f"/{cmd}" for cmd in unanswered)
+    )
