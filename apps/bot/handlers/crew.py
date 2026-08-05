@@ -13,10 +13,12 @@
 """
 
 import re
+from dataclasses import replace
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from smeta_prices import CATALOG
 from smeta_storage import current_estimate, performers, touch_estimate
 
 from ..database import SessionLocal
@@ -46,6 +48,28 @@ def parse(tail: str) -> tuple[str, list[int] | None]:
     return name, (ids or None)
 
 
+def apply_sticky(db, uid: int, rows: list) -> tuple[list, list[str]]:
+    """Проставляет липкого исполнителя распознанной пачке.
+
+    Уже названного не перебивает, аренду пропускает и называет её вслух:
+    у бетономешалки исполнителя не бывает, а тихий пропуск выглядит сбоем
+    (ADR-029).
+    """
+    who = performers.sticky(db, uid)
+    if not who:
+        return rows, []
+
+    stuck, rented = [], []
+    for row in rows:
+        if row.performer or CATALOG.takes_performer(row.name):
+            stuck.append(row if row.performer else replace(row, performer=who))
+        else:
+            stuck.append(row)
+            rented.append(row.name)
+    performers.touch(db, uid)
+    return stuck, rented
+
+
 async def cmd_who(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
     tail = (update.message.text or "").partition(" ")[2].strip()
     if not tail:
@@ -68,7 +92,7 @@ async def cmd_who(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
 
     with SessionLocal() as db:
         estimate = current_estimate(db, uid)
-        touched = performers.assign(db, uid, estimate.id, name, ids)
+        touched, skipped = performers.assign(db, uid, estimate.id, name, ids)
         if ids is None:
             # Липким делает только форма без списка: назвав строки поимённо,
             # человек говорил про них, а не про всё, что будет дальше.
@@ -77,11 +101,13 @@ async def cmd_who(update: Update, _context: ContextTypes.DEFAULT_TYPE) -> None:
             touch_estimate(db, estimate)
 
     who = esc(name)
-    if ids is None:
-        tail_text = (
-            f"Проставила {who}: строк — {touched}. Дальше новые тоже будут его.\n"
-            f"Отменить: /who off"
+    lines = [f"Проставила {who}: строк — {touched}."]
+    if skipped:
+        # Аренда — не работа человека. Пропуск назван, иначе он выглядит сбоем.
+        lines.append(
+            "Пропустила аренду, исполнителя там не бывает: "
+            + ", ".join(esc(one) for one in dict.fromkeys(skipped))
         )
-    else:
-        tail_text = f"Проставила {who}: строк — {touched}."
-    await update.message.reply_text(tail_text)
+    if ids is None:
+        lines.append("Дальше новые строки тоже будут его. Отменить: /who off")
+    await update.message.reply_text("\n".join(lines))

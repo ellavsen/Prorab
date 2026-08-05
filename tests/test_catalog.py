@@ -10,7 +10,16 @@ import pytest
 
 from smeta_core import UNITS
 from smeta_prices import normalize_name
-from smeta_prices.catalog import CATALOG, DATA, KINDS, CatalogError, Item, build, load
+from smeta_prices.catalog import (
+    CATALOG,
+    DATA,
+    DAY_UNITS,
+    KINDS,
+    CatalogError,
+    Item,
+    build,
+    load,
+)
 
 
 def raw_rows():
@@ -21,9 +30,17 @@ def raw_rows():
 
 
 def test_the_catalog_holds_no_price_at_all():
-    """DoD спринта: ни одной цены из справочника. Доказательство — поля файла."""
+    """DoD спринта: ни одной цены из справочника. Доказательство — поля файла.
+
+    Список полей закрытый: новое поле в справочнике — решение, а не побочный
+    эффект правки. «labor» появилось в Sprint 9 и разрешено только позициям,
+    которые меряются часом или сменой (ADR-029).
+    """
     for row in raw_rows():
-        assert set(row) == {"name", "unit", "kind", "aliases"}, row["name"]
+        allowed = {"name", "unit", "kind", "aliases"}
+        if row["unit"] in DAY_UNITS:
+            allowed |= {"labor"}
+        assert set(row) == allowed, row["name"]
 
 
 def test_the_catalog_is_big_enough_to_be_useful():
@@ -114,3 +131,43 @@ def test_work_units_from_the_canon_are_actually_used():
 def test_an_item_without_aliases_still_indexes_itself():
     catalog = build([{"name": "Цемент", "unit": "т", "kind": "material", "aliases": []}])
     assert catalog.find("цемент") == Item(name="Цемент", unit="т", kind="material")
+
+
+# --- Труд против аренды (ADR-029) ---
+
+
+def test_a_shift_must_say_whether_it_is_labour_or_rent():
+    """Забытый признак роняет импорт, а не молча делает перфоратор человеком."""
+    with pytest.raises(CatalogError, match="труд это человека или аренда"):
+        build([{"name": "Аренда лесов", "unit": "смена", "kind": "work"}])
+
+
+def test_labour_is_measured_by_the_hour_or_the_shift():
+    with pytest.raises(CatalogError, match="часом или сменой"):
+        build([{"name": "Штукатурка", "unit": "м²", "kind": "work", "labor": True}])
+
+
+def test_the_rentals_in_the_catalogue_are_marked_as_such():
+    """Замер аудита: шесть позиций в час/смена, три из них — аренда."""
+    timed = [item for item in CATALOG.items if item.unit in DAY_UNITS]
+    assert len(timed) == 6
+    assert sorted(item.name for item in timed if item.labor) == [
+        "Работа разнорабочего", "Работа сантехника", "Работа электрика",
+    ]
+    assert sorted(item.name for item in timed if not item.labor) == [
+        "Аренда бетономешалки", "Аренда вышки-туры", "Аренда перфоратора",
+    ]
+
+
+@pytest.mark.parametrize("name,expected", [
+    ("Работа разнорабочего", True),
+    ("Работа электрика", True),
+    ("Аренда бетономешалки", False),
+    ("Аренда перфоратора", False),
+    ("Штукатурка стен", True),        # обычная работа
+    ("Цемент М500", True),            # материал правило не трогает
+    ("Шлифовка стен", True),          # справочнику неизвестна — хвост разовых
+])
+def test_who_may_have_a_performer(name, expected):
+    """Аренда бетономешалки не должна попасть в человеко-дни (ADR-029)."""
+    assert CATALOG.takes_performer(name) is expected

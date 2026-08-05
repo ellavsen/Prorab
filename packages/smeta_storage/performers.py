@@ -22,6 +22,8 @@ from datetime import timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from smeta_prices import CATALOG
+
 from .models import Position, utcnow
 from .repo import user_state
 
@@ -62,8 +64,8 @@ def touch(db: Session, uid: int) -> None:
 
 def assign(
     db: Session, uid: int, estimate_id: int, name: str, ids: list[int] | None = None
-) -> int:
-    """Ставит исполнителя на строки сметы. Возвращает, скольким поставил.
+) -> tuple[int, list[str]]:
+    """Ставит исполнителя на строки сметы. Возвращает (сколько, что пропущено).
 
     Без списка идентификаторов — всем строкам, у которых исполнителя ещё нет.
     Уже названного не перебивает: массовая простановка обязана быть безопасной
@@ -71,6 +73,10 @@ def assign(
 
     Со списком — ровно этим строкам, и там уже перебивает: их назвали
     поимённо, значит, это и есть намерение.
+
+    Известная аренда пропускается в обоих случаях, и её наименования
+    возвращаются вызывающему: у бетономешалки исполнителя не бывает, а
+    молчаливый пропуск выглядел бы поломкой (ADR-029).
     """
     query = select(Position).where(
         Position.user_id == uid, Position.estimate_id == estimate_id
@@ -80,11 +86,15 @@ def assign(
     else:
         query = query.where(Position.performer == "")
 
-    rows = db.execute(query).scalars().all()
-    for row in rows:
+    touched, skipped = 0, []
+    for row in db.execute(query).scalars().all():
+        if not CATALOG.takes_performer(row.name):
+            skipped.append(row.name)
+            continue
         row.performer = name
+        touched += 1
     db.commit()
-    return len(rows)
+    return touched, skipped
 
 
 def names(db: Session, uid: int, limit: int = 5) -> list[str]:

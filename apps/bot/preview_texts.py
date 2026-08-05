@@ -124,6 +124,16 @@ def render_price_hint(row) -> str:
     return "\n".join(lines)
 
 
+def render_rented(names: list[str]) -> str:
+    """Почему у этих строк нет исполнителя, хотя он проставляется остальным.
+
+    Пропуск без объяснения выглядит сбоем, а объяснение здесь короткое и
+    верное: у аренды исполнителя не бывает (ADR-029).
+    """
+    listed = ", ".join(esc(name) for name in dict.fromkeys(names))
+    return f"Исполнителя не ставлю на аренду — там его не бывает: {listed}"
+
+
 def render_pending(estimate, rows, computed: dict, totals) -> str:
     """Предпросмотр распознанной пачки.
 

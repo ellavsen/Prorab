@@ -24,12 +24,17 @@ from smeta_core import UNITS
 from .match import FUZZY_CUTOFF, candidates
 from .normalize import normalize_name
 
-__all__ = ["CATALOG", "DATA", "FUZZY_CUTOFF", "KINDS", "Catalog", "CatalogError",
-           "Item", "build", "load"]
+__all__ = ["CATALOG", "DATA", "DAY_UNITS", "FUZZY_CUTOFF", "KINDS", "Catalog",
+           "CatalogError", "Item", "build", "load"]
 
 DATA = Path(__file__).parent / "catalog.json"
 
 KINDS = frozenset({"work", "material"})
+
+# Единицы повремёнки. Позиция, которая ими меряется, обязана сказать о себе,
+# труд это человека или аренда железа: и то и другое — «work» за «смену», а
+# исполнитель бывает только у первого (ADR-029).
+DAY_UNITS = frozenset({"час", "смена"})
 
 
 class CatalogError(ValueError):
@@ -42,6 +47,9 @@ class Item:
     unit: str
     kind: str
     aliases: tuple[str, ...] = ()
+    # Труд человека, а не аренда. Значение имеет смысл только у позиций в
+    # часах и сменах; у остальных оно False и ни на что не влияет.
+    labor: bool = False
 
     def spellings(self) -> list[str]:
         """Все написания позиции в нормализованном виде, включая её имя."""
@@ -63,6 +71,20 @@ class Catalog:
         if exact is not None:
             return exact
         return self._closest(key)
+
+    def takes_performer(self, raw: str) -> bool:
+        """Ставится ли на такую позицию исполнитель.
+
+        Нет — только у известной аренды: «Аренда бетономешалки» это work со
+        сменой в единицах, и правило «час или смена → это ставка человека»
+        затащило бы её в человеко-дни (ADR-029).
+
+        Позиция, которой справочник не знает, исполнителя принимает: весь
+        хвост разовых работ живёт именно там, и молчать про него — значит
+        отобрать поле у большинства строк реальной сметы.
+        """
+        item = self.find(raw)
+        return item is None or item.labor or item.unit not in DAY_UNITS
 
     def _closest(self, key: str) -> Item | None:
         """Опечатки и хвосты — двумя ступенями подряд (match.py, ADR-027).
@@ -86,9 +108,24 @@ def build(raw_items: list[dict]) -> Catalog:
     неизвестная категория, одно написание у двух позиций. Последнее — тот же
     класс ошибки, что дубль «т.» в Sprint 5, только на именах.
     """
+    for raw in raw_items:
+        # Признак обязателен, а не подразумевается. Умолчание «не труд» было
+        # бы безопаснее умолчания «труд», но оба молчат, а забытая позиция в
+        # сменах — это либо человек без исполнителя, либо перфоратор с ним.
+        if raw["unit"] in DAY_UNITS and "labor" not in raw:
+            raise CatalogError(
+                f"{raw['name']}: единица {raw['unit']!r} — скажи явно, "
+                f"труд это человека или аренда (labor)"
+            )
+        if raw.get("labor") and raw["unit"] not in DAY_UNITS:
+            raise CatalogError(
+                f"{raw['name']}: labor стоит у позиции в {raw['unit']!r}, "
+                f"а ставка человека меряется часом или сменой"
+            )
+
     items = tuple(
         Item(name=raw["name"], unit=raw["unit"], kind=raw["kind"],
-             aliases=tuple(raw.get("aliases", ())))
+             aliases=tuple(raw.get("aliases", ())), labor=bool(raw.get("labor")))
         for raw in raw_items
     )
     index: dict[str, Item] = {}

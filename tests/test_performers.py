@@ -96,9 +96,9 @@ def test_bulk_assignment_does_not_overwrite_what_was_named_by_hand(db):
     positions.add(db, UID, estimate.id, line("Плитка"))
     db.commit()
 
-    touched = performers.assign(db, UID, estimate.id, "Саня")
+    touched, skipped = performers.assign(db, UID, estimate.id, "Саня")
 
-    assert touched == 2, "только те, у кого исполнителя не было"
+    assert (touched, skipped) == (2, []), "только те, у кого исполнителя не было"
     by_name = {row.name: row.performer for row in positions.load(db, UID, estimate.id)}
     assert by_name == {"Штукатурка": "Паша", "Шпаклёвка": "Саня", "Плитка": "Саня"}
 
@@ -108,7 +108,7 @@ def test_named_rows_are_overwritten_because_naming_them_was_the_point(db):
     row = positions.add(db, UID, estimate.id, line("Штукатурка"), performer="Паша")
     db.commit()
 
-    assert performers.assign(db, UID, estimate.id, "Саня", ids=[row.id]) == 1
+    assert performers.assign(db, UID, estimate.id, "Саня", ids=[row.id]) == (1, [])
     assert positions.load(db, UID, estimate.id)[0].performer == "Саня"
 
 
@@ -269,3 +269,52 @@ def test_the_command_tail_is_read_the_way_it_is_written(tail, expected):
     from bot.handlers.crew import parse
 
     assert parse(tail) == expected
+
+
+# --- Труд против аренды (ADR-029) ---
+
+
+def test_a_concrete_mixer_gets_no_performer(db):
+    """«Час или смена → это ставка человека» затащило бы аренду в человеко-дни."""
+    estimate = create_estimate(db, UID, name="Квартира")
+    positions.add(db, UID, estimate.id, PositionData(
+        category=Category.WORK, name="Аренда бетономешалки",
+        qty=D("2"), price=D("1500"), unit="смена", unit_spoken="смены",
+    ))
+    positions.add(db, UID, estimate.id, PositionData(
+        category=Category.WORK, name="Работа разнорабочего",
+        qty=D("3"), price=D("3000"), unit="смена", unit_spoken="смены",
+    ))
+    db.commit()
+
+    touched, skipped = performers.assign(db, UID, estimate.id, "Саня")
+
+    assert touched == 1
+    assert skipped == ["Аренда бетономешалки"], "пропуск назван, а не молчалив"
+    by_name = {row.name: row.performer for row in positions.load(db, UID, estimate.id)}
+    assert by_name == {"Аренда бетономешалки": "", "Работа разнорабочего": "Саня"}
+
+
+def test_naming_the_rental_row_by_hand_does_not_help_either(db):
+    """Правило одно на всех путях: поимённая форма аренду тоже не берёт."""
+    estimate = create_estimate(db, UID, name="Квартира")
+    row = positions.add(db, UID, estimate.id, PositionData(
+        category=Category.WORK, name="Аренда перфоратора",
+        qty=D("1"), price=D("800"), unit="смена", unit_spoken="смену",
+    ))
+    db.commit()
+
+    assert performers.assign(db, UID, estimate.id, "Саня", ids=[row.id]) == (
+        0, ["Аренда перфоратора"]
+    )
+    assert positions.load(db, UID, estimate.id)[0].performer == ""
+
+
+def test_a_one_off_work_the_catalogue_never_heard_of_takes_a_performer(db):
+    """Хвост разовых работ — большинство строк реальной сметы (ADR-029)."""
+    estimate = create_estimate(db, UID, name="Квартира")
+    positions.add(db, UID, estimate.id, line("Пересборка канализации"))
+    db.commit()
+
+    touched, skipped = performers.assign(db, UID, estimate.id, "Саня")
+    assert (touched, skipped) == (1, [])

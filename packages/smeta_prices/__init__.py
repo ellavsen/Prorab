@@ -5,7 +5,7 @@ Telegram. Цену он не придумывает — он умеет узна
 и посчитать медиану по тому, что уже было (ADR-017).
 """
 
-from .catalog import CATALOG, Catalog, CatalogError, Item
+from .catalog import CATALOG, DAY_UNITS, Catalog, CatalogError, Item
 from .match import FUZZY_CUTOFF, MAX_EXTRA_TOKENS, by_containment, by_typo, resolve
 from .normalize import display_unit, fold, normalize_name, packaging_form, same_unit
 from .packaging import BASES, FORM_GROUPS, FORMS, FormCollision, build_forms
@@ -22,6 +22,7 @@ from .suggest import MIN_FOR_MEDIAN, Hint, PricePoint, from_history
 __all__ = [
     "BASES",
     "CATALOG",
+    "DAY_UNITS",
     "FORMS",
     "FORM_GROUPS",
     "FUZZY_CUTOFF",
