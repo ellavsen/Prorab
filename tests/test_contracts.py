@@ -4,10 +4,12 @@
 об этом узнает потребитель, а не автор. Здесь это ловится сборкой.
 """
 
+import fnmatch
 import json
 import pathlib
 import subprocess
 import sys
+import tomllib
 
 import pytest
 
@@ -133,4 +135,37 @@ def test_installed_distribution_is_importable():
         "установленный пакет не импортируется:\n"
         f"{result.stderr}\n"
         "на macOS помогает: chflags -R nohidden .venv && pip install -e ."
+    )
+
+
+def test_every_runtime_asset_is_declared_as_package_data():
+    """Ловит установку, которая молча приехала без данных.
+
+    Соседний тест проверяет, что установленное импортируется. Этот — что оно
+    ещё и укомплектовано: setuptools кладёт в колесо только .py, а всё
+    остальное — ровно то, что перечислено в package-data. Незаявленный файл
+    исчезает без единого предупреждения, и узнать об этом можно только в
+    рантайме — причём не здесь, где путь задаёт pythonpath и исходное дерево
+    на месте, а в контейнере, собранном через `pip install .` (docs/deploy.md).
+
+    Так уже случалось со шрифтом PDF: он лежит в репозитории намеренно
+    (ADR-021), но в колесо не попадал.
+    """
+    declared = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    patterns = declared["tool"]["setuptools"]["package-data"]
+
+    undeclared = []
+    for path in sorted((ROOT / "packages").rglob("*")):
+        if not path.is_file() or path.suffix == ".py":
+            continue
+        relative = path.relative_to(ROOT / "packages")
+        package, tail = relative.parts[0], "/".join(relative.parts[1:])
+        if package.endswith(".egg-info") or "__pycache__" in relative.parts:
+            continue
+        if not any(fnmatch.fnmatch(tail, glob) for glob in patterns.get(package, [])):
+            undeclared.append(str(relative))
+
+    assert not undeclared, (
+        "файлы лежат в пакете, но не поедут в установку — допиши их в "
+        "[tool.setuptools.package-data] в pyproject.toml:\n  " + "\n  ".join(undeclared)
     )
